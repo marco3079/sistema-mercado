@@ -6,6 +6,12 @@ O formato segue o Keep a Changelog (em português) e o versionamento segue o Sem
 
 ## [Não lançado]
 
+### Alterado
+
+- Node.js 26 nas imagens da API e do build do site (o Node 20 saiu de suporte) e na CI.
+- nginx 1.29 no site e Docker CLI 28 no atualizador.
+- CI com `actions/checkout` e `actions/setup-node` v7.
+
 ## [1.0.0] - 2026-11-15
 
 Primeira versão pública do sistema de mercado, padaria e logística de fornecimento.

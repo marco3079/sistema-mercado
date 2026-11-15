@@ -24,12 +24,12 @@ O instalador confere o Docker, cria o arquivo `.env` com segredos aleatórios e 
 
 ### Para desenvolver sem Docker
 
-Suba só o banco pelo Compose e rode a API e o app com Node.js 20. O passo a passo está na seção "Desenvolvimento" do [README.md](README.md).
+Suba só o banco pelo Compose e rode a API e o app com Node.js 26. O passo a passo está na seção "Desenvolvimento" do [README.md](README.md).
 
 ## Estrutura do código
 
 ```
-server/                          API (Node 20, Express, Prisma, PostgreSQL)
+server/                          API (Node 26, Express, Prisma, PostgreSQL)
   prisma/schema.prisma           modelo de dados
   src/lib/                       código compartilhado (erros, autenticação, regras)
   src/modules/<modulo>/routes.ts um arquivo de rotas por módulo

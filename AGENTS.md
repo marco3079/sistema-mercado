@@ -60,7 +60,7 @@ Opções úteis: `-Demo` no Windows ou `--demo` no Linux/macOS carrega dados de 
 
 ## Desenvolvimento
 
-- Servidor: pasta `server/` (Node.js 20, TypeScript, Express, Prisma).
+- Servidor: pasta `server/` (Node.js 26, TypeScript, Express, Prisma).
 - Cliente: pasta `client/` (React, TypeScript, Vite).
 - Verificações antes de entregar uma mudança:
   - `cd server && npx tsc --noEmit`

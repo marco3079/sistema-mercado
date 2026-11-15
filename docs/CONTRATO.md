@@ -8,7 +8,7 @@ Ele define a arquitetura, as convenções, as bibliotecas comuns e a API públic
 
 - Base copiada do [sistema-restaurante](https://github.com/marco3079/sistema-restaurante): mesma casca visual,
   login, painel, tema claro/escuro, configurações, logs, backup, atualizador e instalador Docker.
-- `server/`: Node 20, TypeScript, Express, Prisma 5 (PostgreSQL), zod 4.
+- `server/`: Node 26, TypeScript, Express, Prisma 5 (PostgreSQL), zod 4.
 - `client/`: React 18, TypeScript, Vite, react-router-dom 6. **Sem bibliotecas novas** (nada de npm install).
 - Referência visual e de código: `C:/Users/tenen/AppData/Local/Temp/claude/3ab78ac3efe4cf73/41809d88-ad4f-4cc8-8c5c-94aee1028530/scratchpad/refs/sistema-restaurante`
   (pasta `client/src/modules/*` e `server/src/modules/*`). Copie padrões de tela, CSS e rotas de lá.
