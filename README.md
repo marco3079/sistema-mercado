@@ -1,10 +1,11 @@
-<p align="center"><img src="client/public/logo-simbolo.svg" alt="Sistema de Mercado" width="120"></p>
+<p align="center"><img src="client/public/logo-simbolo.svg" alt="Sistema de Mercado" width="96"></p>
 
 <h1 align="center">Sistema de Mercado</h1>
 
 <p align="center">PDV, estoque, padaria, compras, fornecedores e entregas para mercados e padarias, em um único app web.</p>
 
 <p align="center">
+  <a href="https://github.com/marco3079/sistema-mercado/actions/workflows/testes.yml"><img src="https://github.com/marco3079/sistema-mercado/actions/workflows/testes.yml/badge.svg" alt="Testes"></a>
   <img src="https://img.shields.io/badge/licen%C3%A7a-MIT-blue" alt="Licença MIT">
   <img src="https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white" alt="Docker Compose">
   <img src="https://img.shields.io/badge/Node-20-339933?logo=node.js&logoColor=white" alt="Node 20">
@@ -13,11 +14,20 @@
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 16">
 </p>
 
+<p align="center">
+  <a href="INSTALAR.md">Instalação</a> · <a href="docs/manual/README.md">Manual</a> · <a href="docs/TELAS.md">Telas</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="CONTRIBUTING.md">Contribuir</a>
+</p>
+
+<p align="center">
+  <img src="docs/telas/gestor-painel.webp" alt="Painel do gestor" width="100%">
+</p>
+
 ## Sumário
 
 - [Visão geral](#visão-geral)
 - [Funcionalidades](#funcionalidades)
 - [Perfis de acesso](#perfis-de-acesso)
+- [Telas](#telas)
 - [Instalação rápida](#instalação-rápida)
 - [Primeiro acesso](#primeiro-acesso)
 - [Dados de demonstração](#dados-de-demonstração)
@@ -26,6 +36,7 @@
 - [Configuração](#configuração)
 - [Arquitetura](#arquitetura)
 - [Desenvolvimento](#desenvolvimento)
+- [Documentação](#documentação)
 - [Origem](#origem)
 - [Segurança](#segurança)
 - [Licença](#licença)
@@ -48,9 +59,11 @@ do pedido ao fornecedor até a entrega na casa do cliente. Funciona no navegador
 
 **Produtos e estoque**
 - Produtos com EAN, código interno, pesáveis (PLU de balança), custo, preço, atacado e dados fiscais.
+- Importação e exportação de produtos por planilha (.xlsx ou .csv), com modelo para preencher.
 - Formação de preço por margem, histórico de preços e etiquetas de gôndola.
 - Exportação para a balança.
 - Estoque por loja, movimentações, perdas, lotes e validade (FEFO), inventário e contagem pelo celular.
+- Estoque em terceiros (consignação, comodato ou evento), com portal de remessas que o terceiro acessa por link.
 
 **Padaria**
 - Receitas (fichas técnicas) com custo por unidade, fornadas, painel do forno e sugestão de produção pelo histórico de vendas.
@@ -60,6 +73,7 @@ do pedido ao fornecedor até a entrega na casa do cliente. Funciona no navegador
 - Sugestão de compra automática (giro, estoque mínimo e prazo do fornecedor).
 - Recebimento com conferência item a item, importação do XML da NF-e, lote/validade e custo médio.
 - Frota, montagem de cargas, roteirização, romaneio, tela do motorista e rastreio público da entrega.
+- Mapa com lojas, entregas e veículos, e rastreadores GPS na frota.
 - Transferência de mercadoria entre lojas e centro de distribuição.
 - Força de vendas (pedido pelo celular com negociação Flex), faturamento em lote e loja B2B para clientes de atacado.
 
@@ -74,7 +88,7 @@ do pedido ao fornecedor até a entrega na casa do cliente. Funciona no navegador
 | Perfil | O que faz |
 |---|---|
 | Gestor | Tudo |
-| Operador de caixa | PDV, caixa, clientes, fiado, delivery |
+| Operador de caixa | PDV, caixa, vendas, clientes, fiado, delivery, produtos e entregas |
 | Estoquista | Estoque, recebimento, validade, inventário, transferências |
 | Padeiro | Produção, painel do forno, receitas |
 | Comprador | Fornecedores, cotações, pedidos de compra, formação de preço |
@@ -82,13 +96,69 @@ do pedido ao fornecedor até a entrega na casa do cliente. Funciona no navegador
 | Vendedor | Força de vendas, carteira de clientes |
 | Contador | Notas fiscais, área do contador, relatórios |
 
+## Telas
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/telas/vendas-pdv.webp" alt="PDV (frente de caixa)" width="440"><br>
+      <sub>PDV: leitor de código de barras, balança e pagamentos.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/telas/produtos-produtos.webp" alt="Produtos" width="440"><br>
+      <sub>Produtos: catálogo com foto, margem e estoque.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/telas/estoque-estoque.webp" alt="Estoque" width="440"><br>
+      <sub>Estoque: saldo por loja e estoque mínimo.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/telas/padaria-forno.webp" alt="Painel do forno" width="440"><br>
+      <sub>Painel do forno: o que assar agora.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/telas/compras-cotacao-detalhe.webp" alt="Cotação" width="440"><br>
+      <sub>Cotação: comparação das respostas dos fornecedores.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/telas/logistica-montar-carga.webp" alt="Montar carga" width="440"><br>
+      <sub>Montar carga: roteirização e romaneio.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/telas/financeiro-meu-lucro.webp" alt="Meu Lucro" width="440"><br>
+      <sub>Meu Lucro: lucro real do período.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/telas/financeiro-relatorios.webp" alt="Relatórios" width="440"><br>
+      <sub>Relatórios: vendas, curva ABC, margem e produtos parados.</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/telas/celular/gestor-painel.webp" alt="Painel do gestor no celular" width="200">
+  <img src="docs/telas/celular/motorista-entregas.webp" alt="Minhas entregas no celular" width="200">
+  <img src="docs/telas/celular/vendedor-novo-pedido.webp" alt="Novo pedido no celular" width="200">
+  <img src="docs/telas/celular/publico-pedir.webp" alt="Pedido do cliente no celular" width="200">
+</p>
+
+<p align="center">Painel do gestor, entregas do motorista, novo pedido do vendedor e pedido do cliente, no celular.</p>
+
+<p align="center"><a href="docs/TELAS.md">Ver todas as telas</a></p>
+
 ## Instalação rápida
 
 Requisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e aberto.
 
 **Windows (PowerShell)**
 
-```
+```powershell
 git clone https://github.com/marco3079/sistema-mercado.git
 cd sistema-mercado
 powershell -ExecutionPolicy Bypass -File .\instalar.ps1
@@ -96,7 +166,7 @@ powershell -ExecutionPolicy Bypass -File .\instalar.ps1
 
 **Linux e macOS**
 
-```
+```bash
 git clone https://github.com/marco3079/sistema-mercado.git
 cd sistema-mercado
 bash instalar.sh
@@ -117,9 +187,14 @@ O passo a passo completo está em [INSTALAR.md](INSTALAR.md).
 
 ## Dados de demonstração
 
-Instale com `-Demo` (Windows) ou `--demo` (Linux/macOS) para carregar dados fictícios: 3 lojas, produtos, fornecedores,
-6 meses de vendas, receitas da padaria, compras, entregas e pedidos de vendedor. Todos os usuários de demonstração usam a senha `demo1234`
-(`operador@`, `estoque@`, `padeiro@`, `compras@`, `motorista@`, `vendedor@` e `contador@mercado.local`).
+Instale com `-Demo` (Windows) ou `--demo` (Linux/macOS) para carregar o cadastro de demonstração, com dados fictícios:
+3 lojas com endereço (Loja Matriz, Loja Bairro Jardim e Centro de Distribuição), uma conta por perfil, categorias,
+56 produtos (40 com foto), estoque zerado e as receitas da padaria.
+
+Não há vendas nem movimento: nenhuma venda, compra, entrega ou lançamento financeiro. O estoque começa zerado.
+A opção vale só para instalação nova.
+
+As contas de demonstração usam a senha `demo1234`: `operador@`, `estoque@`, `padeiro@`, `compras@`, `motorista@`, `vendedor@` e `contador@mercado.local`.
 
 ## Integrações simuladas
 
@@ -167,7 +242,7 @@ Contrato completo dos módulos em [docs/CONTRATO.md](docs/CONTRATO.md).
 
 Com um PostgreSQL acessível (o do `docker compose up -d db` serve):
 
-```
+```powershell
 cd server
 copy .env.example .env      (no Linux/macOS: cp .env.example .env)
 npm install
@@ -176,7 +251,7 @@ npm run seed
 npm run dev
 ```
 
-```
+```powershell
 cd client
 npm install
 npm run dev
@@ -184,11 +259,23 @@ npm run dev
 
 Verificações antes de entregar uma mudança:
 
-```
+```bash
 cd server && npx tsc --noEmit
 cd client && npx tsc --noEmit
 cd client && npx vite build
 ```
+
+## Documentação
+
+| Documento | Para quem é |
+|---|---|
+| [Manual de uso](docs/manual/README.md) | Quem usa o sistema no dia a dia |
+| [Galeria de telas](docs/TELAS.md) | Quem quer ver todas as telas antes de instalar |
+| [Instalação](INSTALAR.md) | Quem vai instalar e manter o sistema no computador |
+| [Contrato técnico](docs/CONTRATO.md) | Desenvolvedores: módulos, rotas e regras |
+| [Changelog](CHANGELOG.md) | Todos: o que mudou em cada versão |
+| [Contribuição](CONTRIBUTING.md) | Quem quer enviar mudanças ao projeto |
+| [Segurança](SECURITY.md) | Quem precisa relatar uma falha ou entender a segurança |
 
 ## Origem
 

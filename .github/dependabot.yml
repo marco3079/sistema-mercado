@@ -1,0 +1,85 @@
+# Atualizações automáticas de dependências. Os PRs seguem o prefixo de commit "chore(deps)".
+version: 2
+
+updates:
+  # Pacotes npm do servidor: um PR por semana, com minor e patch agrupados.
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencias
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      dependencias:
+        update-types:
+          - minor
+          - patch
+
+  # Pacotes npm do cliente: mesma regra do servidor.
+  - package-ecosystem: npm
+    directory: /client
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencias
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      dependencias:
+        update-types:
+          - minor
+          - patch
+
+  # Versões das ações usadas nos workflows do GitHub Actions.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: America/Sao_Paulo
+    labels:
+      - dependencias
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Imagens base dos Dockerfiles do servidor.
+  - package-ecosystem: docker
+    directory: /server
+    schedule:
+      interval: monthly
+      timezone: America/Sao_Paulo
+    labels:
+      - dependencias
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Imagens base dos Dockerfiles do cliente.
+  - package-ecosystem: docker
+    directory: /client
+    schedule:
+      interval: monthly
+      timezone: America/Sao_Paulo
+    labels:
+      - dependencias
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Imagens base do Dockerfile do atualizador.
+  - package-ecosystem: docker
+    directory: /atualizador
+    schedule:
+      interval: monthly
+      timezone: America/Sao_Paulo
+    labels:
+      - dependencias
+    commit-message:
+      prefix: "chore(deps)"
