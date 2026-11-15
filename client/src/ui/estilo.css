@@ -229,6 +229,7 @@ textarea {
   font-weight: 700;
   background: var(--cor-superficie-2);
   color: var(--cor-texto-suave);
+  white-space: nowrap; /* selo nunca quebra em duas linhas */
 }
 
 .selo-verde {
