@@ -675,7 +675,7 @@ export function MapaLojas() {
           titulo: entrega.codigo,
           subtitulo: [entrega.destinatario, entrega.bairro, ROTULO_STATUS_ENTREGA[entrega.status]].filter(Boolean).join(' · '),
           cor: 'laranja',
-          icone: 'pacote',
+          formato: 'bolinha',
         });
       }
     }
@@ -718,6 +718,7 @@ export function MapaLojas() {
           subtitulo: p.endereco,
           cor: feita ? 'verde' : 'laranja',
           rotulo: feita ? '✓' : String(ordemPendente + 1),
+          formato: 'bolinha',
         });
       }
     }

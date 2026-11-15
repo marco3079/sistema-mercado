@@ -9,6 +9,8 @@ import { digitoVerificadorEan, sugerirPrecoVenda } from '../src/lib/precos';
 import { arred3 } from '../src/lib/numeros';
 
 const SENHA = 'demo1234';
+// Quantos produtos (PR0001 em diante) já têm foto em client/public/produtos. Aumente quando chegarem as outras.
+const FOTOS_PRONTAS = 40;
 
 // ---------- Sorteio com semente fixa: os preços saem iguais em todo banco novo ----------
 
@@ -223,8 +225,9 @@ export async function carregarDemonstracao(prisma: PrismaClient): Promise<void> 
         validadeDias: d.validade ?? null,
         controlaLote: (d.lote ?? false) || (d.produzido ?? false),
         ativo: true,
-        // Foto do catálogo de demonstração (client/public/produtos/PR0001.jpg ...).
-        foto: `/produtos/${codigo}.jpg`,
+        // Foto do catálogo de demonstração (client/public/produtos/PR0001.jpg ...). Só os produtos que já têm
+        // o arquivo recebem a foto; os outros entram sem foto e aparecem no contador "Sem foto".
+        foto: i < FOTOS_PRONTAS ? `/produtos/${codigo}.jpg` : null,
       },
     });
     porNome.set(d.nome, p.id);

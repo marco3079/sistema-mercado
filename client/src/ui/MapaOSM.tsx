@@ -17,6 +17,7 @@ export interface PontoMapa {
   cor?: 'azul' | 'verde' | 'laranja' | 'vermelho' | 'roxo' | 'cinza' | 'magenta';
   icone?: NomeIcone;
   rotulo?: string;
+  formato?: 'pino' | 'bolinha'; // bolinha: círculo centrado no ponto exato (paradas no percurso); padrão pino
 }
 
 export interface LinhaMapa {
@@ -331,14 +332,16 @@ export function MapaOSM({
         </svg>
       )}
 
-      {pontos.map((p) => {
+      {/* Pinos primeiro; bolinhas depois, para ficarem por cima do traço. */}
+      {[...pontos.filter((p) => p.formato !== 'bolinha'), ...pontos.filter((p) => p.formato === 'bolinha')].map((p) => {
         const sx = mundoX(p.lng, z) - x0;
         const sy = mundoY(p.lat, z) - y0;
+        const bolinha = p.formato === 'bolinha';
         return (
           <button
             key={p.id}
             type="button"
-            className={`mapa-osm-pino mapa-osm-cor-${p.cor ?? 'azul'}`}
+            className={`${bolinha ? 'mapa-osm-bolinha' : 'mapa-osm-pino'} mapa-osm-cor-${p.cor ?? 'azul'}`}
             style={{ left: sx, top: sy }}
             aria-label={p.titulo}
             onClick={() => {
@@ -347,20 +350,24 @@ export function MapaOSM({
               aoClicarPonto?.(p.id);
             }}
           >
-            <span className="mapa-osm-pino-conteudo">
-              {p.rotulo ? (
-                <b>{p.rotulo}</b>
-              ) : p.icone ? (
-                <Icone nome={p.icone} tamanho={16} />
-              ) : null}
-            </span>
+            {bolinha ? (
+              p.rotulo ? <b>{p.rotulo}</b> : null
+            ) : (
+              <span className="mapa-osm-pino-conteudo">
+                {p.rotulo ? (
+                  <b>{p.rotulo}</b>
+                ) : p.icone ? (
+                  <Icone nome={p.icone} tamanho={16} />
+                ) : null}
+              </span>
+            )}
           </button>
         );
       })}
 
       {selecionado && (
         <div
-          className="mapa-osm-balao"
+          className={`mapa-osm-balao${selecionado.formato === 'bolinha' ? ' mapa-osm-balao-bolinha' : ''}`}
           style={{
             left: mundoX(selecionado.lng, z) - x0,
             top: mundoY(selecionado.lat, z) - y0,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import type { AtualizacaoDTO } from '../lib/atualizacao';
@@ -208,12 +208,20 @@ export function Painel() {
       {dados && (
         <div className="painel-indicadores">
           {dados.cartoes.map((c) => (
-            <article key={c.rotulo} className="painel-indicador">
+            <article
+              key={c.rotulo}
+              className={c.variacao !== null ? 'painel-indicador painel-indicador-com-variacao' : 'painel-indicador'}
+            >
               <div className={`painel-indicador-icone painel-cor-${c.cor}`}>
                 <Icone nome={c.icone} tamanho={26} />
               </div>
               <div className="painel-indicador-texto">
-                <span className="painel-indicador-valor">{c.valor}</span>
+                <span
+                  className="painel-indicador-valor"
+                  style={{ '--caracteres': String(c.valor).length } as CSSProperties}
+                >
+                  {c.valor}
+                </span>
                 <span className="painel-indicador-rotulo">{c.rotulo}</span>
               </div>
               {c.variacao !== null && (

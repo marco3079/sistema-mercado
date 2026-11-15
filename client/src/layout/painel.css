@@ -188,13 +188,23 @@
 .painel-indicador-texto {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-width: 0;
+  container-type: inline-size;
 }
 
+/* Cartão com variação: o selo fica embaixo à direita, então o texto sobe para não ser coberto. */
+.painel-indicador-com-variacao .painel-indicador-texto {
+  padding-bottom: 14px;
+}
+
+/* Valor: 1,6rem quando cabe; diminui só quando o número é longo (cabe no espaço do texto). */
 .painel-indicador-valor {
   font-size: 1.6rem;
+  font-size: clamp(1rem, calc(100cqi / (var(--caracteres, 8) * 0.6)), 1.6rem);
   font-weight: 800;
   line-height: 1.1;
+  white-space: nowrap;
   color: var(--cor-texto);
 }
 

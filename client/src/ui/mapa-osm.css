@@ -248,3 +248,17 @@
     height: 44px;
   }
 }
+
+/* Parada no percurso (estilo Uber): bolinha centrada no ponto exato, por cima da linha. */
+.mapa-osm-bolinha {
+  position: absolute; z-index: 2;
+  width: 22px; height: 22px; margin: -11px 0 0 -11px; padding: 0;
+  border: 3px solid #ffffff; border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(15, 23, 42, 0.55), 0 2px 6px rgba(15, 23, 42, 0.35);
+  color: #ffffff; font-size: 11px; line-height: 1; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.mapa-osm-bolinha:empty, .mapa-osm-bolinha:not(:has(b)) { width: 16px; height: 16px; margin: -8px 0 0 -8px; }
+.mapa-osm-bolinha:focus-visible { outline: 3px solid rgba(37, 99, 235, 0.5); outline-offset: 2px; }
+/* Balão de parada em bolinha: a ponta fica logo acima do círculo (raio de 11 px, ou 8 px sem rótulo). */
+.mapa-osm-balao.mapa-osm-balao-bolinha { transform: translate(-50%, calc(-100% - 16px)); }
