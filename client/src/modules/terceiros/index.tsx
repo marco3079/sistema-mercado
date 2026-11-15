@@ -1,9 +1,10 @@
 import { paraPerfis } from '../../lib/rotas';
-import type { RotaModulo } from '../../lib/rotas';
+import type { RotaModulo, RotaPublica } from '../../lib/rotas';
 import type { Perfil } from '../../lib/tipos';
 import { Terceiros } from './Terceiros';
 import { Remessas } from './Remessas';
 import { DetalheRemessa } from './DetalheRemessa';
+import { PortalRemessa } from './PortalRemessa';
 
 // Estoque em terceiros (consignação, comodato, conserto, demonstração, armazém, evento).
 const PERFIS: Perfil[] = ['GESTOR', 'ESTOQUISTA', 'COMPRADOR', 'CONTADOR'];
@@ -36,3 +37,6 @@ export const rotas: RotaModulo[] = [
     grupo: GRUPO,
   }),
 ];
+
+// Portal público do terceiro (sem login): pede remessa, vê o que está em posse e acompanha os pedidos.
+export const rotasPublicas: RotaPublica[] = [{ caminho: '/remessa/:codigo', elemento: <PortalRemessa /> }];

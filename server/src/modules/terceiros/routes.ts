@@ -1,19 +1,47 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import type { Perfil, Prisma, StatusRemessaTerceiro, TipoTerceiro } from '@prisma/client';
+import type { Perfil, Prisma, StatusPedidoRemessa, StatusRemessaTerceiro, TipoTerceiro } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { asyncHandler, HttpError, idParam, validar } from '../../lib/erros';
 import { permitir } from '../../lib/auth';
 import { filtroLoja, lojaDaRequisicao } from '../../lib/lojas';
 import { movimentarEstoque, saldoDe } from '../../lib/estoque';
 import type { Tx } from '../../lib/estoque';
-import { arred2, arred3, inicioDoDia, num, numOuNull, somarDias } from '../../lib/numeros';
+import { arred2, arred3, codigoAleatorio, inicioDoDia, num, numOuNull, somarDias } from '../../lib/numeros';
+import { lerConfiguracao } from '../../lib/email';
+import { notificarPerfis } from '../../lib/push';
 
 // Estoque em posse de terceiros: cadastro de terceiros, remessas (envio), retorno, baixa
 // (vendido/consumido/perdido no terceiro) e cancelamento. Estoque próprio só muda por movimentarEstoque.
 
 const router = Router();
 export default router;
+
+// Rotas públicas (portal do terceiro, sem login). Montadas em /api antes das autenticadas.
+export const publico = Router();
+
+// Limite simples em memória: 60 requisições por minuto por IP nas rotas do portal.
+const JANELA_LIMITE_MS = 60_000;
+const LIMITE_POR_JANELA = 60;
+const contagemPorIp = new Map<string, { inicio: number; total: number }>();
+
+publico.use('/publico/remessa', (req, _res, next) => {
+  const agora = Date.now();
+  const ip = req.ip ?? 'desconhecido';
+  if (contagemPorIp.size > 5000) {
+    for (const [chave, valor] of contagemPorIp) {
+      if (agora - valor.inicio > JANELA_LIMITE_MS) contagemPorIp.delete(chave);
+    }
+  }
+  const atual = contagemPorIp.get(ip);
+  if (!atual || agora - atual.inicio > JANELA_LIMITE_MS) {
+    contagemPorIp.set(ip, { inicio: agora, total: 1 });
+    return next();
+  }
+  atual.total++;
+  if (atual.total > LIMITE_POR_JANELA) return next(new HttpError(429, 'Muitas tentativas, aguarde um minuto'));
+  next();
+});
 
 const ESCRITA: Perfil[] = ['GESTOR', 'ESTOQUISTA'];
 const LEITURA: Perfil[] = ['GESTOR', 'ESTOQUISTA', 'COMPRADOR', 'CONTADOR'];
@@ -293,6 +321,74 @@ function conferirQuantidade(item: ItemLinha, quantidade: number): void {
   }
 }
 
+// Miolo da criação de remessa: cria a remessa, tira do estoque próprio e soma no saldo do terceiro.
+// Usada pela rota de envio e pela aprovação de pedido do portal. Devolve o id da remessa.
+async function criarRemessa(
+  tx: Tx,
+  d: {
+    terceiro: { id: number; nome: string };
+    lojaId: number;
+    tipo: TipoTerceiro;
+    documento: string | null;
+    previsaoRetorno: Date | null;
+    observacoes: string | null;
+    usuarioId: number;
+    itens: { produtoId: number; quantidade: number; precoCobranca?: number | null }[];
+  }
+): Promise<number> {
+  const remessa = await tx.remessaTerceiro.create({
+    data: {
+      terceiroId: d.terceiro.id,
+      lojaId: d.lojaId,
+      tipo: d.tipo,
+      documento: d.documento,
+      previsaoRetorno: d.previsaoRetorno,
+      observacoes: d.observacoes,
+      usuarioId: d.usuarioId,
+    },
+  });
+
+  for (const it of d.itens) {
+    const produto = await tx.produto.findUnique({
+      where: { id: it.produtoId },
+      select: { id: true, nome: true, precoCusto: true, precoVenda: true },
+    });
+    if (!produto) throw new HttpError(400, 'Produto não encontrado');
+    const quantidade = arred3(it.quantidade);
+    const saldo = await saldoDe(produto.id, d.lojaId, tx);
+    if (saldo < quantidade) {
+      throw new HttpError(400, `Saldo insuficiente de ${produto.nome}: há ${arred3(saldo)} un no estoque próprio`);
+    }
+    const custo = num(produto.precoCusto);
+
+    await movimentarEstoque(tx, {
+      produtoId: produto.id,
+      lojaId: d.lojaId,
+      tipo: 'REMESSA_TERCEIRO',
+      quantidade: -quantidade,
+      custoUnitario: custo,
+      motivo: `Remessa nº ${remessa.numero} para ${d.terceiro.nome}`,
+      referencia: `terceiro:${remessa.id}`,
+      usuarioId: d.usuarioId,
+    });
+    await tx.remessaTerceiroItem.create({
+      data: {
+        remessaId: remessa.id,
+        produtoId: produto.id,
+        quantidade,
+        custoUnitario: custo,
+        precoCobranca: it.precoCobranca ?? num(produto.precoVenda),
+      },
+    });
+    await tx.estoqueTerceiro.upsert({
+      where: { terceiroId_produtoId_lojaId: { terceiroId: d.terceiro.id, produtoId: produto.id, lojaId: d.lojaId } },
+      create: { terceiroId: d.terceiro.id, produtoId: produto.id, lojaId: d.lojaId, quantidade },
+      update: { quantidade: { increment: quantidade } },
+    });
+  }
+  return remessa.id;
+}
+
 // ---------- Terceiros ----------
 
 router.get(
@@ -314,6 +410,7 @@ router.get(
       }),
     ]);
 
+    const pendentes = await pedidosPendentesPorTerceiro(lojaId);
     res.json(
       terceiros.map((t) => {
         const remessas = remessasAtivas.filter((r) => r.terceiroId === t.id);
@@ -331,6 +428,8 @@ router.get(
           cidade: t.cidade,
           uf: t.uf,
           ativo: t.ativo,
+          codigoAcesso: t.codigoAcesso,
+          pedidosPendentes: pendentes.get(t.id) ?? 0,
           remessasAbertas: remessas.length,
           itensEmPosse: arred3(itensEmPosse),
           produtosEmPosse,
@@ -405,7 +504,9 @@ router.get(
       porTipoMapa.set(i.remessa.tipo, (porTipoMapa.get(i.remessa.tipo) ?? 0) + valorPendenteDe(i));
     }
 
+    const pendentesPorTerceiro = await pedidosPendentesPorTerceiro(lojaId);
     res.json({
+      pedidosPendentes: [...pendentesPorTerceiro.values()].reduce((s, n) => s + n, 0),
       valorEmPosse: arred2(ativos.reduce((s, i) => s + valorPendenteDe(i), 0)),
       itensEmPosse: arred3(estoques.reduce((s, e) => s + num(e.quantidade), 0)),
       produtosEmPosse: new Set(estoques.map((e) => e.produtoId)).size,
@@ -532,59 +633,18 @@ router.post(
     if (!terceiro) throw new HttpError(404, 'Terceiro não encontrado');
     if (!terceiro.ativo) throw new HttpError(400, 'Terceiro inativo');
 
-    const id = await prisma.$transaction(async (tx) => {
-      const remessa = await tx.remessaTerceiro.create({
-        data: {
-          terceiroId: terceiro.id,
-          lojaId,
-          tipo: dados.tipo,
-          documento: limpa(dados.documento) ?? null,
-          previsaoRetorno: dataLocal(dados.previsaoRetorno),
-          observacoes: limpa(dados.observacoes) ?? null,
-          usuarioId: req.usuario.id,
-        },
-      });
-
-      for (const it of dados.itens) {
-        const produto = await tx.produto.findUnique({
-          where: { id: it.produtoId },
-          select: { id: true, nome: true, precoCusto: true, precoVenda: true },
-        });
-        if (!produto) throw new HttpError(400, 'Produto não encontrado');
-        const quantidade = arred3(it.quantidade);
-        const saldo = await saldoDe(produto.id, lojaId, tx);
-        if (saldo < quantidade) {
-          throw new HttpError(400, `Saldo insuficiente de ${produto.nome}: há ${arred3(saldo)} un no estoque próprio`);
-        }
-        const custo = num(produto.precoCusto);
-
-        await movimentarEstoque(tx, {
-          produtoId: produto.id,
-          lojaId,
-          tipo: 'REMESSA_TERCEIRO',
-          quantidade: -quantidade,
-          custoUnitario: custo,
-          motivo: `Remessa nº ${remessa.numero} para ${terceiro.nome}`,
-          referencia: `terceiro:${remessa.id}`,
-          usuarioId: req.usuario.id,
-        });
-        await tx.remessaTerceiroItem.create({
-          data: {
-            remessaId: remessa.id,
-            produtoId: produto.id,
-            quantidade,
-            custoUnitario: custo,
-            precoCobranca: it.precoCobranca ?? num(produto.precoVenda),
-          },
-        });
-        await tx.estoqueTerceiro.upsert({
-          where: { terceiroId_produtoId_lojaId: { terceiroId: terceiro.id, produtoId: produto.id, lojaId } },
-          create: { terceiroId: terceiro.id, produtoId: produto.id, lojaId, quantidade },
-          update: { quantidade: { increment: quantidade } },
-        });
-      }
-      return remessa.id;
-    });
+    const id = await prisma.$transaction((tx) =>
+      criarRemessa(tx, {
+        terceiro,
+        lojaId,
+        tipo: dados.tipo,
+        documento: limpa(dados.documento) ?? null,
+        previsaoRetorno: dataLocal(dados.previsaoRetorno),
+        observacoes: limpa(dados.observacoes) ?? null,
+        usuarioId: req.usuario.id,
+        itens: dados.itens,
+      })
+    );
 
     const r = await buscarRemessa(prisma, id);
     res.status(201).json({ ...dtoRemessa(r), itens: r.itens.map(dtoItem) });
@@ -742,5 +802,552 @@ router.post(
 
     const r = await buscarRemessa(prisma, id);
     res.json({ ...dtoRemessa(r), itens: r.itens.map(dtoItem) });
+  })
+);
+
+// ---------- Portal do terceiro: link de acesso (autenticado) ----------
+
+async function novoCodigoPortal(anterior: string | null): Promise<string> {
+  for (let tentativa = 0; tentativa < 10; tentativa++) {
+    const codigo = codigoAleatorio(12);
+    if (codigo === anterior) continue;
+    const existe = await prisma.terceiro.findUnique({ where: { codigoAcesso: codigo }, select: { id: true } });
+    if (!existe) return codigo;
+  }
+  throw new HttpError(500, 'Não foi possível gerar o link. Tente de novo.');
+}
+
+async function terceiroParaPortal(id: number) {
+  const t = await prisma.terceiro.findUnique({ where: { id }, select: { id: true, ativo: true, codigoAcesso: true } });
+  if (!t) throw new HttpError(404, 'Terceiro não encontrado');
+  if (!t.ativo) throw new HttpError(400, 'Terceiro inativo');
+  return t;
+}
+
+function respostaPortal(codigoAcesso: string) {
+  return { codigoAcesso, caminho: '/remessa/' + codigoAcesso };
+}
+
+// Gera o link do portal (se ainda não houver) e devolve o código.
+router.post(
+  '/terceiros/:id/portal',
+  permitir(...ESCRITA),
+  asyncHandler(async (req, res) => {
+    const id = idParam(req);
+    const t = await terceiroParaPortal(id);
+    if (t.codigoAcesso) return res.json(respostaPortal(t.codigoAcesso));
+    const codigo = await novoCodigoPortal(null);
+    await prisma.terceiro.update({ where: { id }, data: { codigoAcesso: codigo } });
+    res.json(respostaPortal(codigo));
+  })
+);
+
+// Gera um código novo: o link antigo deixa de funcionar.
+router.post(
+  '/terceiros/:id/portal/novo',
+  permitir(...ESCRITA),
+  asyncHandler(async (req, res) => {
+    const id = idParam(req);
+    const t = await terceiroParaPortal(id);
+    const codigo = await novoCodigoPortal(t.codigoAcesso);
+    await prisma.terceiro.update({ where: { id }, data: { codigoAcesso: codigo } });
+    res.json(respostaPortal(codigo));
+  })
+);
+
+// Desliga o portal.
+router.delete(
+  '/terceiros/:id/portal',
+  permitir(...ESCRITA),
+  asyncHandler(async (req, res) => {
+    const id = idParam(req);
+    const existente = await prisma.terceiro.findUnique({ where: { id }, select: { id: true } });
+    if (!existente) throw new HttpError(404, 'Terceiro não encontrado');
+    await prisma.terceiro.update({ where: { id }, data: { codigoAcesso: null } });
+    res.status(204).end();
+  })
+);
+
+// ---------- Pedidos de remessa (feitos pelo terceiro no portal) ----------
+
+const STATUS_PEDIDO = ['PENDENTE', 'APROVADO', 'RECUSADO', 'CANCELADO'] as const;
+
+const INCLUI_PEDIDO = {
+  terceiro: { select: { id: true, nome: true, telefone: true, ativo: true } },
+  loja: { select: { id: true, nome: true } },
+  itens: {
+    orderBy: { id: 'asc' as const },
+    include: {
+      produto: { select: { id: true, codigo: true, nome: true, foto: true, unidade: true, precoCusto: true } },
+    },
+  },
+  remessa: { select: { numero: true } },
+} as const;
+
+interface PedidoItemLinha {
+  produtoId: number;
+  quantidade: Prisma.Decimal;
+  produto: { id: number; codigo: string; nome: string; foto: string | null; unidade: string; precoCusto: Prisma.Decimal };
+}
+
+interface PedidoLinha {
+  id: number;
+  numero: number;
+  status: StatusPedidoRemessa;
+  tipo: TipoTerceiro;
+  lojaId: number;
+  dataDesejada: Date | null;
+  observacoes: string | null;
+  motivoRecusa: string | null;
+  remessaId: number | null;
+  criadoEm: Date;
+  respondidoEm: Date | null;
+  terceiro: { id: number; nome: string; telefone: string | null; ativo: boolean };
+  loja: { id: number; nome: string };
+  itens: PedidoItemLinha[];
+  remessa: { numero: number } | null;
+}
+
+// Data AAAA-MM-DD no horário local (a mesma que foi gravada por dataLocal).
+function dataDoDia(d: Date | null): string | null {
+  if (!d) return null;
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mes}-${dia}`;
+}
+
+async function buscarPedido(cliente: Tx, id: number): Promise<PedidoLinha> {
+  const p = await cliente.pedidoRemessaTerceiro.findUnique({ where: { id }, include: INCLUI_PEDIDO });
+  if (!p) throw new HttpError(404, 'Pedido não encontrado');
+  return p as unknown as PedidoLinha;
+}
+
+async function buscarPedidos(where: Prisma.PedidoRemessaTerceiroWhereInput): Promise<PedidoLinha[]> {
+  const lista = await prisma.pedidoRemessaTerceiro.findMany({
+    where,
+    orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }],
+    include: INCLUI_PEDIDO,
+  });
+  return lista as unknown as PedidoLinha[];
+}
+
+// Monta o formato da lista. O saldo da loja e o custo atual vêm em lote (mesma regra do saldoDe).
+// Quantidade efetivamente enviada por remessa e produto (soma de RemessaTerceiroItem.quantidade).
+// Chave: `${remessaId}-${produtoId}`. Item tirado na aprovação não tem linha, então vale 0 quando consultado.
+async function quantidadesEnviadas(remessaIds: number[]): Promise<Map<string, number>> {
+  const mapa = new Map<string, number>();
+  if (remessaIds.length === 0) return mapa;
+  const itens = await prisma.remessaTerceiroItem.findMany({
+    where: { remessaId: { in: remessaIds } },
+    select: { remessaId: true, produtoId: true, quantidade: true },
+  });
+  for (const i of itens) {
+    const chave = `${i.remessaId}-${i.produtoId}`;
+    mapa.set(chave, arred3((mapa.get(chave) ?? 0) + num(i.quantidade)));
+  }
+  return mapa;
+}
+
+async function dtosPedidos(lista: PedidoLinha[]) {
+  const lojas = [...new Set(lista.map((p) => p.lojaId))];
+  const produtos = [...new Set(lista.flatMap((p) => p.itens.map((i) => i.produtoId)))];
+  const saldos = new Map<string, number>();
+  if (lojas.length > 0 && produtos.length > 0) {
+    const linhas = await prisma.estoqueLoja.findMany({
+      where: { lojaId: { in: lojas }, produtoId: { in: produtos } },
+      select: { produtoId: true, lojaId: true, quantidade: true },
+    });
+    for (const l of linhas) saldos.set(`${l.produtoId}-${l.lojaId}`, arred3(num(l.quantidade)));
+  }
+  const enviadas = await quantidadesEnviadas(
+    lista.map((p) => p.remessaId).filter((x): x is number => x !== null)
+  );
+
+  return lista.map((p) => {
+    let valorEstimado = 0;
+    const itens = p.itens.map((i) => {
+      const quantidade = arred3(num(i.quantidade));
+      valorEstimado += quantidade * num(i.produto.precoCusto);
+      return {
+        produtoId: i.produtoId,
+        codigo: i.produto.codigo,
+        nome: i.produto.nome,
+        foto: i.produto.foto,
+        unidade: i.produto.unidade,
+        quantidade,
+        quantidadeEnviada: p.remessaId !== null ? (enviadas.get(`${p.remessaId}-${i.produtoId}`) ?? 0) : null,
+        saldoLoja: saldos.get(`${i.produtoId}-${p.lojaId}`) ?? 0,
+      };
+    });
+    return {
+      id: p.id,
+      numero: p.numero,
+      status: p.status,
+      tipo: p.tipo,
+      terceiro: { id: p.terceiro.id, nome: p.terceiro.nome, telefone: p.terceiro.telefone },
+      loja: { id: p.loja.id, nome: p.loja.nome },
+      dataDesejada: dataDoDia(p.dataDesejada),
+      observacoes: p.observacoes,
+      motivoRecusa: p.motivoRecusa,
+      remessaId: p.remessaId,
+      remessaNumero: p.remessa?.numero ?? null,
+      criadoEm: p.criadoEm.toISOString(),
+      respondidoEm: p.respondidoEm ? p.respondidoEm.toISOString() : null,
+      totalItens: itens.length,
+      valorEstimado: arred2(valorEstimado),
+      itens,
+    };
+  });
+}
+
+// Pedidos pendentes por terceiro (filtrados pela loja, quando houver).
+async function pedidosPendentesPorTerceiro(lojaId: number | null): Promise<Map<number, number>> {
+  const pedidos = await prisma.pedidoRemessaTerceiro.findMany({
+    where: { status: 'PENDENTE', ...(lojaId ? { lojaId } : {}) },
+    select: { terceiroId: true },
+  });
+  const mapa = new Map<number, number>();
+  for (const p of pedidos) mapa.set(p.terceiroId, (mapa.get(p.terceiroId) ?? 0) + 1);
+  return mapa;
+}
+
+router.get(
+  '/pedidos-remessa',
+  permitir(...LEITURA),
+  asyncHandler(async (req, res) => {
+    const lojaId = await filtroLoja(req);
+    const status = typeof req.query.status === 'string' ? req.query.status : '';
+    const where: Prisma.PedidoRemessaTerceiroWhereInput = {};
+    if (lojaId) where.lojaId = lojaId;
+    if ((STATUS_PEDIDO as readonly string[]).includes(status)) where.status = status as StatusPedidoRemessa;
+    res.json(await dtosPedidos(await buscarPedidos(where)));
+  })
+);
+
+const ajusteAprovacaoSchema = z.object({
+  itens: z
+    .array(
+      z.object({
+        produtoId: z.number().int().positive(),
+        quantidade: z.number().nonnegative('Quantidade inválida').max(100000, 'Quantidade muito alta'),
+      })
+    )
+    .optional(),
+  documento: textoOpc,
+  previsaoRetorno: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida').nullish(),
+  observacoes: z.string().trim().max(2000).nullish(),
+});
+
+const recusaSchema = z.object({
+  motivo: z.string().trim().min(3, 'Informe o motivo da recusa').max(300, 'Motivo muito longo'),
+});
+
+// Aprovar: cria a remessa (sai do estoque próprio) com os itens ajustados e marca o pedido como APROVADO.
+router.post(
+  '/pedidos-remessa/:id/aprovar',
+  permitir(...ESCRITA),
+  asyncHandler(async (req, res) => {
+    const id = idParam(req);
+    const dados = validar(ajusteAprovacaoSchema, req.body ?? {});
+    const ajustes = new Map<number, number>();
+    for (const i of dados.itens ?? []) {
+      if (ajustes.has(i.produtoId)) throw new HttpError(400, 'Produto repetido nos ajustes');
+      ajustes.set(i.produtoId, i.quantidade);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const pedido = await buscarPedido(tx, id);
+      if (pedido.status !== 'PENDENTE') throw new HttpError(400, 'Este pedido já foi respondido');
+      if (!pedido.terceiro.ativo) throw new HttpError(400, 'Terceiro inativo');
+      for (const produtoId of ajustes.keys()) {
+        if (!pedido.itens.some((i) => i.produtoId === produtoId)) {
+          throw new HttpError(400, 'Item não pertence a este pedido');
+        }
+      }
+
+      const itens = pedido.itens
+        .map((i) => ({
+          produtoId: i.produtoId,
+          quantidade: ajustes.get(i.produtoId) ?? arred3(num(i.quantidade)),
+        }))
+        .filter((i) => i.quantidade > 0);
+      if (itens.length === 0) throw new HttpError(400, 'Nenhum item para enviar. Ajuste as quantidades ou recuse o pedido.');
+
+      const remessaId = await criarRemessa(tx, {
+        terceiro: { id: pedido.terceiro.id, nome: pedido.terceiro.nome },
+        lojaId: pedido.lojaId,
+        tipo: pedido.tipo,
+        documento: limpa(dados.documento) ?? null,
+        previsaoRetorno: dataLocal(dados.previsaoRetorno),
+        observacoes: limpa(dados.observacoes) ?? pedido.observacoes ?? null,
+        usuarioId: req.usuario.id,
+        itens,
+      });
+
+      const gravou = await tx.pedidoRemessaTerceiro.updateMany({
+        where: { id, status: 'PENDENTE' },
+        data: { status: 'APROVADO', remessaId, usuarioId: req.usuario.id, respondidoEm: new Date() },
+      });
+      if (gravou.count !== 1) throw new HttpError(400, 'Este pedido já foi respondido');
+    });
+
+    const atual = await dtosPedidos([await buscarPedido(prisma, id)]);
+    res.json(atual[0]);
+  })
+);
+
+// Recusar: marca o pedido como RECUSADO com o motivo. Não mexe no estoque.
+router.post(
+  '/pedidos-remessa/:id/recusar',
+  permitir(...ESCRITA),
+  asyncHandler(async (req, res) => {
+    const id = idParam(req);
+    const dados = validar(recusaSchema, req.body);
+
+    await prisma.$transaction(async (tx) => {
+      const gravou = await tx.pedidoRemessaTerceiro.updateMany({
+        where: { id, status: 'PENDENTE' },
+        data: { status: 'RECUSADO', motivoRecusa: dados.motivo, usuarioId: req.usuario.id, respondidoEm: new Date() },
+      });
+      if (gravou.count !== 1) {
+        await buscarPedido(tx, id);
+        throw new HttpError(400, 'Este pedido já foi respondido');
+      }
+    });
+
+    const atual = await dtosPedidos([await buscarPedido(prisma, id)]);
+    res.json(atual[0]);
+  })
+);
+
+// ---------- Portal público do terceiro (sem login, pelo código do link) ----------
+
+// Código inexistente, terceiro inativo ou portal desligado: mesma resposta, sem detalhes.
+async function terceiroDoCodigo(codigo: string) {
+  const t = await prisma.terceiro.findUnique({
+    where: { codigoAcesso: codigo },
+    select: { id: true, nome: true, contato: true, ativo: true },
+  });
+  if (!t || !t.ativo) throw new HttpError(404, 'Link inválido ou desativado');
+  return t;
+}
+
+function montaEndereco(l: { endereco: string | null; numero: string | null; bairro: string | null; cidade: string | null }): string | null {
+  const partes = [l.endereco, l.numero, l.bairro, l.cidade].map((v) => (v ?? '').trim()).filter((v) => v.length > 0);
+  return partes.length > 0 ? partes.join(', ') : null;
+}
+
+publico.get(
+  '/publico/remessa/:codigo',
+  asyncHandler(async (req, res) => {
+    const terceiro = await terceiroDoCodigo(String(req.params.codigo));
+    const hoje = inicioDoDia();
+    const [config, lojas, saldos, remessas, pedidos, produtos] = await Promise.all([
+      lerConfiguracao(),
+      prisma.loja.findMany({
+        where: { ativa: true },
+        orderBy: { id: 'asc' },
+        select: { id: true, nome: true, endereco: true, numero: true, bairro: true, cidade: true },
+      }),
+      prisma.estoqueTerceiro.findMany({
+        where: { terceiroId: terceiro.id, quantidade: { gt: 0 } },
+        select: {
+          quantidade: true,
+          produto: { select: { id: true, nome: true, unidade: true, foto: true } },
+        },
+      }),
+      prisma.remessaTerceiro.findMany({
+        where: { terceiroId: terceiro.id, status: { in: ATIVAS } },
+        orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }],
+        select: {
+          numero: true,
+          tipo: true,
+          criadoEm: true,
+          previsaoRetorno: true,
+          _count: { select: { itens: true } },
+        },
+      }),
+      prisma.pedidoRemessaTerceiro.findMany({
+        where: { terceiroId: terceiro.id },
+        orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }],
+        take: 20,
+        select: {
+          id: true,
+          numero: true,
+          status: true,
+          criadoEm: true,
+          dataDesejada: true,
+          motivoRecusa: true,
+          remessaId: true,
+          remessa: { select: { numero: true } },
+          itens: {
+            orderBy: { id: 'asc' },
+            select: { produtoId: true, quantidade: true, produto: { select: { nome: true, unidade: true } } },
+          },
+        },
+      }),
+      prisma.produto.findMany({
+        where: { ativo: true, insumo: false },
+        orderBy: { nome: 'asc' },
+        select: {
+          id: true,
+          codigo: true,
+          nome: true,
+          unidade: true,
+          foto: true,
+          precoVenda: true,
+          categoria: { select: { nome: true } },
+        },
+      }),
+    ]);
+
+    // Soma o que está com o terceiro por produto, de todas as lojas.
+    const emPosse = new Map<number, { produtoId: number; nome: string; unidade: string; foto: string | null; quantidade: number }>();
+    for (const s of saldos) {
+      const atual = emPosse.get(s.produto.id) ?? {
+        produtoId: s.produto.id,
+        nome: s.produto.nome,
+        unidade: s.produto.unidade,
+        foto: s.produto.foto,
+        quantidade: 0,
+      };
+      atual.quantidade = arred3(atual.quantidade + num(s.quantidade));
+      emPosse.set(s.produto.id, atual);
+    }
+
+    const enviadasPublico = await quantidadesEnviadas(
+      pedidos.map((p) => p.remessaId).filter((x): x is number => x !== null)
+    );
+
+    res.json({
+      empresa: config.nome,
+      terceiro: { nome: terceiro.nome, contato: terceiro.contato },
+      lojas: lojas.map((l) => ({ id: l.id, nome: l.nome, endereco: montaEndereco(l) })),
+      emPosse: [...emPosse.values()],
+      remessasAbertas: remessas.map((r) => ({
+        numero: r.numero,
+        tipo: r.tipo,
+        criadoEm: r.criadoEm.toISOString(),
+        previsaoRetorno: r.previsaoRetorno ? r.previsaoRetorno.toISOString() : null,
+        atrasada: r.previsaoRetorno !== null && r.previsaoRetorno < hoje,
+        itens: r._count.itens,
+      })),
+      pedidos: pedidos.map((p) => ({
+        id: p.id,
+        numero: p.numero,
+        status: p.status,
+        criadoEm: p.criadoEm.toISOString(),
+        dataDesejada: dataDoDia(p.dataDesejada),
+        motivoRecusa: p.motivoRecusa,
+        remessaNumero: p.remessa?.numero ?? null,
+        itens: p.itens.map((i) => ({
+          nome: i.produto.nome,
+          unidade: i.produto.unidade,
+          quantidade: arred3(num(i.quantidade)),
+          quantidadeEnviada:
+            p.remessaId !== null ? (enviadasPublico.get(`${p.remessaId}-${i.produtoId}`) ?? 0) : null,
+        })),
+      })),
+      produtos: produtos.map((p) => ({
+        id: p.id,
+        codigo: p.codigo,
+        nome: p.nome,
+        unidade: p.unidade,
+        foto: p.foto,
+        categoria: p.categoria?.nome ?? null,
+        preco: num(p.precoVenda),
+      })),
+    });
+  })
+);
+
+const pedidoPublicoSchema = z.object({
+  lojaId: z.number().int().positive('Escolha a loja'),
+  tipo: z.enum(TIPOS, { message: 'Tipo inválido' }).optional(),
+  dataDesejada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida').nullish(),
+  observacoes: z.string().trim().max(500, 'Observação muito longa').nullish(),
+  itens: z
+    .array(
+      z.object({
+        produtoId: z.number().int().positive(),
+        quantidade: z.number().positive('Quantidade inválida').max(100000, 'Quantidade muito alta'),
+      })
+    )
+    .min(1, 'Inclua ao menos um item')
+    .max(100, 'Itens demais no pedido')
+    .refine((itens) => new Set(itens.map((i) => i.produtoId)).size === itens.length, 'Produto repetido no pedido'),
+});
+
+// O terceiro pede remessa. Não mexe no estoque: vira remessa só quando a loja aprovar.
+publico.post(
+  '/publico/remessa/:codigo/pedidos',
+  asyncHandler(async (req, res) => {
+    const terceiro = await terceiroDoCodigo(String(req.params.codigo));
+    const dados = validar(pedidoPublicoSchema, req.body);
+
+    const dataDesejada = dataLocal(dados.dataDesejada);
+    if (dataDesejada && dataDesejada < inicioDoDia()) {
+      throw new HttpError(400, 'A data desejada não pode ser antes de hoje');
+    }
+
+    const loja = await prisma.loja.findFirst({ where: { id: dados.lojaId, ativa: true }, select: { id: true } });
+    if (!loja) throw new HttpError(400, 'Loja inválida');
+
+    const ids = dados.itens.map((i) => i.produtoId);
+    const validos = await prisma.produto.findMany({
+      where: { id: { in: ids }, ativo: true, insumo: false },
+      select: { id: true },
+    });
+    if (validos.length !== ids.length) throw new HttpError(400, 'Algum produto não está disponível para pedido');
+
+    const aguardando = await prisma.pedidoRemessaTerceiro.count({
+      where: { terceiroId: terceiro.id, status: 'PENDENTE' },
+    });
+    if (aguardando >= 5) throw new HttpError(400, 'Você já tem 5 pedidos aguardando. Aguarde a resposta da loja.');
+
+    const pedido = await prisma.pedidoRemessaTerceiro.create({
+      data: {
+        terceiroId: terceiro.id,
+        lojaId: loja.id,
+        tipo: dados.tipo ?? 'CONSIGNACAO',
+        status: 'PENDENTE',
+        dataDesejada,
+        observacoes: limpa(dados.observacoes) ?? null,
+        itens: {
+          create: dados.itens.map((i) => ({ produtoId: i.produtoId, quantidade: arred3(i.quantidade) })),
+        },
+      },
+      select: { id: true, numero: true },
+    });
+
+    void notificarPerfis(['GESTOR', 'ESTOQUISTA'], {
+      titulo: 'Pedido de remessa',
+      corpo: `${terceiro.nome} pediu ${dados.itens.length} itens`,
+      url: '/gestor/remessas-terceiro?aba=pedidos',
+      marca: 'pedido-remessa',
+    }).catch(() => {});
+
+    res.status(201).json({ id: pedido.id, numero: pedido.numero });
+  })
+);
+
+// O terceiro cancela o próprio pedido, enquanto estiver pendente.
+publico.post(
+  '/publico/remessa/:codigo/pedidos/:id/cancelar',
+  asyncHandler(async (req, res) => {
+    const terceiro = await terceiroDoCodigo(String(req.params.codigo));
+    const id = idParam(req);
+    const pedido = await prisma.pedidoRemessaTerceiro.findFirst({
+      where: { id, terceiroId: terceiro.id },
+      select: { id: true, status: true },
+    });
+    if (!pedido) throw new HttpError(404, 'Pedido não encontrado');
+    if (pedido.status !== 'PENDENTE') throw new HttpError(400, 'Só é possível cancelar um pedido pendente');
+    const gravou = await prisma.pedidoRemessaTerceiro.updateMany({
+      where: { id, status: 'PENDENTE' },
+      data: { status: 'CANCELADO' },
+    });
+    if (gravou.count !== 1) throw new HttpError(400, 'Só é possível cancelar um pedido pendente');
+    res.json({ ok: true });
   })
 );

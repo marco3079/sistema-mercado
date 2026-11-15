@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -11,12 +11,16 @@ import { CelulaProduto } from '../../ui/FotoProduto';
 import { Icone } from '../../ui/icones';
 import type { NomeIcone } from '../../ui/icones';
 import { podeEscrever } from './tipos';
-import type { ResumoTerceiros, RespostaSaldos, SaldoTerceiro, TerceiroLinha } from './tipos';
+import type { ResumoTerceiros, RespostaPortal, RespostaSaldos, SaldoTerceiro, TerceiroLinha } from './tipos';
 import { ModalNovaRemessa } from './Remessas';
 import './terceiros.css';
 
 type Aba = 'terceiros' | 'produtos';
-type Janela = { tipo: 'cadastro'; terceiro: TerceiroLinha | null } | { tipo: 'remessa'; terceiroId: number } | null;
+type Janela =
+  | { tipo: 'cadastro'; terceiro: TerceiroLinha | null }
+  | { tipo: 'remessa'; terceiroId: number }
+  | { tipo: 'portal'; terceiro: TerceiroLinha }
+  | null;
 
 // Visão geral de terceiros: resumo, cartão de cada terceiro (com nova remessa e saldo) e saldo por produto.
 export function Terceiros() {
@@ -118,6 +122,8 @@ export function Terceiros() {
                   aoVerSaldo={() => verSaldo(t.id)}
                   aoEditar={() => setJanela({ tipo: 'cadastro', terceiro: t })}
                   aoVerRemessas={() => navigate(`${raiz}/remessas-terceiro?terceiroId=${t.id}`)}
+                  aoVerPedidos={() => navigate(`${raiz}/remessas-terceiro?aba=pedidos`)}
+                  aoLinkPortal={() => setJanela({ tipo: 'portal', terceiro: t })}
                 />
               ))}
             </div>
@@ -168,22 +174,39 @@ export function Terceiros() {
       {janela?.tipo === 'remessa' && (
         <ModalNovaRemessa aberto aoFechar={() => setJanela(null)} terceiroInicial={janela.terceiroId} />
       )}
+      {janela?.tipo === 'portal' && (
+        <ModalLinkPortal
+          terceiro={janela.terceiro}
+          aoFechar={() => setJanela(null)}
+          aoAlterado={() => terceiros.recarregar()}
+        />
+      )}
     </Pagina>
   );
 }
 
 function ResumoCartoes({ r }: { r: ResumoTerceiros }) {
-  const itens: { rotulo: string; valor: string; icone: NomeIcone; cor: string; atraso?: boolean }[] = [
+  const itens: { rotulo: string; valor: string; icone: NomeIcone; cor: string; classe?: string; atraso?: boolean }[] = [
     { rotulo: 'Valor em posse de terceiros', valor: formatarMoeda(r.valorEmPosse), icone: 'dinheiro', cor: 'verde' },
     { rotulo: 'Produtos em posse', valor: `${r.produtosEmPosse} ${r.produtosEmPosse === 1 ? 'produto' : 'produtos'}`, icone: 'pacote', cor: 'azul' },
     { rotulo: 'Remessas abertas', valor: String(r.remessasAbertas), icone: 'caminhao', cor: 'roxo' },
     { rotulo: 'Atrasadas', valor: String(r.atrasadas), icone: 'validade', cor: 'vermelho', atraso: r.atrasadas > 0 },
   ];
+  // Pedidos do portal aguardando aprovação: só aparece quando há algum.
+  if (r.pedidosPendentes > 0) {
+    itens.push({
+      rotulo: 'Pedidos aguardando',
+      valor: String(r.pedidosPendentes),
+      icone: 'sino',
+      cor: 'amarelo',
+      classe: 'portal-link-icone-amarelo',
+    });
+  }
   return (
     <div className="resumo">
       {itens.map((i) => (
         <div className="resumo-item" key={i.rotulo}>
-          <span className={`resumo-icone resumo-icone-${i.cor}`}>
+          <span className={i.classe ? `resumo-icone ${i.classe}` : `resumo-icone resumo-icone-${i.cor}`}>
             <Icone nome={i.icone} tamanho={24} />
           </span>
           <div>
@@ -203,6 +226,8 @@ function CartaoTerceiro({
   aoVerSaldo,
   aoEditar,
   aoVerRemessas,
+  aoVerPedidos,
+  aoLinkPortal,
 }: {
   t: TerceiroLinha;
   escreve: boolean;
@@ -210,9 +235,12 @@ function CartaoTerceiro({
   aoVerSaldo: () => void;
   aoEditar: () => void;
   aoVerRemessas: () => void;
+  aoVerPedidos: () => void;
+  aoLinkPortal: () => void;
 }) {
   const acoes: AcaoMenu[] = [];
   if (escreve) acoes.push({ rotulo: 'Editar cadastro', aoClicar: aoEditar });
+  if (escreve) acoes.push({ rotulo: 'Link do portal', icone: 'enviar', aoClicar: aoLinkPortal });
   acoes.push({ rotulo: 'Ver remessas', aoClicar: aoVerRemessas });
 
   return (
@@ -250,13 +278,22 @@ function CartaoTerceiro({
       </dl>
 
       <footer className="terceiros-cartao-rodape">
-        {t.atrasadas > 0 ? (
-          <Selo cor="vermelho">
-            {t.atrasadas} {t.atrasadas === 1 ? 'atrasada' : 'atrasadas'}
-          </Selo>
-        ) : (
-          <Selo cor="verde">Em dia</Selo>
-        )}
+        <span className="portal-link-selos">
+          {t.atrasadas > 0 ? (
+            <Selo cor="vermelho">
+              {t.atrasadas} {t.atrasadas === 1 ? 'atrasada' : 'atrasadas'}
+            </Selo>
+          ) : (
+            <Selo cor="verde">Em dia</Selo>
+          )}
+          {t.pedidosPendentes > 0 && (
+            <button type="button" className="portal-link-pedidos" onClick={aoVerPedidos}>
+              <Selo cor="amarelo">
+                {t.pedidosPendentes} {t.pedidosPendentes === 1 ? 'pedido aguardando' : 'pedidos aguardando'}
+              </Selo>
+            </button>
+          )}
+        </span>
         <span className="terceiros-acoes">
           <Botao variante="secundario" aoClicar={aoVerSaldo}>
             Ver saldo
@@ -355,5 +392,168 @@ function FormularioTerceiro({
         </Botao>
       </div>
     </>
+  );
+}
+
+// Link do portal do terceiro: quem tem o link vê o saldo em posse e pede remessas (pedidos chegam para aprovação).
+function ModalLinkPortal({
+  terceiro,
+  aoFechar,
+  aoAlterado,
+}: {
+  terceiro: TerceiroLinha;
+  aoFechar: () => void;
+  aoAlterado: () => void;
+}) {
+  const [codigo, setCodigo] = useState<string | null>(terceiro.codigoAcesso);
+  const [confirmar, setConfirmar] = useState<'novo' | 'desligar' | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
+  const campoLink = useRef<HTMLInputElement>(null);
+
+  const link = codigo ? `${window.location.origin}/remessa/${codigo}` : '';
+  const digitos = (terceiro.telefone ?? '').replace(/\D/g, '');
+  // Telefone sem DDI recebe 55 (Brasil); com DDI já completo, usa como está.
+  const numeroWhatsapp = digitos.startsWith('55') && digitos.length >= 12 ? digitos : `55${digitos}`;
+  const textoWhatsapp = `Olá, ${terceiro.nome}! Pelo link abaixo você vê o que está com você e pede novas remessas: ${link}`;
+  const urlWhatsapp = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(textoWhatsapp)}`;
+
+  async function executar(acao: () => Promise<void>) {
+    setErro(null);
+    setOcupado(true);
+    try {
+      await acao();
+      aoAlterado();
+    } catch (e) {
+      setErro(mensagemErro(e));
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  function criar() {
+    return executar(async () => {
+      const r = await api.post<RespostaPortal>(`/terceiros/${terceiro.id}/portal`);
+      setCodigo(r.codigoAcesso);
+    });
+  }
+
+  async function gerarNovo() {
+    setConfirmar(null);
+    await executar(async () => {
+      const r = await api.post<RespostaPortal>(`/terceiros/${terceiro.id}/portal/novo`);
+      setCodigo(r.codigoAcesso);
+    });
+  }
+
+  async function desligar() {
+    setConfirmar(null);
+    await executar(async () => {
+      await api.del(`/terceiros/${terceiro.id}/portal`);
+      setCodigo(null);
+    });
+  }
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiado(true);
+      window.setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // Sem acesso à área de transferência (ex.: http sem segurança): seleciona o link para copiar à mão.
+      campoLink.current?.select();
+      setErro('Não foi possível copiar. Selecione o link e copie manualmente.');
+    }
+  }
+
+  return (
+    <Modal aberto titulo={`Link do portal · ${terceiro.nome}`} aoFechar={aoFechar}>
+      <p className="portal-link-texto">Quem tem o link vê o saldo em posse e pede remessas. Os pedidos chegam para aprovação.</p>
+      {erro && <Aviso tipo="erro">{erro}</Aviso>}
+
+      {codigo === null ? (
+        <div className="portal-link-botoes">
+          <Botao aoClicar={criar} desabilitado={ocupado}>
+            {ocupado ? 'Criando...' : 'Criar link do portal'}
+          </Botao>
+        </div>
+      ) : (
+        <>
+          <div className="campo">
+            <span className="campo-rotulo">Link</span>
+            <span className="portal-link-linha">
+              <input
+                ref={campoLink}
+                className="campo-controle"
+                readOnly
+                value={link}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <Botao variante="secundario" aoClicar={copiar}>
+                {copiado ? 'Copiado' : 'Copiar'}
+              </Botao>
+            </span>
+          </div>
+
+          <div className="portal-link-botoes">
+            <Botao variante="secundario" aoClicar={() => window.open(link, '_blank', 'noopener')}>
+              Abrir
+            </Botao>
+            <Botao
+              variante="secundario"
+              desabilitado={!digitos}
+              aoClicar={() => window.open(urlWhatsapp, '_blank', 'noopener')}
+            >
+              Enviar por WhatsApp
+            </Botao>
+          </div>
+          {!digitos && <p className="terceiros-texto-suave">Cadastre o telefone do terceiro para enviar pelo WhatsApp.</p>}
+
+          {confirmar === null && (
+            <div className="portal-link-botoes portal-link-rodape">
+              <Botao variante="secundario" desabilitado={ocupado} aoClicar={() => setConfirmar('novo')}>
+                Gerar novo link
+              </Botao>
+              <Botao variante="perigo" desabilitado={ocupado} aoClicar={() => setConfirmar('desligar')}>
+                Desligar portal
+              </Botao>
+            </div>
+          )}
+          {confirmar === 'novo' && (
+            <div className="portal-link-confirmacao">
+              <Aviso tipo="info">O link antigo vai parar de funcionar. Gerar um novo link?</Aviso>
+              <div className="portal-link-botoes">
+                <Botao variante="secundario" aoClicar={() => setConfirmar(null)}>
+                  Voltar
+                </Botao>
+                <Botao aoClicar={gerarNovo} desabilitado={ocupado}>
+                  Gerar novo link
+                </Botao>
+              </div>
+            </div>
+          )}
+          {confirmar === 'desligar' && (
+            <div className="portal-link-confirmacao">
+              <Aviso tipo="info">O link atual deixa de funcionar. Para usar o portal de novo, crie um novo link.</Aviso>
+              <div className="portal-link-botoes">
+                <Botao variante="secundario" aoClicar={() => setConfirmar(null)}>
+                  Voltar
+                </Botao>
+                <Botao variante="perigo" aoClicar={desligar} desabilitado={ocupado}>
+                  Desligar portal
+                </Botao>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="terceiros-modal-botoes">
+        <Botao variante="secundario" aoClicar={aoFechar}>
+          Fechar
+        </Botao>
+      </div>
+    </Modal>
   );
 }

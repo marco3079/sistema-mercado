@@ -272,3 +272,179 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Link do portal (cartão do terceiro e modal) */
+.portal-link-selos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.portal-link-pedidos {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.portal-link-pedidos:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+.portal-link-icone-amarelo {
+  background: var(--cor-laranja-suave);
+  color: var(--cor-aviso);
+}
+
+.portal-link-texto {
+  margin: 0 0 0.75rem;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.portal-link-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.portal-link-linha .campo-controle {
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-link-linha .botao,
+.portal-link-botoes .botao {
+  min-height: 44px;
+}
+
+.portal-link-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.portal-link-rodape {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.portal-link-confirmacao {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .portal-link-linha {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .portal-link-botoes .botao {
+    flex: 1 1 auto;
+  }
+}
+
+/* Pedidos do portal (fila de aprovação em Remessas) */
+.pedrem-pilulas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.pedrem-pilula {
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.pedrem-pilula-ativa {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: var(--cor-sobre-primaria);
+  font-weight: 600;
+}
+
+.pedrem-pilula:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+.pedrem-link {
+  display: inline-flex;
+  color: inherit;
+  text-decoration: none;
+}
+
+.pedrem-link:hover {
+  text-decoration: underline;
+}
+
+.pedrem-qtd {
+  width: 110px;
+  min-width: 0;
+  text-align: right;
+}
+
+.pedrem-falta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--cor-erro, #c62828);
+  font-weight: 700;
+}
+
+.pedrem-falta-texto {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pedrem-rodape {
+  align-items: center;
+}
+
+.pedrem-alinha-direita {
+  align-items: flex-end;
+}
+
+.pedrem-ajustado {
+  color: var(--cor-aviso);
+  font-weight: 700;
+}
+
+.pedrem-recusar {
+  margin-right: auto;
+}
+
+@media (max-width: 640px) {
+  .pedrem-qtd {
+    width: 100%;
+  }
+
+  .pedrem-rodape .botao {
+    flex: 1 1 auto;
+  }
+
+  .pedrem-recusar {
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .pedrem-recusar .botao {
+    width: 100%;
+  }
+}

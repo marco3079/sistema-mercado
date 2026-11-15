@@ -321,3 +321,211 @@
     flex: 1 1 auto;
   }
 }
+
+/* ===== Importar e exportar planilha (PlanilhaProdutos.tsx) ===== */
+
+.modal-fundo:has(.planilha-modal) {
+  align-items: center;
+  justify-content: center;
+}
+
+.modal:has(.planilha-modal) {
+  max-width: 880px;
+  height: auto;
+  max-height: calc(100vh - 2rem);
+  width: calc(100% - 2rem);
+  border-radius: var(--raio);
+}
+
+.planilha-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.planilha-soltar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  border: 2px dashed var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.planilha-soltar.arrastando {
+  border-color: var(--cor-primaria);
+  background: var(--cor-primaria-suave);
+}
+
+.planilha-soltar-icone {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+}
+
+.planilha-soltar-titulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.planilha-soltar-texto {
+  margin: 0 0 0.5rem;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.planilha-ajuda {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.planilha-dicas {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.25rem;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.planilha-arquivo {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.planilha-icone-cinza {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+}
+
+.planilha-pilulas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.planilha-pilula {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+.planilha-pilula.ativo {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: var(--cor-sobre-primaria);
+}
+
+.planilha-pilula-contagem {
+  margin-left: 0.35rem;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+.planilha-erro-texto {
+  color: var(--cor-perigo);
+  font-size: 0.9rem;
+}
+
+.planilha-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.planilha-rodape-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.planilha-aviso-linhas {
+  width: 100%;
+  margin: 0;
+  text-align: right;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.planilha-feito {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.planilha-feito-icone {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--cor-verde-suave);
+  color: var(--cor-sucesso);
+}
+
+@media (max-width: 640px) {
+  .modal:has(.planilha-modal) {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .planilha-rodape-acoes {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .planilha-rodape-acoes .botao {
+    flex: 1 1 auto;
+  }
+}
+
+/* Cabeçalhos da tabela de produtos não quebram no meio da palavra (só nesta tela). */
+.produtos-tela .tabela th {
+  white-space: nowrap;
+  word-break: normal;
+}
+
+/* Ajuda do modal de importação: no celular, cada item em linha própria, sem o separador. */
+@media (max-width: 640px) {
+  .planilha-separador {
+    display: none;
+  }
+
+  .planilha-ajuda-item {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}

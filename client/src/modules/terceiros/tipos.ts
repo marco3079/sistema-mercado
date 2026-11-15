@@ -64,6 +64,9 @@ export interface TerceiroLinha {
   produtosEmPosse: number;
   valorEmPosse: number;
   atrasadas: number;
+  // Link do portal (código de acesso) e pedidos do portal aguardando aprovação.
+  codigoAcesso: string | null;
+  pedidosPendentes: number;
 }
 
 export interface ResumoTerceiros {
@@ -73,7 +76,48 @@ export interface ResumoTerceiros {
   terceirosComSaldo: number;
   remessasAbertas: number;
   atrasadas: number;
+  pedidosPendentes: number;
   porTipo: { tipo: TipoTerceiro; valor: number }[];
+}
+
+// Resposta de POST /terceiros/:id/portal (e /portal/novo): código e caminho público (/remessa/<código>).
+export interface RespostaPortal {
+  codigoAcesso: string;
+  caminho: string;
+}
+
+export type StatusPedido = 'PENDENTE' | 'APROVADO' | 'RECUSADO' | 'CANCELADO';
+
+export interface ItemPedido {
+  produtoId: number;
+  codigo: string;
+  nome: string;
+  foto: string | null;
+  unidade: string;
+  quantidade: number;
+  saldoLoja: number;
+  // Quantidade efetivamente enviada na aprovação (opcional; o servidor pode não trazer).
+  quantidadeEnviada?: number | null;
+}
+
+// Pedido enviado pelo portal do terceiro (GET /pedidos-remessa).
+export interface PedidoRemessa {
+  id: number;
+  numero: number;
+  status: StatusPedido;
+  tipo: TipoTerceiro;
+  terceiro: { id: number; nome: string; telefone: string | null };
+  loja: { id: number; nome: string };
+  dataDesejada: string | null;
+  observacoes: string | null;
+  motivoRecusa: string | null;
+  remessaId: number | null;
+  remessaNumero: number | null;
+  criadoEm: string;
+  respondidoEm: string | null;
+  totalItens: number;
+  valorEstimado: number;
+  itens: ItemPedido[];
 }
 
 export interface SaldoTerceiro {

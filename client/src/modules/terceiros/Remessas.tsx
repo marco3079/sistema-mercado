@@ -5,7 +5,7 @@ import { useAuth } from '../../lib/auth';
 import { formatarQuantidade, lerNumero, mensagemErro } from '../../lib/mercado';
 import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { useDados } from '../../lib/useDados';
-import { Aviso, AreaTexto, Botao, Campo, Carregando, Cartao, MenuAcoes, Modal, Pagina, Selecao, Selo, Tabela, formatarData, formatarMoeda } from '../../ui';
+import { Abas, Aviso, AreaTexto, Botao, Campo, Carregando, Cartao, MenuAcoes, Modal, Pagina, Selecao, Selo, Tabela, formatarData, formatarMoeda } from '../../ui';
 import type { AcaoMenu, ColunaTabela } from '../../ui';
 import { BarraNivel, CelulaProduto } from '../../ui/FotoProduto';
 import {
@@ -18,7 +18,8 @@ import {
   podeEscrever,
   textoPreco,
 } from './tipos';
-import type { ProdutoBusca, RemessaDetalhe, RemessaLinha, StatusRemessa, TerceiroLinha, TipoTerceiro } from './tipos';
+import { PedidosRemessa } from './PedidosRemessa';
+import type { ProdutoBusca, RemessaDetalhe, RemessaLinha, ResumoTerceiros, StatusRemessa, TerceiroLinha, TipoTerceiro } from './tipos';
 import './terceiros.css';
 
 const STATUS_OPCOES = [
@@ -81,18 +82,22 @@ export function Remessas() {
   const escreve = podeEscrever(usuario?.perfil);
   const raiz = usuario ? RAIZ_DO_PERFIL[usuario.perfil] : '';
 
+  // Duas abas na mesma tela: Remessas (lista) e Pedidos do portal. A aba fica na URL (?aba=pedidos).
+  const aba = filtros.get('aba') === 'pedidos' ? 'pedidos' : 'remessas';
+
   const status = filtros.get('status') ?? '';
   const tipo = filtros.get('tipo') ?? '';
   const terceiroId = filtros.get('terceiroId') ?? '';
 
   const terceiros = useDados<TerceiroLinha[]>('/terceiros');
+  const resumo = useDados<ResumoTerceiros>('/terceiros/resumo');
 
   const partes = new URLSearchParams();
   if (status) partes.set('status', status);
   if (tipo) partes.set('tipo', tipo);
   if (terceiroId) partes.set('terceiroId', terceiroId);
   const consulta = partes.toString();
-  const lista = useDados<RemessaLinha[]>(`/remessas-terceiro${consulta ? `?${consulta}` : ''}`);
+  const lista = useDados<RemessaLinha[]>(aba === 'remessas' ? `/remessas-terceiro${consulta ? `?${consulta}` : ''}` : null);
 
   function mudarFiltro(chave: string, valor: string) {
     const proximo = new URLSearchParams(filtros);
@@ -100,6 +105,15 @@ export function Remessas() {
     else proximo.delete(chave);
     setFiltros(proximo, { replace: true });
   }
+
+  function mudarAba(id: string) {
+    const proximo = new URLSearchParams(filtros);
+    if (id === 'pedidos') proximo.set('aba', 'pedidos');
+    else proximo.delete('aba');
+    setFiltros(proximo, { replace: true });
+  }
+
+  const pendentes = resumo.dados?.pedidosPendentes ?? 0;
 
   const caminhoDe = (id: number) => `${raiz}/remessas-terceiro/${id}`;
 
@@ -155,32 +169,47 @@ export function Remessas() {
   return (
     <Pagina
       titulo="Remessas a terceiros"
-      acoes={escreve ? <Botao aoClicar={() => setNovaAberta(true)}>Nova remessa</Botao> : undefined}
+      acoes={escreve && aba === 'remessas' ? <Botao aoClicar={() => setNovaAberta(true)}>Nova remessa</Botao> : undefined}
     >
-      <Cartao>
-        <div className="barra-ferramentas">
-          <div className="filtros">
-            <Selecao rotulo="Status" valor={status} aoMudar={(v) => mudarFiltro('status', v)} opcoes={STATUS_OPCOES} vazio="Todos" />
-            <Selecao rotulo="Tipo" valor={tipo} aoMudar={(v) => mudarFiltro('tipo', v)} opcoes={TIPO_OPCOES} vazio="Todos" />
-            <Selecao rotulo="Terceiro" valor={terceiroId} aoMudar={(v) => mudarFiltro('terceiroId', v)} opcoes={opcoesTerceiro} vazio="Todos" />
-          </div>
-        </div>
-      </Cartao>
+      <Abas
+        abas={[
+          { id: 'remessas', rotulo: 'Remessas' },
+          { id: 'pedidos', rotulo: pendentes > 0 ? `Pedidos do portal (${pendentes})` : 'Pedidos do portal' },
+        ]}
+        ativa={aba}
+        aoMudar={mudarAba}
+      />
 
-      {lista.carregando && !lista.dados && <Carregando />}
-      {lista.erro && <Aviso tipo="erro">{lista.erro}</Aviso>}
-      {lista.dados && (
-        <Tabela
-          colunas={colunas}
-          dados={lista.dados}
-          chave={(r) => r.id}
-          vazio="Nenhuma remessa com esses filtros."
-          aoClicarLinha={(r) => navigate(caminhoDe(r.id))}
-          idVisao="terceiros-remessas"
-        />
+      {aba === 'remessas' && (
+        <>
+          <Cartao>
+            <div className="barra-ferramentas">
+              <div className="filtros">
+                <Selecao rotulo="Status" valor={status} aoMudar={(v) => mudarFiltro('status', v)} opcoes={STATUS_OPCOES} vazio="Todos" />
+                <Selecao rotulo="Tipo" valor={tipo} aoMudar={(v) => mudarFiltro('tipo', v)} opcoes={TIPO_OPCOES} vazio="Todos" />
+                <Selecao rotulo="Terceiro" valor={terceiroId} aoMudar={(v) => mudarFiltro('terceiroId', v)} opcoes={opcoesTerceiro} vazio="Todos" />
+              </div>
+            </div>
+          </Cartao>
+
+          {lista.carregando && !lista.dados && <Carregando />}
+          {lista.erro && <Aviso tipo="erro">{lista.erro}</Aviso>}
+          {lista.dados && (
+            <Tabela
+              colunas={colunas}
+              dados={lista.dados}
+              chave={(r) => r.id}
+              vazio="Nenhuma remessa com esses filtros."
+              aoClicarLinha={(r) => navigate(caminhoDe(r.id))}
+              idVisao="terceiros-remessas"
+            />
+          )}
+
+          <ModalNovaRemessa aberto={novaAberta} aoFechar={() => setNovaAberta(false)} terceiroInicial={Number(terceiroId) || undefined} />
+        </>
       )}
 
-      <ModalNovaRemessa aberto={novaAberta} aoFechar={() => setNovaAberta(false)} terceiroInicial={Number(terceiroId) || undefined} />
+      {aba === 'pedidos' && <PedidosRemessa aoMudar={resumo.recarregar} />}
     </Pagina>
   );
 }

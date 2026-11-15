@@ -5,11 +5,12 @@ import { useAuth } from '../../lib/auth';
 import { useDados } from '../../lib/useDados';
 import { formatarPercentual, formatarQuantidade, mensagemErro } from '../../lib/mercado';
 import { Aviso, Botao, Cartao, Carregando, MenuAcoes, Pagina, Selecao, Selo, Tabela, formatarMoeda } from '../../ui';
-import type { ColunaTabela } from '../../ui';
+import type { AcaoMenu, ColunaTabela } from '../../ui';
 import { BarraNivel, CelulaProduto } from '../../ui/FotoProduto';
 import { Icone } from '../../ui/icones';
 import type { NomeIcone } from '../../ui/icones';
 import { FichaProduto } from './FichaProduto';
+import { ModalImportarProdutos, baixarModeloProdutos, exportarProdutos } from './PlanilhaProdutos';
 import type { CategoriaDTO, ProdutoDTO } from './tipos';
 import { PODE_EDITAR_PRODUTO, corDaMargem, useProdutosCompletos } from './tipos';
 import './produtos.css';
@@ -71,6 +72,7 @@ export function TelaProdutos() {
   const [ficha, setFicha] = useState<{ id: number | null; aba?: string } | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [higienizando, setHigienizando] = useState(false);
+  const [importando, setImportando] = useState(false);
 
   const todos = useProdutosCompletos();
   const categorias = useDados<CategoriaDTO[]>('/categorias');
@@ -177,6 +179,37 @@ export function TelaProdutos() {
     },
   ];
 
+  async function exportar() {
+    setAviso(null);
+    try {
+      await exportarProdutos(situacao === '1');
+    } catch (e) {
+      setAviso({ tipo: 'erro', texto: mensagemErro(e) });
+    }
+  }
+
+  async function baixarModelo() {
+    setAviso(null);
+    try {
+      await baixarModeloProdutos();
+    } catch (e) {
+      setAviso({ tipo: 'erro', texto: mensagemErro(e) });
+    }
+  }
+
+  // Menu ⋯ do topo: para todos que veem a tela; higienizar só para o gestor.
+  const itensMenuTopo: AcaoMenu[] = [
+    { rotulo: 'Exportar planilha (Excel)', icone: 'documento', aoClicar: exportar },
+    { rotulo: 'Baixar modelo de planilha', icone: 'documento', aoClicar: baixarModelo },
+  ];
+  if (ehGestor) {
+    itensMenuTopo.push({
+      rotulo: higienizando ? 'Higienizando...' : 'Higienizar dados fiscais',
+      icone: 'engrenagem',
+      aoClicar: higienizar,
+    });
+  }
+
   let conteudo: ReactNode = null;
   if (todos.carregando && !todos.dados) {
     conteudo = <Carregando />;
@@ -199,18 +232,12 @@ export function TelaProdutos() {
       titulo="Produtos"
       acoes={
         <>
-          {ehGestor && (
-            <MenuAcoes
-              rotulo="Mais ações de produtos"
-              acoes={[
-                {
-                  rotulo: higienizando ? 'Higienizando...' : 'Higienizar dados fiscais',
-                  icone: 'engrenagem',
-                  aoClicar: higienizar,
-                },
-              ]}
-            />
+          {podeEditar && (
+            <Botao variante="secundario" aoClicar={() => setImportando(true)}>
+              Importar planilha
+            </Botao>
           )}
+          <MenuAcoes rotulo="Mais ações de produtos" acoes={itensMenuTopo} />
           {podeEditar && <Botao aoClicar={() => setFicha({ id: null })}>Novo produto</Botao>}
         </>
       }
@@ -226,6 +253,7 @@ export function TelaProdutos() {
         </div>
       )}
 
+      <div className="produtos-tela">
       <Cartao>
         <div className="barra-ferramentas">
           <div className="filtros produtos-filtros">
@@ -253,6 +281,7 @@ export function TelaProdutos() {
 
         {conteudo}
       </Cartao>
+      </div>
 
       {ficha && (
         <FichaProduto
@@ -266,6 +295,16 @@ export function TelaProdutos() {
           }}
         />
       )}
+
+      <ModalImportarProdutos
+        aberto={importando}
+        soAtivos={situacao === '1'}
+        aoFechar={() => setImportando(false)}
+        aoConcluir={(mensagem) => {
+          setAviso({ tipo: 'sucesso', texto: mensagem });
+          todos.recarregar();
+        }}
+      />
     </Pagina>
   );
 }
