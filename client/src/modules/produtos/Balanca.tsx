@@ -228,25 +228,18 @@ export function TelaBalanca() {
 
       <Modal aberto={simulador} titulo="Simular etiqueta da balança" aoFechar={fecharSimulador}>
         {aviso && <Aviso tipo={aviso.tipo}>{aviso.texto}</Aviso>}
-        <div className="barra-ferramentas produtos-filtros">
-          <div className="filtros">
-            <Selecao
-              rotulo="Produto"
-              valor={produtoId}
-              aoMudar={(v) => {
-                setProdutoId(v);
-                setSimulada(null);
-              }}
-              opcoes={lista.map((p) => ({ valor: String(p.id), rotulo: p.nome }))}
-              vazio="Escolha o produto"
-            />
-            <Campo rotulo="Peso (kg)" valor={pesoTexto} aoMudar={setPesoTexto} />
-          </div>
-          <div className="acoes-linha">
-            <Botao variante="secundario" desabilitado={simulando} aoClicar={simular}>
-              Simular
-            </Botao>
-          </div>
+        <div className="etiq-simulador-campos">
+          <Selecao
+            rotulo="Produto"
+            valor={produtoId}
+            aoMudar={(v) => {
+              setProdutoId(v);
+              setSimulada(null);
+            }}
+            opcoes={lista.map((p) => ({ valor: String(p.id), rotulo: p.nome }))}
+            vazio="Escolha o produto"
+          />
+          <Campo rotulo="Peso (kg)" valor={pesoTexto} aoMudar={setPesoTexto} />
         </div>
 
         {simulada && produtoEscolhido && (
@@ -273,9 +266,12 @@ export function TelaBalanca() {
           </div>
         )}
 
-        <div className="produtos-acoes-modal">
+        <div className="pagina-acoes">
           <Botao variante="secundario" aoClicar={fecharSimulador}>
             Fechar
+          </Botao>
+          <Botao desabilitado={simulando} aoClicar={simular}>
+            Simular
           </Botao>
         </div>
       </Modal>

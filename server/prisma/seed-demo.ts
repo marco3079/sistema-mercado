@@ -648,7 +648,7 @@ export async function carregarDemonstracao(prisma: PrismaClient): Promise<void> 
   // Promoções vigentes (a regra do PDV usa as promoções vigentes no momento da venda)
   const cola = produto('Refrigerante cola 2 L');
   await prisma.promocao.create({
-    data: { nome: 'Refrigerante 2 L em oferta', tipo: 'PRECO_FIXO', produtoId: cola.id, valor: 6.49, industria: 'Bebidas Sol do Sul', bonificacaoUnidade: 0.8, inicio: diaRelativo(7), fim: somarDias(hoje, 14) },
+    data: { nome: 'Refrigerante 2 L em oferta', tipo: 'PRECO_FIXO', produtoId: cola.id, valor: 5.99, industria: 'Bebidas Sol do Sul', bonificacaoUnidade: 0.8, inicio: diaRelativo(7), fim: somarDias(hoje, 14) },
   });
   await prisma.promocao.create({
     data: { nome: 'Leve 3, pague 2 em higiene', tipo: 'LEVE_PAGUE', categoriaId: categorias.get('Higiene')!, valor: 0, levar: 3, pagar: 2, inicio: diaRelativo(7), fim: somarDias(hoje, 14) },

@@ -348,12 +348,20 @@ export function Mercado() {
         </Cartao>
 
         <Cartao titulo="Impressora de etiquetas">
-          <Selecao
-            rotulo="Formato"
-            valor={form.etiquetaModo}
-            aoMudar={(v) => mudar({ etiquetaModo: v })}
-            opcoes={OPCOES_FORMATO_ETIQUETA}
-          />
+          <label className="campo">
+            <span className="campo-rotulo">Formato</span>
+            <select
+              className="campo-controle"
+              value={form.etiquetaModo}
+              onChange={(e) => mudar({ etiquetaModo: e.target.value })}
+            >
+              {OPCOES_FORMATO_ETIQUETA.map((o) => (
+                <option key={o.valor} value={o.valor}>
+                  {o.rotulo}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="etiq-atalhos">
             {ATALHOS_ETIQUETA.map((a) => (
               <Botao
@@ -384,12 +392,20 @@ export function Mercado() {
             <>
               <Campo rotulo="IP da Zebra na rede" valor={form.zebraIp} aoMudar={(v) => mudar({ zebraIp: v })} />
               <Campo rotulo="Porta" valor={form.zebraPorta} aoMudar={(v) => mudar({ zebraPorta: v })} />
-              <Selecao
-                rotulo="Resolução"
-                valor={form.zebraDpi}
-                aoMudar={(v) => mudar({ zebraDpi: v })}
-                opcoes={OPCOES_DPI}
-              />
+              <label className="campo">
+                <span className="campo-rotulo">Resolução</span>
+                <select
+                  className="campo-controle"
+                  value={form.zebraDpi}
+                  onChange={(e) => mudar({ zebraDpi: e.target.value })}
+                >
+                  {OPCOES_DPI.map((o) => (
+                    <option key={o.valor} value={o.valor}>
+                      {o.rotulo}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="etiq-atalhos">
                 <Botao
                   variante="secundario"

@@ -175,6 +175,25 @@
   font-size: 0.9rem;
 }
 
+/* Busca e campos lado a lado no modal (desktop); empilhados no celular. */
+.etiq-busca {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.etiq-busca .campo {
+  width: 100%;
+}
+
+.etiq-simulador-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  align-items: end;
+  margin-bottom: 0.5rem;
+}
+
 .etiq-simulada {
   display: grid;
   gap: 0.75rem;
@@ -193,6 +212,10 @@
   }
 
   .etiq-passos {
+    grid-template-columns: 1fr;
+  }
+
+  .etiq-simulador-campos {
     grid-template-columns: 1fr;
   }
 }

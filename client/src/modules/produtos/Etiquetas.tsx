@@ -4,7 +4,7 @@ import { api, baixarArquivo } from '../../lib/api';
 import { useDados } from '../../lib/useDados';
 import { escapar, imprimirHtml, moeda } from '../../lib/imprimir';
 import { mensagemErro } from '../../lib/mercado';
-import { Aviso, Botao, Campo, Cartao, Carregando, Modal, Pagina, Selecao, Selo, Tabela, formatarDataHora, formatarMoeda } from '../../ui';
+import { Aviso, Botao, Campo, Cartao, Carregando, Modal, Pagina, Selo, Tabela, formatarDataHora, formatarMoeda } from '../../ui';
 import type { ColunaTabela } from '../../ui';
 import { Icone } from '../../ui/icones';
 import { CelulaProduto } from '../../ui/FotoProduto';
@@ -316,12 +316,20 @@ export function TelaEtiquetas() {
       <Cartao>
         <div className="barra-ferramentas">
           <div className="filtros">
-            <Selecao
-              rotulo="Formato de impressão"
-              valor={modo}
-              aoMudar={(v) => setModoEscolhido(v as Modo)}
-              opcoes={OPCOES_MODO}
-            />
+            <label className="campo">
+              <span className="campo-rotulo">Formato de impressão</span>
+              <select
+                className="campo-controle"
+                value={modo}
+                onChange={(e) => setModoEscolhido(e.target.value as Modo)}
+              >
+                {OPCOES_MODO.map((o) => (
+                  <option key={o.valor} value={o.valor}>
+                    {o.rotulo}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className="acoes-linha">
             <Botao variante="texto" desabilitado={lista.length === 0} aoClicar={() => setMarcadas(lista.map((e) => e.id))}>
@@ -409,8 +417,14 @@ function AdicionarProdutos({
   return (
     <Modal aberto titulo="Adicionar produtos às etiquetas" aoFechar={aoFechar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      <div className="barra-ferramentas produtos-filtros">
-        <div className="filtros">
+      <form
+        className="barra-ferramentas produtos-filtros"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void pesquisar();
+        }}
+      >
+        <div className="filtros etiq-busca">
           <Campo
             rotulo="Buscar"
             placeholder="Buscar por nome, código ou EAN"
@@ -419,11 +433,11 @@ function AdicionarProdutos({
           />
         </div>
         <div className="acoes-linha">
-          <Botao variante="secundario" desabilitado={buscando} aoClicar={pesquisar}>
+          <Botao tipo="submit" variante="secundario" desabilitado={buscando}>
             Buscar
           </Botao>
         </div>
-      </div>
+      </form>
       {resultados && resultados.length === 0 && <p className="tabela-vazia">Nenhum produto encontrado.</p>}
       {resultados && resultados.length > 0 && (
         <ul className="produtos-lista-escolha">

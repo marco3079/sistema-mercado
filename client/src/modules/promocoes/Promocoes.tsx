@@ -76,7 +76,13 @@ function CartaoPromocao({
   aoExcluir(): void;
 }) {
   const selo = seloOferta(p);
-  const riscado = p.tipo !== 'LEVE_PAGUE' && p.precoNormal !== null ? p.precoNormal : null;
+  // Preço normal riscado só quando há desconto real (promocional menor que o normal).
+  const temDesconto =
+    p.tipo !== 'LEVE_PAGUE' &&
+    p.precoNormal !== null &&
+    p.precoPromocional !== null &&
+    p.precoPromocional < p.precoNormal - 0.005;
+  const riscado = temDesconto ? p.precoNormal : null;
   const destaque = p.tipo === 'PERCENTUAL' ? p.precoPromocional : null;
   // O servidor manda "<nome>: <texto>"; tira o prefixo. Preço fixo e percentual não repetem descrição.
   const prefixo = `${p.nome}: `;

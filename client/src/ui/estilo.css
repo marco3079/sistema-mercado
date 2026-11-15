@@ -939,3 +939,10 @@ textarea.campo-controle {
     gap: 1rem;
   }
 }
+
+/* Busca (campo de texto) primeiro nos filtros: ocupa duas colunas no computador. */
+@media (min-width: 720px) {
+  .filtros > .campo:first-child:has(input[type='text'], input[type='search']) {
+    grid-column: span 2;
+  }
+}
