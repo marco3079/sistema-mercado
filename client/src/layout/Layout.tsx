@@ -16,6 +16,17 @@ import { SeletorLoja } from './SeletorLoja';
 import './casca.css';
 
 const CONSULTA_CELULAR = '(max-width: 899px)';
+const CHAVE_RECOLHIDOS = 'mercado.menu.recolhidos';
+
+// Grupos do menu que o usuário recolheu (guardados neste navegador).
+function lerRecolhidos(): string[] {
+  try {
+    const valor = JSON.parse(localStorage.getItem(CHAVE_RECOLHIDOS) ?? '[]');
+    return Array.isArray(valor) ? valor.filter((v): v is string => typeof v === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 export function nomePortal(perfil: Perfil): string {
   return NOME_DO_PERFIL[perfil];
@@ -58,6 +69,7 @@ export function Layout({ menu }: { menu: RotaModulo[] }) {
   const { usuario, sair } = useAuth();
   const { plataforma, logoSrc } = usePlataforma();
   const [gavetaAberta, setGavetaAberta] = useState(false);
+  const [recolhidos, setRecolhidos] = useState<string[]>(lerRecolhidos);
   const estreita = useTelaEstreita();
   const local = useLocation();
   useEffect(() => {
@@ -94,13 +106,52 @@ export function Layout({ menu }: { menu: RotaModulo[] }) {
     );
   }
 
+  function alternarGrupo(titulo: string) {
+    setRecolhidos((atuais) => {
+      const novos = atuais.includes(titulo) ? atuais.filter((t) => t !== titulo) : [...atuais, titulo];
+      try {
+        localStorage.setItem(CHAVE_RECOLHIDOS, JSON.stringify(novos));
+      } catch {
+        // sem armazenamento: vale só até recarregar
+      }
+      return novos;
+    });
+  }
+
+  // Grupo com a tela aberta fica sempre expandido (para o item ativo não sumir).
+  function grupoAtivo(rotas: RotaModulo[]): boolean {
+    return rotas.some((r) => r.caminho !== raizPortal && local.pathname.startsWith(r.caminho));
+  }
+
   function secoes() {
-    return grupos.map((g) => (
-      <div className="casca-grupo" key={g.titulo || 'inicio'}>
-        {g.titulo && <p className="casca-grupo-titulo">{g.titulo}</p>}
-        {g.rotas.map(itemMenu)}
-      </div>
-    ));
+    return grupos.map((g) => {
+      if (!g.titulo) {
+        return (
+          <div className="casca-grupo" key="inicio">
+            {g.rotas.map(itemMenu)}
+          </div>
+        );
+      }
+      const ativo = grupoAtivo(g.rotas);
+      const aberto = ativo || !recolhidos.includes(g.titulo);
+      return (
+        <div className={aberto ? 'casca-grupo' : 'casca-grupo casca-grupo-recolhido'} key={g.titulo}>
+          <button
+            type="button"
+            className="casca-grupo-titulo"
+            aria-expanded={aberto}
+            disabled={ativo}
+            title={ativo ? 'A tela aberta está neste grupo' : aberto ? 'Recolher' : 'Expandir'}
+            onClick={() => alternarGrupo(g.titulo)}
+          >
+            <span>{g.titulo}</span>
+            {!aberto && <span className="casca-grupo-contagem">{g.rotas.length}</span>}
+            <Icone nome="chevron-baixo" tamanho={14} className="casca-grupo-seta" />
+          </button>
+          {aberto && g.rotas.map(itemMenu)}
+        </div>
+      );
+    });
   }
 
   return (
