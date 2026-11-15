@@ -54,7 +54,7 @@ export async function estadoDoPush(): Promise<EstadoPush> {
 }
 
 // A chave VAPID vem do servidor em base64url; o navegador pede bytes.
-function base64UrlParaBytes(texto: string): Uint8Array {
+function base64UrlParaBytes(texto: string): Uint8Array<ArrayBuffer> {
   const base64 = texto.replace(/-/g, '+').replace(/_/g, '/');
   const preenchido = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
   const binario = atob(preenchido);
@@ -63,7 +63,7 @@ function base64UrlParaBytes(texto: string): Uint8Array {
   return bytes;
 }
 
-function mesmaChave(inscricao: PushSubscription, chave: Uint8Array): boolean {
+function mesmaChave(inscricao: PushSubscription, chave: Uint8Array<ArrayBuffer>): boolean {
   const atual = inscricao.options?.applicationServerKey;
   if (!atual) return false;
   const bytesAtuais = new Uint8Array(atual);

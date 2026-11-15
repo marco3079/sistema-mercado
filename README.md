@@ -9,8 +9,8 @@
   <img src="https://img.shields.io/badge/licen%C3%A7a-MIT-blue" alt="Licença MIT">
   <img src="https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white" alt="Docker Compose">
   <img src="https://img.shields.io/badge/Node-26-339933?logo=node.js&logoColor=white" alt="Node 26">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black" alt="React 18">
-  <img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19">
+  <img src="https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 16">
 </p>
 
@@ -227,7 +227,7 @@ Detalhes e cuidados em [SECURITY.md](SECURITY.md).
 ## Arquitetura
 
 ```
-client/   React 18 + TypeScript + Vite (site; nginx em produção)
+client/   React 19 + TypeScript + Vite (site; nginx em produção)
 server/   Node.js 26 + Express + Prisma (API)
           PostgreSQL 16 (banco)
 ```
