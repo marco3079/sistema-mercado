@@ -11,6 +11,8 @@ O formato segue o Keep a Changelog (em português) e o versionamento segue o Sem
 - Node.js 26 nas imagens da API e do build do site (o Node 20 saiu de suporte) e na CI.
 - nginx 1.29 no site e Docker CLI 28 no atualizador.
 - CI com `actions/checkout` e `actions/setup-node` v7.
+- Site: React 19, React Router 7, Vite 8 (com @vitejs/plugin-react 6) e TypeScript 7.
+- API: Express 5, nodemailer 10, web-push 4, TypeScript 7 e atualizações menores de cors e jsonwebtoken.
 
 ## [1.0.0] - 2026-11-15
 
