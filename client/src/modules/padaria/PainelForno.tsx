@@ -6,7 +6,8 @@ import { formatarQuantidade, hojeIso, horaCurta, mensagemErro } from '../../lib/
 import { Aviso, Botao, Carregando, Pagina } from '../../ui';
 import { ModalConcluir } from './Producao';
 import type { OrdemDTO, ReceitaDTO } from './tipos';
-import { FotoProduto } from '../../ui/FotoProduto';
+import { BarraNivel, FotoProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 
 // Painel do forno: tela grande para o tablet da padaria. Botões grandes e contagem regressiva
 // de quem está no forno (início + tempo de forno da receita).
@@ -18,6 +19,12 @@ function formatarRelogio(d: Date): string {
 // mm:ss; zero ou menos vira "Pronto".
 function formatarRestante(ms: number): string {
   const total = Math.ceil(ms / 1000);
+  // Acima de uma hora: "14 h 11 min" (o mm:ss ficaria ilegível, ex.: 851:40).
+  if (total >= 3600) {
+    const horas = Math.floor(total / 3600);
+    const resto = Math.floor((total % 3600) / 60);
+    return `${horas} h ${String(resto).padStart(2, '0')} min`;
+  }
   const minutos = Math.floor(total / 60);
   const segundos = total % 60;
   return `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
@@ -78,21 +85,42 @@ export function PainelForno() {
   const todas = ordens.dados ?? [];
   const noForno = todas.filter((o) => o.status === 'EM_PRODUCAO');
   const proximas = todas.filter((o) => o.status === 'PLANEJADA');
+  const concluidas = todas.filter((o) => o.status === 'CONCLUIDA');
+
+  function tempoDe(o: OrdemDTO): number | null {
+    return tempoForno.get(o.receitaId) ?? null;
+  }
 
   function restanteDe(o: OrdemDTO): number | null {
-    const minutos = tempoForno.get(o.receitaId) ?? null;
+    const minutos = tempoDe(o);
     if (!o.iniciadoEm || minutos === null) return null;
     const fim = new Date(o.iniciadoEm).getTime() + minutos * 60000;
     return fim - agora.getTime();
   }
 
-  return (
-    <Pagina titulo="Painel do forno">
-      <div className="padaria-painel">
-        <div className="padaria-relogio" aria-live="off">
-          {formatarRelogio(agora)}
-        </div>
+  const prontas = noForno.filter((o) => {
+    const r = restanteDe(o);
+    return r !== null && r <= 0;
+  }).length;
 
+  const relogio = formatarRelogio(agora);
+
+  return (
+    <Pagina
+      titulo="Painel do forno"
+      acoes={
+        <div className="padaria-relogio" aria-live="off">
+          <span className="padaria-relogio-data">
+            {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+          </span>
+          <span className="padaria-relogio-hora">
+            {relogio.slice(0, 5)}
+            <small>{relogio.slice(5)}</small>
+          </span>
+        </div>
+      }
+    >
+      <div className="padaria-painel">
         {aviso && <Aviso tipo="sucesso">{aviso}</Aviso>}
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         {ordens.erro && <Aviso tipo="erro">{ordens.erro}</Aviso>}
@@ -100,33 +128,97 @@ export function PainelForno() {
 
         {ordens.dados && (
           <>
+            <div className="resumo">
+              <div className="resumo-item">
+                <span className="resumo-icone resumo-icone-laranja">
+                  <Icone nome="pao" tamanho={22} />
+                </span>
+                <div>
+                  <div className="resumo-valor">{noForno.length}</div>
+                  <div className="resumo-rotulo">No forno</div>
+                </div>
+              </div>
+              <div className="resumo-item">
+                <span className="resumo-icone resumo-icone-verde">
+                  <Icone nome="visto" tamanho={22} />
+                </span>
+                <div>
+                  <div className="resumo-valor">{prontas}</div>
+                  <div className="resumo-rotulo">Prontas para tirar</div>
+                </div>
+              </div>
+              <div className="resumo-item">
+                <span className="resumo-icone resumo-icone-azul">
+                  <Icone nome="relogio" tamanho={22} />
+                </span>
+                <div>
+                  <div className="resumo-valor">{proximas.length}</div>
+                  <div className="resumo-rotulo">Próximas fornadas</div>
+                </div>
+              </div>
+              <div className="resumo-item">
+                <span className="resumo-icone resumo-icone-roxo">
+                  <Icone nome="lista" tamanho={22} />
+                </span>
+                <div>
+                  <div className="resumo-valor">{concluidas.length}</div>
+                  <div className="resumo-rotulo">Concluídas hoje</div>
+                </div>
+              </div>
+            </div>
+
             <section className="padaria-painel-secao">
-              <h2 className="padaria-painel-titulo">No forno ({noForno.length})</h2>
-              {noForno.length === 0 && <p className="padaria-painel-vazio">Nenhuma fornada no forno.</p>}
-              <div className="padaria-painel-lista">
+              <h2 className="padaria-painel-titulo">No forno</h2>
+              {noForno.length === 0 && <p className="padaria-painel-vazio">Nenhuma fornada no forno agora.</p>}
+              <div className="padaria-painel-grade">
                 {noForno.map((o) => {
                   const restante = restanteDe(o);
                   const pronto = restante !== null && restante <= 0;
+                  const total = (tempoDe(o) ?? 0) * 60000;
+                  const decorrido = restante === null || total === 0 ? 0 : total - Math.max(0, restante);
                   return (
-                    <article
-                      key={o.id}
-                      className={`padaria-painel-cartao${pronto ? ' padaria-painel-pronto' : ''}`}
-                    >
-                      <FotoProduto foto={o.foto} nome={o.produto} setor={o.categoria} preencher />
-                      <div className="padaria-painel-produto">{o.produto}</div>
-                      <div className="padaria-painel-quantidade">
-                        {formatarQuantidade(o.quantidadePlanejada, o.unidade)}
+                    <article key={o.id} className={`padaria-forno-cartao${pronto ? ' pronto' : ''}`}>
+                      <FotoProduto foto={o.foto} nome={o.produto} setor={o.categoria} tamanho={112} />
+                      <div className="padaria-forno-info">
+                        <div className="padaria-forno-cabecalho">
+                          <div>
+                            <div className="padaria-forno-produto">{o.produto}</div>
+                            <div className="padaria-forno-quantidade">
+                              {formatarQuantidade(o.quantidadePlanejada, o.unidade)}
+                              {o.iniciadoEm && ` · entrou às ${horaCurta(o.iniciadoEm)}`}
+                            </div>
+                          </div>
+                          {pronto ? (
+                            <span className="padaria-forno-selo pronto">
+                              <Icone nome="visto" tamanho={16} /> Pronto para tirar
+                            </span>
+                          ) : (
+                            <span className="padaria-forno-selo">
+                              <Icone nome="relogio" tamanho={16} /> Assando
+                            </span>
+                          )}
+                        </div>
+
+                        {restante === null ? (
+                          <div className="padaria-forno-tempo sem-tempo">Sem tempo de forno na receita</div>
+                        ) : (
+                          <>
+                            <div className="padaria-forno-tempo">
+                              <span className="padaria-forno-tempo-valor">
+                                {pronto ? `+${formatarRestante(-restante)}` : formatarRestante(restante)}
+                              </span>
+                              <span className="padaria-forno-tempo-rotulo">{pronto ? 'passou do tempo' : 'restantes'}</span>
+                            </div>
+                            <BarraNivel valor={decorrido} maximo={total} cor={pronto ? 'verde' : 'amarelo'} />
+                          </>
+                        )}
+
+                        <div className="padaria-forno-acoes">
+                          <Botao aoClicar={() => setConcluindo(o)} desabilitado={ocupada === o.id}>
+                            Concluir fornada
+                          </Botao>
+                        </div>
                       </div>
-                      <div className="padaria-painel-contagem">
-                        {restante === null
-                          ? 'Sem tempo de forno cadastrado'
-                          : pronto
-                            ? 'Pronto para tirar!'
-                            : formatarRestante(restante)}
-                      </div>
-                      <Botao aoClicar={() => setConcluindo(o)} desabilitado={ocupada === o.id}>
-                        Concluir
-                      </Botao>
                     </article>
                   );
                 })}
@@ -134,24 +226,27 @@ export function PainelForno() {
             </section>
 
             <section className="padaria-painel-secao">
-              <h2 className="padaria-painel-titulo">Próximas fornadas ({proximas.length})</h2>
-              {proximas.length === 0 && <p className="padaria-painel-vazio">Nenhuma fornada planejada.</p>}
-              <div className="padaria-painel-lista">
+              <h2 className="padaria-painel-titulo">Próximas fornadas</h2>
+              {proximas.length === 0 && <p className="padaria-painel-vazio">Nenhuma fornada planejada para hoje.</p>}
+              <div className="padaria-painel-grade padaria-painel-grade-proximas">
                 {proximas.map((o) => (
                   <article
                     key={o.id}
-                    className={`padaria-painel-cartao${o.faltaInsumo.length > 0 ? ' padaria-painel-alerta' : ''}`}
+                    className={`padaria-proxima-cartao${o.faltaInsumo.length > 0 ? ' alerta' : ''}`}
                   >
-                    <div className="padaria-painel-hora">{horaCurta(o.agendadoPara)}</div>
-                    <FotoProduto foto={o.foto} nome={o.produto} setor={o.categoria} preencher />
-                    <div className="padaria-painel-produto">{o.produto}</div>
-                    <div className="padaria-painel-quantidade">
-                      {formatarQuantidade(o.quantidadePlanejada, o.unidade)}
+                    <div className="padaria-proxima-hora">{horaCurta(o.agendadoPara)}</div>
+                    <FotoProduto foto={o.foto} nome={o.produto} setor={o.categoria} tamanho={64} />
+                    <div className="padaria-proxima-info">
+                      <div className="padaria-forno-produto">{o.produto}</div>
+                      <div className="padaria-forno-quantidade">
+                        {formatarQuantidade(o.quantidadePlanejada, o.unidade)}
+                        {tempoDe(o) !== null && ` · ${tempoDe(o)} min de forno`}
+                      </div>
+                      {o.faltaInsumo.length > 0 && (
+                        <p className="padaria-falta">Falta: {o.faltaInsumo.map((f) => f.insumo).join(', ')}</p>
+                      )}
                     </div>
-                    {o.faltaInsumo.length > 0 && (
-                      <p className="padaria-falta">Falta insumo: {o.faltaInsumo.map((f) => f.insumo).join(', ')}</p>
-                    )}
-                    <Botao aoClicar={() => iniciar(o)} desabilitado={ocupada === o.id}>
+                    <Botao variante="secundario" aoClicar={() => iniciar(o)} desabilitado={ocupada === o.id}>
                       Iniciar
                     </Botao>
                   </article>

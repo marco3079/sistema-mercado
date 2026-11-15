@@ -236,121 +236,226 @@
 .padaria-painel {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.25rem;
 }
 
+/* Relógio no canto do cabeçalho */
 .padaria-relogio {
-  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+.padaria-relogio-data {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+}
+.padaria-relogio-data::first-letter {
+  text-transform: uppercase;
+}
+.padaria-relogio-hora {
+  font-size: 2.25rem;
   font-weight: 800;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
   color: var(--cor-primaria);
+  font-variant-numeric: tabular-nums;
+}
+.padaria-relogio-hora small {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cor-texto-suave);
+  margin-left: 2px;
 }
 
 .padaria-painel-secao {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.75rem;
 }
-
 .padaria-painel-titulo {
   margin: 0;
-  font-size: 1.3rem;
-  color: var(--cor-texto);
+  font-size: 1.1rem;
 }
-
 .padaria-painel-vazio {
   margin: 0;
-  font-size: 1.1rem;
+  padding: 1.25rem;
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio);
   color: var(--cor-texto-suave);
+  text-align: center;
 }
 
-.padaria-painel-lista {
+.padaria-painel-grade {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 1rem;
+}
+.padaria-painel-grade-proximas {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
 }
 
-.padaria-painel-cartao {
+/* Cartão de fornada no forno: foto à esquerda, tempo e ação à direita */
+.padaria-forno-cartao {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-left: 5px solid #f59e0b;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  min-width: 0;
+}
+.padaria-forno-cartao.pronto {
+  border-left-color: #16a34a;
+  background: color-mix(in srgb, #16a34a 7%, var(--cor-superficie));
+  animation: padaria-pulso 1.6s ease-in-out infinite;
+}
+@keyframes padaria-pulso {
+  0%, 100% { box-shadow: var(--sombra); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, #16a34a 25%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .padaria-forno-cartao.pronto { animation: none; }
+}
+
+.padaria-forno-info {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
-  border-radius: var(--raio);
-  background: var(--cor-superficie);
-  border: 2px solid var(--cor-borda);
+  gap: 0.6rem;
 }
-
-.padaria-painel-alerta {
-  border-color: var(--cor-perigo);
+.padaria-forno-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
-
-.padaria-painel-pronto {
-  border-color: var(--cor-verde);
-  background: var(--cor-verde-suave);
-}
-
-.padaria-painel-hora {
-  font-size: 2rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  color: var(--cor-primaria);
-}
-
-.padaria-painel-produto {
-  font-size: 1.4rem;
+.padaria-forno-produto {
+  font-size: 1.15rem;
   font-weight: 700;
-  color: var(--cor-texto);
 }
-
-.padaria-painel-quantidade {
-  font-size: 1.1rem;
+.padaria-forno-quantidade {
+  font-size: 0.9rem;
   color: var(--cor-texto-suave);
 }
+.padaria-forno-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+  color: #b45309;
+}
+.padaria-forno-selo.pronto {
+  background: color-mix(in srgb, #16a34a 18%, transparent);
+  color: #15803d;
+}
 
-.padaria-painel-contagem {
-  font-size: 3rem;
+.padaria-forno-tempo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.padaria-forno-tempo-valor {
+  font-size: 2.25rem;
   font-weight: 800;
-  line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  color: var(--cor-texto);
+  line-height: 1;
 }
-
-.padaria-painel-cartao .foto-produto-preencher {
-  max-width: 220px;
+.padaria-forno-cartao.pronto .padaria-forno-tempo-valor {
+  color: #15803d;
 }
-
-.padaria-painel-cartao .padaria-falta {
+.padaria-forno-tempo-rotulo {
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+.padaria-forno-tempo.sem-tempo {
+  color: var(--cor-texto-suave);
+  font-size: 0.95rem;
+}
+.padaria-forno-acoes {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+.padaria-forno-acoes .botao {
+  min-height: 48px;
+  padding: 0 1.5rem;
   font-size: 1rem;
 }
 
-.padaria-painel button {
-  min-height: 88px;
-  font-size: 1.4rem;
-  width: 100%;
+/* Próximas fornadas: linha compacta com horário em destaque */
+.padaria-proxima-cartao {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  min-width: 0;
+}
+.padaria-proxima-cartao.alerta {
+  border-color: #dc2626;
+}
+.padaria-proxima-hora {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--cor-primaria);
+  font-variant-numeric: tabular-nums;
+  min-width: 4.2rem;
+}
+.padaria-proxima-info {
+  flex: 1;
+  min-width: 0;
+}
+.padaria-proxima-info .padaria-forno-produto {
+  font-size: 1rem;
+}
+.padaria-proxima-cartao .padaria-falta {
+  margin: 4px 0 0;
 }
 
-/* ---------- Telas pequenas ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema='claro']) .padaria-forno-selo { color: #fcd34d; }
+  :root:not([data-tema='claro']) .padaria-forno-selo.pronto,
+  :root:not([data-tema='claro']) .padaria-forno-cartao.pronto .padaria-forno-tempo-valor { color: #4ade80; }
+}
+:root[data-tema='escuro'] .padaria-forno-selo { color: #fcd34d; }
+:root[data-tema='escuro'] .padaria-forno-selo.pronto,
+:root[data-tema='escuro'] .padaria-forno-cartao.pronto .padaria-forno-tempo-valor { color: #4ade80; }
 
+/* Celular: cartões em uma coluna, foto menor */
 @media (max-width: 720px) {
-  .padaria-grade-campos {
+  .padaria-painel-grade,
+  .padaria-painel-grade-proximas {
     grid-template-columns: 1fr;
   }
-
-  .padaria-cartao-dados {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .padaria-forno-cartao .foto-produto {
+    width: 72px !important;
+    height: 72px !important;
   }
-
-  .padaria-insumo {
-    grid-template-columns: 1fr;
-    align-items: stretch;
+  .padaria-forno-cabecalho {
+    flex-direction: column;
   }
-
-  .padaria-insumo-custo {
-    text-align: left;
+  .padaria-forno-tempo {
+    flex-wrap: wrap;
+    gap: 0 0.4rem;
   }
-
-  .padaria-kanban {
-    grid-template-columns: 1fr;
+  .padaria-forno-tempo-valor {
+    font-size: 1.5rem;
+    white-space: nowrap;
+  }
+  .padaria-relogio-hora {
+    font-size: 1.6rem;
+  }
+  .padaria-proxima-cartao {
+    flex-wrap: wrap;
   }
 }
