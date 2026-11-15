@@ -101,9 +101,11 @@ function Escolher-Porta {
 
 function Obter-IP {
     try {
-        $ip = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop |
-            Where-Object { $_.IPAddress -notmatch '^(127\.|169\.254\.)' -and $_.InterfaceAlias -notmatch 'vEthernet|Loopback|WSL' } |
-            Select-Object -First 1
+        # Prefere o IP da rede local (192.168, 10, 172.16-31); VPNs como Radmin e Tailscale ficam de fora.
+        $candidatos = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop |
+            Where-Object { $_.IPAddress -notmatch '^(127\.|169\.254\.)' -and $_.InterfaceAlias -notmatch 'vEthernet|Loopback|WSL|Radmin|Tailscale|ZeroTier|Hamachi|VPN' }
+        $ip = $candidatos | Where-Object { $_.IPAddress -match '^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)' } | Select-Object -First 1
+        if ($null -eq $ip) { $ip = $candidatos | Select-Object -First 1 }
         if ($null -ne $ip) { return $ip.IPAddress }
     } catch {
         # sem IP detectado: usa o texto generico abaixo
