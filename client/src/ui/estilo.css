@@ -26,7 +26,7 @@
   --raio-pequeno: 10px;
   --sombra: 0 4px 20px rgba(15, 23, 42, 0.06);
   --sombra-primaria: 0 6px 16px rgba(37, 99, 235, 0.28);
-  --largura-lateral: 280px;
+  --largura-lateral: 300px;
   --altura-barra-inferior: 64px;
   --altura-toque: 44px;
   --fonte: Inter, 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
@@ -67,7 +67,7 @@
   --raio-pequeno: 10px;
   --sombra: 0 4px 20px rgba(0, 0, 0, 0.35);
   --sombra-primaria: 0 6px 16px rgba(37, 99, 235, 0.35);
-  --largura-lateral: 280px;
+  --largura-lateral: 300px;
   --altura-barra-inferior: 64px;
   --altura-toque: 44px;
 }
@@ -101,7 +101,7 @@
     --raio-pequeno: 10px;
     --sombra: 0 4px 20px rgba(0, 0, 0, 0.35);
     --sombra-primaria: 0 6px 16px rgba(37, 99, 235, 0.35);
-    --largura-lateral: 280px;
+    --largura-lateral: 300px;
     --altura-barra-inferior: 64px;
     --altura-toque: 44px;
   }
