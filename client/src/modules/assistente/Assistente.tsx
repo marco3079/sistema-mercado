@@ -3,7 +3,8 @@ import type { FormEvent } from 'react';
 import { api } from '../../lib/api';
 import { useDados } from '../../lib/useDados';
 import { mensagemErro } from '../../lib/mercado';
-import { Aviso, Botao, Carregando, Pagina, Selo } from '../../ui';
+import { Aviso, Botao, Carregando, Pagina } from '../../ui';
+import { Icone } from '../../ui/icones';
 import type { CartaoResposta, FonteResposta, ItemHistorico, Mensagem, RespostaAssistente } from './tipos';
 
 // Assistente IA: tela de conversa. Responde por regras (sem chave) ou pela IA (com chave configurada).
@@ -74,90 +75,134 @@ export function Assistente() {
 
   const vazio = mensagens.length === 0;
 
+  const perguntasRapidas = exemplos.dados ?? [];
+
   return (
     <Pagina
       titulo="Assistente IA"
       acoes={
-        <Selo cor={fonte === 'ia' ? 'azul' : 'cinza'}>{fonte === 'ia' ? 'IA' : 'Regras'}</Selo>
+        <span className="assistente-fonte">
+          <Icone nome="robo" tamanho={18} />
+          {fonte === 'ia' ? 'Respondendo com IA' : 'Respondendo por regras'}
+        </span>
       }
     >
-      <section className="assistente-chat">
-        {historico.carregando && <Carregando />}
-        {historico.erro && <Aviso tipo="erro">{historico.erro}</Aviso>}
+      <div className="assistente-layout">
+        <section className="assistente-chat">
+          {historico.erro && <Aviso tipo="erro">{historico.erro}</Aviso>}
 
-        <div className="assistente-mensagens" role="log" aria-live="polite">
-          {vazio && !historico.carregando && (
-            <div className="assistente-boas-vindas">
-              <p>Pergunte sobre vendas, estoque, validade, fiado, compras, produção ou entregas. Exemplos:</p>
-              <div className="assistente-chips">
-                {(exemplos.dados ?? []).map((exemplo) => (
-                  <button
-                    key={exemplo}
-                    type="button"
-                    className="assistente-chip"
-                    disabled={pensando}
-                    onClick={() => void enviar(exemplo)}
-                  >
-                    {exemplo}
-                  </button>
-                ))}
+          <div className="assistente-mensagens" role="log" aria-live="polite">
+            {historico.carregando && <Carregando />}
+            {vazio && !historico.carregando && (
+              <div className="assistente-boas-vindas">
+                <span className="assistente-boas-vindas-icone">
+                  <Icone nome="robo" tamanho={36} />
+                </span>
+                <h2>Pergunte sobre o seu mercado</h2>
+                <p>Vendas, lucro, estoque, validade, fiado, compras, produção e entregas. Escolha uma pergunta ao lado ou escreva a sua.</p>
               </div>
+            )}
+
+            {mensagens.map((mensagem) => (
+              <Bolha key={mensagem.id} mensagem={mensagem} />
+            ))}
+
+            {pensando && (
+              <div className="assistente-linha">
+                <span className="assistente-avatar"><Icone nome="robo" tamanho={18} /></span>
+                <div className="assistente-bolha assistente-bolha-resposta assistente-pensando">
+                  <span /><span /><span />
+                </div>
+              </div>
+            )}
+            <div ref={fimRef} />
+          </div>
+
+          {sugestoes.length > 0 && !pensando && (
+            <div className="assistente-chips assistente-sugestoes">
+              {sugestoes.map((sugestao) => (
+                <button key={sugestao} type="button" className="assistente-chip" onClick={() => void enviar(sugestao)}>
+                  {sugestao}
+                </button>
+              ))}
             </div>
           )}
 
-          {mensagens.map((mensagem) => (
-            <Bolha key={mensagem.id} mensagem={mensagem} />
-          ))}
+          {erro && <Aviso tipo="erro">{erro}</Aviso>}
 
-          {pensando && (
-            <div className="assistente-linha">
-              <div className="assistente-bolha assistente-bolha-resposta assistente-pensando">pensando...</div>
-            </div>
-          )}
-          <div ref={fimRef} />
-        </div>
+          <form className="assistente-formulario" onSubmit={aoEnviar}>
+            <input
+              className="assistente-campo"
+              type="text"
+              value={texto}
+              maxLength={500}
+              disabled={pensando}
+              placeholder="Pergunte algo, por exemplo: quanto vendi hoje?"
+              aria-label="Sua pergunta"
+              onChange={(e) => setTexto(e.target.value)}
+            />
+            <Botao tipo="submit" desabilitado={pensando || texto.trim() === ''}>
+              <Icone nome="enviar" tamanho={18} />
+              Enviar
+            </Botao>
+          </form>
+        </section>
 
-        {sugestoes.length > 0 && !pensando && (
-          <div className="assistente-chips assistente-sugestoes">
-            {sugestoes.map((sugestao) => (
-              <button key={sugestao} type="button" className="assistente-chip" onClick={() => void enviar(sugestao)}>
-                {sugestao}
+        <aside className="assistente-lateral">
+          <h2>Perguntas rápidas</h2>
+          <div className="assistente-rapidas">
+            {perguntasRapidas.map((exemplo) => (
+              <button
+                key={exemplo}
+                type="button"
+                className="assistente-rapida"
+                disabled={pensando}
+                onClick={() => void enviar(exemplo)}
+              >
+                <Icone nome="chat" tamanho={16} />
+                <span>{exemplo}</span>
               </button>
             ))}
           </div>
-        )}
-
-        {erro && <Aviso tipo="erro">{erro}</Aviso>}
-
-        <form className="assistente-formulario" onSubmit={aoEnviar}>
-          <input
-            className="assistente-campo"
-            type="text"
-            value={texto}
-            maxLength={500}
-            disabled={pensando}
-            placeholder="Ex.: quanto vendi hoje?"
-            aria-label="Sua pergunta"
-            onChange={(e) => setTexto(e.target.value)}
-          />
-          <Botao tipo="submit" desabilitado={pensando || texto.trim() === ''}>
-            Enviar
-          </Botao>
-        </form>
-      </section>
+          <p className="assistente-dica">
+            {fonte === 'ia'
+              ? 'As respostas usam IA sobre os dados do sistema.'
+              : 'Sem chave de IA configurada, as respostas seguem regras sobre os dados do sistema. Configure em Configurações > Mercado > Assistente IA.'}
+          </p>
+        </aside>
+      </div>
     </Pagina>
   );
 }
 
+// Quando a resposta traz tabelas, o texto mostra só o resumo (a primeira frase);
+// as listas numeradas já aparecem nas tabelas, sem repetir.
+function resumoDoTexto(texto: string, temCartoes: boolean): string {
+  if (!temCartoes) return texto;
+  const linhas = texto.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const semListas = linhas.filter((l) => !/^\d+[.)]\s/.test(l) && !/^[-•]\s/.test(l) && !/:$/.test(l));
+  return (semListas[0] ?? linhas[0] ?? texto).trim();
+}
+
 function Bolha({ mensagem }: { mensagem: Mensagem }) {
   const usuario = mensagem.papel === 'usuario';
+  const cartoes = (mensagem.cartoes ?? []).filter((c) => c.linhas.length > 0);
   return (
     <div className={`assistente-linha${usuario ? ' assistente-linha-usuario' : ''}`}>
+      {!usuario && (
+        <span className="assistente-avatar">
+          <Icone nome="robo" tamanho={18} />
+        </span>
+      )}
       <div className={`assistente-bolha ${usuario ? 'assistente-bolha-usuario' : 'assistente-bolha-resposta'}`}>
-        <div className="assistente-texto">{mensagem.texto}</div>
-        {mensagem.cartoes?.map((cartao) => (
-          <MiniTabela key={cartao.titulo} cartao={cartao} />
-        ))}
+        <div className="assistente-texto">{usuario ? mensagem.texto : resumoDoTexto(mensagem.texto, cartoes.length > 0)}</div>
+        {cartoes.length > 0 && (
+          <div className="assistente-cartoes">
+            {cartoes.map((cartao) => (
+              <MiniTabela key={cartao.titulo} cartao={cartao} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

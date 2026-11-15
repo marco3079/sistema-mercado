@@ -209,10 +209,14 @@ export function Relatorios() {
   const abaixoDoCusto = (margem.dados ?? []).filter((m) => m.prejuizo).length;
 
   return (
-    <Pagina titulo="Relatórios">
-      <div className="relatorios-topo">
-        <Caixa rotulo="Todas as lojas" marcado={todas} aoMudar={setTodas} />
-      </div>
+    <Pagina
+      titulo="Relatórios"
+      acoes={
+        <div className="relatorios-topo">
+          <Caixa rotulo="Somar todas as lojas" marcado={todas} aoMudar={setTodas} />
+        </div>
+      }
+    >
 
       <Abas
         abas={[

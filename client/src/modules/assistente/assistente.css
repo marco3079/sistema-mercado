@@ -1,194 +1,309 @@
-/* Assistente IA: tela de conversa. Só variáveis de ui/estilo.css (funciona no tema escuro e no celular). */
+/* Assistente IA: conversa larga + coluna de perguntas rápidas. */
+
+.assistente-fonte {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.assistente-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1.25rem;
+  align-items: start;
+}
 
 .assistente-chat {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-width: 820px;
-  width: 100%;
+  min-width: 0;
+  height: calc(100vh - 190px);
+  min-height: 480px;
 }
 
-/* ---------- Mensagens ---------- */
-
 .assistente-mensagens {
+  flex: 1;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  min-height: 320px;
-  max-height: 62vh;
-  overflow-y: auto;
-  padding: 0.9rem;
-  background: var(--cor-fundo);
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
+  box-shadow: var(--sombra);
 }
 
 .assistente-boas-vindas {
+  margin: auto;
+  max-width: 460px;
+  text-align: center;
   color: var(--cor-texto-suave);
-  font-size: 0.95rem;
 }
-
+.assistente-boas-vindas h2 {
+  margin: 0.75rem 0 0.35rem;
+  color: var(--cor-texto);
+  font-size: 1.25rem;
+}
 .assistente-boas-vindas p {
-  margin: 0 0 0.6rem;
+  margin: 0;
+}
+.assistente-boas-vindas-icone {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--cor-primaria) 12%, transparent);
+  color: var(--cor-primaria);
 }
 
 .assistente-linha {
   display: flex;
-  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 0.6rem;
 }
-
 .assistente-linha-usuario {
   justify-content: flex-end;
 }
+.assistente-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--cor-primaria) 12%, transparent);
+  color: var(--cor-primaria);
+}
 
 .assistente-bolha {
-  max-width: min(88%, 620px);
-  padding: 0.6rem 0.8rem;
-  border-radius: 14px;
-  word-break: break-word;
+  max-width: min(760px, 85%);
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  line-height: 1.5;
 }
-
 .assistente-bolha-usuario {
   background: var(--cor-primaria);
-  color: var(--cor-sobre-primaria);
+  color: #fff;
   border-bottom-right-radius: 4px;
 }
-
 .assistente-bolha-resposta {
-  background: var(--cor-superficie);
-  color: var(--cor-texto);
+  background: color-mix(in srgb, var(--cor-primaria) 5%, var(--cor-superficie));
   border: 1px solid var(--cor-borda);
-  border-bottom-left-radius: 4px;
+  border-top-left-radius: 4px;
 }
-
 .assistente-texto {
   white-space: pre-line;
-  line-height: 1.45;
 }
 
-.assistente-pensando {
-  color: var(--cor-texto-suave);
-  font-style: italic;
+/* Tabelas da resposta lado a lado */
+.assistente-cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
 }
-
-/* ---------- Cartões (mini-tabelas) ---------- */
-
 .assistente-cartao {
-  margin-top: 0.6rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  padding: 0.6rem 0.75rem;
+  min-width: 0;
 }
-
 .assistente-cartao-titulo {
-  margin: 0 0 0.3rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--cor-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
-
 .assistente-mini {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
-
 .assistente-mini th,
 .assistente-mini td {
-  padding: 0.25rem 0.3rem;
+  padding: 0.35rem 0;
   border-bottom: 1px solid var(--cor-borda);
-  text-align: left;
-  vertical-align: top;
 }
-
+.assistente-mini tr:last-child th,
+.assistente-mini tr:last-child td {
+  border-bottom: 0;
+}
 .assistente-mini th {
+  text-align: left;
   font-weight: 500;
-  color: var(--cor-texto-suave);
+  padding-right: 0.75rem;
 }
-
 .assistente-mini td {
   text-align: right;
+  font-weight: 700;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Chips de exemplos e sugestões ---------- */
+/* "pensando": três pontinhos */
+.assistente-pensando {
+  display: inline-flex;
+  gap: 5px;
+  padding: 0.9rem 1rem;
+}
+.assistente-pensando span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cor-texto-suave);
+  animation: assistente-ponto 1s infinite ease-in-out;
+}
+.assistente-pensando span:nth-child(2) { animation-delay: 0.15s; }
+.assistente-pensando span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes assistente-ponto {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
 
 .assistente-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
-
-.assistente-sugestoes {
-  margin-top: -0.2rem;
-}
-
 .assistente-chip {
-  padding: 0.4rem 0.7rem;
-  font: inherit;
-  font-size: 0.88rem;
-  color: var(--cor-primaria);
-  background: var(--cor-primaria-suave);
-  border: 1px solid var(--cor-borda);
+  padding: 0.4rem 0.85rem;
   border-radius: 999px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-primaria);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
 }
-
 .assistente-chip:hover:not(:disabled) {
   border-color: var(--cor-primaria);
 }
-
 .assistente-chip:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-/* ---------- Campo de pergunta ---------- */
-
 .assistente-formulario {
   display: flex;
-  gap: 0.5rem;
-  align-items: stretch;
-}
-
-.assistente-campo {
-  flex: 1;
-  min-width: 0;
-  padding: 0.7rem 0.9rem;
-  font: inherit;
-  color: var(--cor-texto);
+  gap: 0.6rem;
+  padding: 0.5rem;
   background: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
+  box-shadow: var(--sombra);
 }
-
-.assistente-campo:focus {
-  outline: 2px solid var(--cor-primaria);
-  outline-offset: 1px;
+.assistente-formulario .botao {
+  gap: 0.4rem;
 }
-
+.assistente-campo {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cor-texto);
+  font: inherit;
+  padding: 0 0.6rem;
+  outline: none;
+}
 .assistente-campo:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
-/* ---------- Celular ---------- */
+/* Coluna da direita */
+.assistente-lateral {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+}
+.assistente-lateral h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.assistente-rapidas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.assistente-rapida {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.6rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+.assistente-rapida svg {
+  margin-top: 2px;
+  color: var(--cor-primaria);
+  flex-shrink: 0;
+}
+.assistente-rapida:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cor-primaria) 8%, transparent);
+}
+.assistente-rapida:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.assistente-dica {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cor-borda);
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave);
+}
 
-@media (max-width: 600px) {
-  .assistente-mensagens {
-    min-height: 240px;
-    max-height: 58vh;
-    padding: 0.7rem;
+@media (max-width: 999px) {
+  .assistente-layout {
+    grid-template-columns: 1fr;
   }
-
+  .assistente-lateral {
+    position: static;
+    order: -1;
+  }
+  .assistente-rapidas {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .assistente-rapida {
+    white-space: nowrap;
+    border: 1px solid var(--cor-borda);
+  }
+  .assistente-dica {
+    display: none;
+  }
+  .assistente-chat {
+    height: calc(100vh - 260px);
+  }
   .assistente-bolha {
-    max-width: 96%;
-  }
-
-  .assistente-formulario {
-    flex-wrap: wrap;
-  }
-
-  .assistente-formulario .botao {
-    width: 100%;
+    max-width: 92%;
   }
 }

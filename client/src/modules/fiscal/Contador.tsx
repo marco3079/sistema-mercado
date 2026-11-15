@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, baixarArquivo } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
-import { Aviso, Botao, Carregando, Cartao, Pagina, formatarDataHora, formatarMoeda } from '../../ui';
+import { Aviso, Botao, Carregando, Pagina, Selecao, Selo, Tabela, formatarDataHora, formatarMoeda } from '../../ui';
+import type { ColunaTabela } from '../../ui';
 import { Icone } from '../../ui/icones';
 import type { NomeIcone } from '../../ui/icones';
-import '../../ui/foto-produto.css';
 import type { ResultadoEnvioDTO, ResumoMesDTO } from './tipos';
 
 const MESES_NA_LISTA = 12;
+const NOMES_MESES = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
 
 // Mês (AAAA-MM) deslocado `n` meses em relação a hoje.
 function mesDeslocado(n: number): string {
@@ -19,9 +23,11 @@ function mesDeslocado(n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function rotuloMes(mes: string): string {
+// "novembro de 2026" (com a primeira letra maiúscula).
+function nomeDoMes(mes: string): string {
   const [ano, numero] = mes.split('-');
-  return `${numero}/${ano}`;
+  const nome = NOMES_MESES[Number(numero) - 1] ?? numero;
+  return `${nome.charAt(0).toUpperCase()}${nome.slice(1)} de ${ano}`;
 }
 
 // Cartão de número do topo (classes .resumo da casca).
@@ -30,11 +36,13 @@ function Indicador({
   cor,
   valor,
   rotulo,
+  pequeno,
 }: {
   icone: NomeIcone;
   cor: 'azul' | 'verde' | 'laranja' | 'roxo' | 'vermelho';
   valor: string;
   rotulo: string;
+  pequeno?: boolean;
 }) {
   return (
     <div className="resumo-item">
@@ -42,74 +50,66 @@ function Indicador({
         <Icone nome={icone} tamanho={24} />
       </span>
       <div>
-        <span className="resumo-valor">{valor}</span>
+        <span className={pequeno ? 'resumo-valor fiscal-resumo-texto' : 'resumo-valor'}>{valor}</span>
         <span className="resumo-rotulo">{rotulo}</span>
       </div>
     </div>
   );
 }
 
-function enviadoEmTexto(resumo: ResumoMesDTO | null): string {
-  if (!resumo) return '—';
-  return resumo.enviadoEm ? formatarDataHora(resumo.enviadoEm) : 'Ainda não enviado';
+function SeloEnvio({ resumo }: { resumo: ResumoMesDTO }) {
+  if (resumo.enviadoEm) return <Selo cor="verde">Enviado em {formatarDataHora(resumo.enviadoEm)}</Selo>;
+  if (resumo.notas === 0) return <Selo cor="cinza">Sem notas</Selo>;
+  return <Selo cor="amarelo">Não enviado</Selo>;
 }
 
-// Cartão de um mês (cada um busca o próprio resumo).
-function CartaoMes({ mes }: { mes: string }) {
-  const resumo = useDados<ResumoMesDTO>(`/contador/arquivos?mes=${mes}`);
-  const dados = resumo.dados;
-  return (
-    <li className="fiscal-mes">
-      <span className="fiscal-mes-nome">{rotuloMes(mes)}</span>
-      {resumo.carregando && !dados && <span className="fiscal-mes-aviso">Carregando...</span>}
-      {resumo.erro && <span className="fiscal-mes-aviso">{resumo.erro}</span>}
-      {dados && (
-        <dl className="fiscal-mes-dados">
-          <div>
-            <dt>Notas</dt>
-            <dd className="numero">{dados.notas}</dd>
-          </div>
-          <div>
-            <dt>Valor</dt>
-            <dd className="numero">{formatarMoeda(dados.valor)}</dd>
-          </div>
-          <div>
-            <dt>Canceladas</dt>
-            <dd className="numero">{dados.canceladas}</dd>
-          </div>
-          <div className="fiscal-mes-envio">
-            <dt>Envio ao contador</dt>
-            <dd>{enviadoEmTexto(dados)}</dd>
-          </div>
-        </dl>
-      )}
-    </li>
-  );
+interface LinhaMes extends ResumoMesDTO {
+  chave: string; // AAAA-MM
 }
 
 export function Contador() {
   const { usuario } = useAuth();
   const eGestor = usuario?.perfil === 'GESTOR';
 
-  const [mes, setMes] = useState(mesDeslocado(0));
+  const meses = Array.from({ length: MESES_NA_LISTA }, (_, i) => mesDeslocado(-i));
+  const [mes, setMes] = useState(meses[0]);
   const resumo = useDados<ResumoMesDTO>(`/contador/arquivos?mes=${mes}`);
+  const [linhas, setLinhas] = useState<LinhaMes[] | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [baixando, setBaixando] = useState(false);
+  const [baixando, setBaixando] = useState<string | null>(null);
+  const [versao, setVersao] = useState(0);
 
-  const meses = Array.from({ length: MESES_NA_LISTA }, (_, i) => mesDeslocado(-i));
+  // Resumo dos últimos 12 meses para a tabela (uma consulta por mês, em paralelo).
+  useEffect(() => {
+    let ativo = true;
+    Promise.all(
+      meses.map((m) =>
+        api
+          .get<ResumoMesDTO>(`/contador/arquivos?mes=${m}`)
+          .then((r) => ({ ...r, chave: m }))
+          .catch(() => null),
+      ),
+    ).then((lista) => {
+      if (ativo) setLinhas(lista.filter((l): l is LinhaMes => l !== null));
+    });
+    return () => {
+      ativo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versao]);
 
-  async function baixarZip() {
+  async function baixarZip(m: string) {
     setErro(null);
     setAviso(null);
-    setBaixando(true);
+    setBaixando(m);
     try {
-      await baixarArquivo(`/contador/arquivos/${mes}.zip`, `notas-${mes}.zip`);
+      await baixarArquivo(`/contador/arquivos/${m}.zip`, `notas-${m}.zip`);
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
-      setBaixando(false);
+      setBaixando(null);
     }
   }
 
@@ -119,10 +119,10 @@ export function Contador() {
     setEnviando(true);
     try {
       const resposta = await api.post<ResultadoEnvioDTO>('/contador/enviar', { mes });
-      if (resposta.enviado) setAviso(resposta.mensagem);
-      else if (resposta.simulado) setAviso(resposta.mensagem);
+      if (resposta.enviado || resposta.simulado) setAviso(resposta.mensagem);
       else setErro(resposta.mensagem);
       resumo.recarregar();
+      setVersao((v) => v + 1);
     } catch (e) {
       setErro(mensagemErro(e));
     } finally {
@@ -132,58 +132,107 @@ export function Contador() {
 
   const dados = resumo.dados;
 
-  return (
-    <Pagina titulo="Área do contador">
-      <div className="barra-ferramentas">
-        <div className="filtros">
-          <label className="campo">
-            <span className="campo-rotulo">Mês</span>
-            <input
-              className="campo-controle"
-              type="month"
-              value={mes}
-              onChange={(e) => {
-                if (e.target.value) setMes(e.target.value);
-              }}
-            />
-          </label>
-        </div>
-      </div>
+  const colunas: ColunaTabela<LinhaMes>[] = [
+    {
+      titulo: 'Mês',
+      celula: (l) => (
+        <span className="fiscal-mes-celula">
+          <strong>{nomeDoMes(l.chave)}</strong>
+          {l.chave === mes && <Selo cor="azul">Selecionado</Selo>}
+        </span>
+      ),
+    },
+    { titulo: 'Notas', alinhar: 'direita', celula: (l) => <span className="numero">{l.notas}</span> },
+    { titulo: 'Valor', alinhar: 'direita', celula: (l) => <span className="numero">{formatarMoeda(l.valor)}</span> },
+    {
+      titulo: 'Canceladas',
+      alinhar: 'direita',
+      celula: (l) => <span className={l.canceladas > 0 ? 'numero fiscal-texto-vermelho' : 'numero'}>{l.canceladas}</span>,
+    },
+    { titulo: 'Envio ao contador', celula: (l) => <SeloEnvio resumo={l} /> },
+    {
+      titulo: 'Ações',
+      acoes: true,
+      celula: (l) => (
+        <span className="acoes-linha">
+          <Botao
+            variante="texto"
+            desabilitado={l.notas === 0 || baixando === l.chave}
+            aoClicar={() => void baixarZip(l.chave)}
+          >
+            {baixando === l.chave ? 'Baixando...' : 'Baixar .zip'}
+          </Botao>
+          <Botao variante="texto" desabilitado={l.chave === mes} aoClicar={() => setMes(l.chave)}>
+            Ver
+          </Botao>
+        </span>
+      ),
+    },
+  ];
 
+  return (
+    <Pagina
+      titulo="Área do contador"
+      acoes={
+        <div className="fiscal-contador-acoes">
+          <div className="fiscal-seletor-mes">
+            <Selecao
+              rotulo="Mês"
+              valor={mes}
+              aoMudar={(v) => setMes(v)}
+              opcoes={meses.map((m) => ({ valor: m, rotulo: nomeDoMes(m) }))}
+            />
+          </div>
+          <Botao
+            variante="secundario"
+            desabilitado={baixando !== null || (dados?.notas ?? 0) === 0}
+            aoClicar={() => void baixarZip(mes)}
+          >
+            <Icone nome="documento" tamanho={18} />
+            {baixando === mes ? 'Baixando...' : 'Baixar XML (.zip)'}
+          </Botao>
+          {eGestor && (
+            <Botao desabilitado={enviando} aoClicar={() => void enviarAviso()}>
+              <Icone nome="enviar" tamanho={18} />
+              {enviando ? 'Enviando...' : 'Enviar ao contador'}
+            </Botao>
+          )}
+        </div>
+      }
+    >
       {aviso && <Aviso tipo="sucesso">{aviso}</Aviso>}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {resumo.erro && <Aviso tipo="erro">{resumo.erro}</Aviso>}
       {resumo.carregando && !dados && <Carregando />}
 
       {dados && (
-        <>
-          <div className="resumo">
-            <Indicador icone="documento" cor="azul" valor={String(dados.notas)} rotulo="Notas do mês" />
-            <Indicador icone="dinheiro" cor="verde" valor={formatarMoeda(dados.valor)} rotulo="Valor autorizado" />
-            <Indicador icone="fechar" cor="vermelho" valor={String(dados.canceladas)} rotulo="Canceladas" />
-            <Indicador icone="enviar" cor="roxo" valor={enviadoEmTexto(dados)} rotulo="Último envio ao contador" />
-          </div>
-
-          <div className="pagina-acoes fiscal-acoes">
-            <Botao variante="secundario" desabilitado={baixando} aoClicar={() => void baixarZip()}>
-              {baixando ? 'Baixando...' : 'Baixar XML do mês (.zip)'}
-            </Botao>
-            {eGestor && (
-              <Botao desabilitado={enviando} aoClicar={() => void enviarAviso()}>
-                {enviando ? 'Enviando...' : 'Enviar aviso ao contador'}
-              </Botao>
-            )}
-          </div>
-        </>
+        <div className="resumo">
+          <Indicador icone="documento" cor="azul" valor={String(dados.notas)} rotulo={`Notas de ${nomeDoMes(mes).toLowerCase()}`} />
+          <Indicador icone="dinheiro" cor="verde" valor={formatarMoeda(dados.valor)} rotulo="Valor autorizado" />
+          <Indicador icone="fechar" cor="vermelho" valor={String(dados.canceladas)} rotulo="Canceladas" />
+          <Indicador
+            icone="enviar"
+            cor="roxo"
+            pequeno
+            valor={dados.enviadoEm ? formatarDataHora(dados.enviadoEm) : 'Não enviado'}
+            rotulo="Envio ao contador"
+          />
+        </div>
       )}
 
-      <Cartao titulo="Últimos meses">
-        <ul className="fiscal-meses">
-          {meses.map((m) => (
-            <CartaoMes key={m} mes={m} />
-          ))}
-        </ul>
-      </Cartao>
+      <section className="fiscal-contador-meses">
+        <h2 className="fiscal-contador-titulo">Últimos 12 meses</h2>
+        {!linhas && <Carregando />}
+        {linhas && (
+          <Tabela<LinhaMes>
+            colunas={colunas}
+            dados={linhas}
+            chave={(l) => l.chave}
+            porPagina={12}
+            idVisao="contador-meses"
+          />
+        )}
+      </section>
     </Pagina>
   );
 }
