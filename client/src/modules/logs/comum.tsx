@@ -64,10 +64,13 @@ const ROTULO_TIPO: Record<string, { rotulo: string; cor: CorSelo }> = {
 
 const ROTULO_PERFIL: Record<string, { rotulo: string; cor: CorSelo }> = {
   GESTOR: { rotulo: 'Gestor', cor: 'azul' },
-  GARCOM: { rotulo: 'Garçom', cor: 'verde' },
-  COZINHA: { rotulo: 'Cozinha', cor: 'amarelo' },
-  LIMPEZA: { rotulo: 'Limpeza', cor: 'cinza' },
-  RECEPCAO: { rotulo: 'Recepção', cor: 'cinza' },
+  OPERADOR: { rotulo: 'Operador de caixa', cor: 'verde' },
+  ESTOQUISTA: { rotulo: 'Estoquista', cor: 'amarelo' },
+  PADEIRO: { rotulo: 'Padeiro', cor: 'amarelo' },
+  COMPRADOR: { rotulo: 'Comprador', cor: 'azul' },
+  MOTORISTA: { rotulo: 'Motorista', cor: 'cinza' },
+  VENDEDOR: { rotulo: 'Vendedor', cor: 'verde' },
+  CONTADOR: { rotulo: 'Contador', cor: 'cinza' },
 };
 
 export const TIPOS_LOG: { valor: string; rotulo: string }[] = Object.keys(ROTULO_TIPO).map((t) => ({
@@ -84,9 +87,12 @@ export function rotuloPerfil(perfil: string | null): string {
 
 // Rótulos com acento para os módulos conhecidos. A chave é comparada sem maiúsculas e sem acentos.
 const ROTULO_MODULO: Record<string, string> = {
-  pedidos: 'Pedidos',
-  mesas: 'Mesas',
-  cardapio: 'Cardápio',
+  pdv: 'PDV',
+  vendas: 'Vendas',
+  produtos: 'Produtos',
+  estoque: 'Estoque',
+  compras: 'Compras',
+  entregas: 'Entregas',
   usuarios: 'Equipe',
   atividades: 'Atividades',
   configuracoes: 'Configurações',

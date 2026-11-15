@@ -62,7 +62,7 @@ async function lojaPadrao(): Promise<number> {
   return loja.id;
 }
 
-// Loja do cardápio público: ?loja=ID ou a primeira loja ativa.
+// Loja da página pública de pedidos: ?loja=ID ou a primeira loja ativa.
 async function lojaDoParametro(req: Request): Promise<number> {
   const pedida = numeroQuery(req.query.loja);
   if (pedida === undefined) return lojaPadrao();

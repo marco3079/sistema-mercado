@@ -6,7 +6,7 @@ import { useDados } from '../../lib/useDados';
 import { Aviso, Botao, Campo, Cartao, Carregando } from '../../ui';
 import { mensagemErro } from '../cadastros/tipos';
 
-// Aba Permissões de Configurações: senha curta do gestor e o que o garçom pode fazer sem ele.
+// Aba Permissões de Configurações: senha curta do gestor e o que a equipe pode fazer sem ele.
 export function Permissoes() {
   const { dados, carregando, erro, recarregar } = useDados<PermissoesDTO>('/permissoes');
   return (
@@ -22,7 +22,7 @@ function Conteudo({ dados, recarregar }: { dados: PermissoesDTO; recarregar: () 
   return (
     <>
       <SenhaDoGestor senhaDefinida={dados.senhaDefinida} recarregar={recarregar} />
-      <RegrasDoGarcom regras={dados.regras} senhaDefinida={dados.senhaDefinida} recarregar={recarregar} />
+      <RegrasDaEquipe regras={dados.regras} senhaDefinida={dados.senhaDefinida} recarregar={recarregar} />
     </>
   );
 }
@@ -92,7 +92,7 @@ function SenhaDoGestor({ senhaDefinida, recarregar }: { senhaDefinida: boolean; 
   );
 }
 
-function RegrasDoGarcom({
+function RegrasDaEquipe({
   regras,
   senhaDefinida,
   recarregar,
@@ -122,9 +122,9 @@ function RegrasDoGarcom({
   }
 
   return (
-    <Cartao titulo="O que o garçom pode fazer">
+    <Cartao titulo="O que a equipe pode fazer">
       <p className="permissoes-texto-suave">
-        Cada ação pode ser livre para o garçom, pedir a senha do gestor ou ser só do gestor. O gestor sempre pode, sem senha.
+        Cada ação pode ser livre para a equipe (operador de caixa, estoquista...), pedir a senha do gestor ou ser só do gestor. O gestor sempre pode, sem senha.
       </p>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {sucesso && <Aviso tipo="sucesso">{sucesso}</Aviso>}

@@ -3,7 +3,7 @@
 
 export type TipoSom = 'novoPedido' | 'pronto' | 'chamado' | 'atraso';
 
-const CHAVE_SOM = 'sistema-restaurante-som';
+const CHAVE_SOM = 'mercado.som';
 
 let contexto: AudioContext | null = null;
 
@@ -86,7 +86,7 @@ function reproduzir(ctx: AudioContext, tipo: TipoSom): void {
 }
 
 export interface OpcoesTocar {
-  // Toca mesmo com a preferência de som desligada (ex.: chamado de mesa para o garçom).
+  // Toca mesmo com a preferência de som desligada (ex.: aviso de pedido novo).
   sempre?: boolean;
 }
 

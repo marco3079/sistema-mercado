@@ -157,7 +157,7 @@ export function Email({
         </div>
         <p className="config-ajuda-campo">
           O endereço do site é usado nos links dos e-mails, por exemplo
-          https://restaurante.exemplo.com.br
+          https://mercado.exemplo.com.br
         </p>
         <Caixa
           rotulo="Conexão segura (TLS direto, porta 465)"

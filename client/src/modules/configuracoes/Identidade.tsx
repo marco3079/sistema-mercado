@@ -88,8 +88,8 @@ function PreviaIdentidade({
             <strong className="config-previa-nome-lateral">{nomeExibido}</strong>
           </div>
           <span className="config-previa-item config-previa-item-ativo">Início</span>
-          <span className="config-previa-item">Pedidos</span>
-          <span className="config-previa-item">Cardápio</span>
+          <span className="config-previa-item">PDV</span>
+          <span className="config-previa-item">Produtos</span>
         </div>
       </div>
 

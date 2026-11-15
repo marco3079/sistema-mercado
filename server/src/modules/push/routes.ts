@@ -88,7 +88,7 @@ router.post(
   '/push/teste',
   asyncHandler(async (req, res) => {
     const enviadas = await notificar([req.usuario.id], {
-      titulo: 'Sistema de Restaurante',
+      titulo: 'Sistema de Mercado',
       corpo: 'Notificações ligadas neste aparelho.',
       url: '/',
       marca: 'teste-push',

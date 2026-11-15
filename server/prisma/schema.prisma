@@ -55,6 +55,9 @@ enum TipoMovimentoEstoque {
   TRANSFERENCIA_SAIDA
   TRANSFERENCIA_ENTRADA
   INVENTARIO // diferença apurada no inventário
+  REMESSA_TERCEIRO // saiu do estoque próprio para a posse de um terceiro (negativa)
+  RETORNO_TERCEIRO // voltou do terceiro para o estoque próprio (positiva)
+  BAIXA_TERCEIRO // consumido/vendido/perdido no terceiro (só registro; o estoque próprio já tinha saído)
 }
 
 enum StatusInventario {
@@ -222,9 +225,14 @@ model Loja {
   tipo     TipoLoja @default(LOJA)
   cnpj     String?
   telefone String?
-  endereco String?
+  cep      String?
+  endereco String? // logradouro
+  numero   String?
+  complemento String?
+  bairro   String?
   cidade   String?
   uf       String?
+  horario  String? // ex.: "Seg a sáb 7h–21h, dom 7h–13h"
   latitude  Decimal? @db.Decimal(10, 7)
   longitude Decimal? @db.Decimal(10, 7)
   ativa    Boolean  @default(true)
@@ -246,6 +254,8 @@ model Loja {
   rotas           Rota[]
   transfSaida     Transferencia[] @relation("TransferenciaOrigem")
   transfEntrada   Transferencia[] @relation("TransferenciaDestino")
+  remessasTerceiro RemessaTerceiro[]
+  estoqueTerceiros EstoqueTerceiro[]
 }
 
 // ---------- Pessoas ----------
@@ -347,6 +357,8 @@ model Produto {
   transferenciaItens TransferenciaItem[]
   etiquetas      EtiquetaPendente[]
   historicoPrecos HistoricoPreco[]
+  remessaTerceiroItens RemessaTerceiroItem[]
+  estoqueTerceiros EstoqueTerceiro[]
 
   @@index([nome])
   @@index([categoriaId])
@@ -1085,6 +1097,96 @@ model TransferenciaItem {
   produto            Produto       @relation(fields: [produtoId], references: [id])
   quantidade         Decimal       @db.Decimal(12, 3)
   quantidadeRecebida Decimal?      @db.Decimal(12, 3)
+}
+
+// ---------- Estoque em posse de terceiros ----------
+// Mercadoria que é da empresa mas está com outra pessoa/empresa: consignação em cliente, comodato,
+// conserto, demonstração, armazém de terceiro (operador logístico), feira/evento.
+// A remessa tira do estoque próprio (REMESSA_TERCEIRO) e soma em EstoqueTerceiro; o retorno faz o contrário.
+// A baixa (vendido/consumido/perdido no terceiro) só tira de EstoqueTerceiro e pode gerar cobrança.
+
+enum TipoTerceiro {
+  CONSIGNACAO // deixado em consignação em cliente/revenda
+  COMODATO // emprestado (ex.: freezer, expositor, botijão)
+  CONSERTO // equipamento/mercadoria em conserto
+  DEMONSTRACAO // amostra / demonstração
+  ARMAZEM // armazém geral / operador logístico
+  EVENTO // feira, evento, ponto temporário
+  OUTRO
+}
+
+enum StatusRemessaTerceiro {
+  ABERTA // com saldo no terceiro
+  PARCIAL // parte devolvida/baixada
+  ENCERRADA // tudo devolvido ou baixado
+  CANCELADA
+}
+
+model Terceiro {
+  id          Int      @id @default(autoincrement())
+  nome        String
+  documento   String? // CPF/CNPJ
+  telefone    String?
+  email       String?
+  contato     String?
+  endereco    String?
+  cidade      String?
+  uf          String?
+  clienteId    Int? // se o terceiro também é cliente cadastrado
+  fornecedorId Int? // ou fornecedor
+  observacoes String?
+  ativo       Boolean  @default(true)
+  criadoEm    DateTime @default(now())
+  remessas    RemessaTerceiro[]
+  estoques    EstoqueTerceiro[]
+}
+
+model RemessaTerceiro {
+  id              Int                   @id @default(autoincrement())
+  numero          Int                   @default(autoincrement())
+  terceiroId      Int
+  terceiro        Terceiro              @relation(fields: [terceiroId], references: [id])
+  lojaId          Int // loja de onde saiu (e para onde volta)
+  loja            Loja                  @relation(fields: [lojaId], references: [id])
+  tipo            TipoTerceiro
+  status          StatusRemessaTerceiro @default(ABERTA)
+  documento       String? // nº da nota de remessa / contrato
+  previsaoRetorno DateTime?
+  observacoes     String?
+  usuarioId       Int?
+  criadoEm        DateTime              @default(now())
+  encerradaEm     DateTime?
+  itens           RemessaTerceiroItem[]
+
+  @@index([status])
+  @@index([terceiroId])
+}
+
+model RemessaTerceiroItem {
+  id                 Int             @id @default(autoincrement())
+  remessaId          Int
+  remessa            RemessaTerceiro @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  produtoId          Int
+  produto            Produto         @relation(fields: [produtoId], references: [id])
+  quantidade         Decimal         @db.Decimal(12, 3) // enviada
+  quantidadeRetornada Decimal        @default(0) @db.Decimal(12, 3)
+  quantidadeBaixada  Decimal         @default(0) @db.Decimal(12, 3) // vendida/consumida/perdida no terceiro
+  custoUnitario      Decimal         @db.Decimal(12, 4) // custo no envio (valor em posse de terceiros)
+  precoCobranca      Decimal?        @db.Decimal(12, 2) // preço para cobrar o que for baixado (consignação)
+}
+
+// Saldo atual de cada produto em cada terceiro (por loja de origem).
+model EstoqueTerceiro {
+  id         Int      @id @default(autoincrement())
+  terceiroId Int
+  terceiro   Terceiro @relation(fields: [terceiroId], references: [id], onDelete: Cascade)
+  produtoId  Int
+  produto    Produto  @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  lojaId     Int
+  loja       Loja     @relation(fields: [lojaId], references: [id])
+  quantidade Decimal  @default(0) @db.Decimal(12, 3)
+
+  @@unique([terceiroId, produtoId, lojaId])
 }
 
 // ---------- Assistente IA ----------

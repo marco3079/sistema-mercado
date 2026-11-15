@@ -13,7 +13,7 @@ import type { EntregaVenda } from './tipos';
 import { COR_STATUS_ENTREGA, ROTULO_STATUS_ENTREGA, quantidadeCurta } from './tipos';
 import './comercial.css';
 
-// Delivery (gestor e operador): pedidos do dia do cardápio online e do iFood Mercado (simulado).
+// Delivery (gestor e operador): pedidos do dia da loja online e do iFood Mercado (simulado).
 
 const ROTULO_ORIGEM: Record<string, string> = {
   DELIVERY: 'Delivery',

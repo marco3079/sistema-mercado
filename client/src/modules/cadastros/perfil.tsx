@@ -41,10 +41,13 @@ interface PerfilCompletoDTO {
 
 const PAPEIS: Record<string, string> = {
   GESTOR: 'Gestor',
-  GARCOM: 'Garçom',
-  COZINHA: 'Cozinha',
-  LIMPEZA: 'Limpeza',
-  RECEPCAO: 'Recepção',
+  OPERADOR: 'Operador de caixa',
+  ESTOQUISTA: 'Estoquista',
+  PADEIRO: 'Padeiro',
+  COMPRADOR: 'Comprador',
+  MOTORISTA: 'Motorista',
+  VENDEDOR: 'Vendedor',
+  CONTADOR: 'Contador',
 };
 
 const ICONE_ATIVIDADE: Record<string, NomeIcone> = {

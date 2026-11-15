@@ -45,7 +45,7 @@ export function gerarPixCopiaECola(dados: {
     campo('53', '986') +
     campo('54', dados.valor.toFixed(2)) +
     campo('58', 'BR') +
-    campo('59', simples(dados.nome, 25) || 'RESTAURANTE') +
+    campo('59', simples(dados.nome, 25) || 'MERCADO') +
     campo('60', simples(dados.cidade, 15) || 'BRASIL') +
     campo('62', campo('05', identificador)) +
     '6304';

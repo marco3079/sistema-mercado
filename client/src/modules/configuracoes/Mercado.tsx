@@ -1,8 +1,10 @@
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../../lib/api';
 import { lerNumero, mensagemErro } from '../../lib/mercado';
-import { Aviso, Botao, Campo, Caixa, Cartao, Carregando, Grade, Selecao } from '../../ui';
+import { Aviso, Botao, Campo, Caixa, Carregando, Selecao } from '../../ui';
 import '../produtos/etiquetas.css';
 
 // Ajustes do mercado: GET/PUT /configuracoes/mercado. Os tokens nunca voltam; o servidor só diz se estão definidos.
@@ -128,6 +130,19 @@ const ATALHOS_ETIQUETA = [
 ];
 
 // Texto do banco (ou null) para o campo do formulário.
+const SECOES: { id: string; titulo: string; icone: NomeIcone }[] = [
+  { id: 'pix', titulo: 'Pix', icone: 'dinheiro' },
+  { id: 'precos', titulo: 'Preços', icone: 'porcentagem' },
+  { id: 'balanca', titulo: 'Balança', icone: 'balanca' },
+  { id: 'impressora', titulo: 'Impressora de etiquetas', icone: 'etiqueta' },
+  { id: 'fiado', titulo: 'Fiado', icone: 'usuarios' },
+  { id: 'fiscal', titulo: 'Nota fiscal', icone: 'documento' },
+  { id: 'contador', titulo: 'Contador', icone: 'email' },
+  { id: 'delivery', titulo: 'Delivery e WhatsApp', icone: 'caminhao' },
+  { id: 'integracoes', titulo: 'Integrações', icone: 'raio' },
+  { id: 'ia', titulo: 'Assistente IA', icone: 'robo' },
+];
+
 function texto(valor: string | null | undefined): string {
   return valor ?? '';
 }
@@ -238,6 +253,16 @@ function corpoDe(f: Formulario) {
 }
 
 export function Mercado() {
+  const [secao, setSecao] = useState<string>(() => {
+    const pedida = new URLSearchParams(window.location.search).get('secao');
+    return SECOES.some((s) => s.id === pedida) ? (pedida as string) : 'pix';
+  });
+  function escolherSecao(id: string) {
+    setSecao(id);
+    const url = new URL(window.location.href);
+    url.searchParams.set('secao', id);
+    window.history.replaceState(null, '', url.toString());
+  }
   const [dto, setDto] = useState<MercadoDTO | null>(null);
   const [form, setForm] = useState<Formulario | null>(null);
   const [erroCarga, setErroCarga] = useState<string | null>(null);
@@ -304,14 +329,49 @@ export function Mercado() {
     <form onSubmit={salvar}>
       {aviso && <Aviso tipo={aviso.tipo}>{aviso.texto}</Aviso>}
 
-      <Grade>
-        <Cartao titulo="Pix">
+      <div className="cfg-layout">
+        <nav className="cfg-menu" aria-label="Seções das configurações do mercado">
+          {SECOES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={secao === s.id ? 'cfg-menu-item ativo' : 'cfg-menu-item'}
+              aria-current={secao === s.id ? 'true' : undefined}
+              onClick={() => escolherSecao(s.id)}
+            >
+              <Icone nome={s.icone} tamanho={18} />
+              <span>{s.titulo}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="cfg-conteudo">
+        {secao === 'pix' && (
+          <section className="cfg-secao" aria-labelledby="cfg-pix">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="dinheiro" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-pix">Pix</h2>
+                <p>Chave usada para gerar o Pix copia e cola no PDV e nos boletos.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Campo rotulo="Chave Pix" valor={form.pixChave} aoMudar={(v) => mudar({ pixChave: v })} />
           <Campo rotulo="Nome do recebedor" valor={form.pixNome} aoMudar={(v) => mudar({ pixNome: v })} />
           <Campo rotulo="Cidade" valor={form.pixCidade} aoMudar={(v) => mudar({ pixCidade: v })} />
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Preços">
+        {secao === 'precos' && (
+          <section className="cfg-secao" aria-labelledby="cfg-precos">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="porcentagem" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-precos">Preços</h2>
+                <p>Margem usada na formação de preço e arredondamento do preço sugerido.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Campo
             rotulo="Margem padrão (%)"
             valor={form.margemPadrao}
@@ -322,9 +382,20 @@ export function Mercado() {
             marcado={form.arredondarPreco}
             aoMudar={(v) => mudar({ arredondarPreco: v })}
           />
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Balança">
+        {secao === 'balanca' && (
+          <section className="cfg-secao" aria-labelledby="cfg-balanca">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="balanca" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-balanca">Balança</h2>
+                <p>Formato do código de barras impresso pela balança e lido no PDV.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Campo
             rotulo="Prefixo da etiqueta (1 dígito)"
             valor={form.balancaPrefixo}
@@ -345,9 +416,20 @@ export function Mercado() {
             A etiqueta EAN-13 segue o formato 2 PPPPPP VVVVV D: prefixo, PLU do produto, valor (preço ou peso) e
             dígito verificador.
           </p>
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Impressora de etiquetas">
+        {secao === 'impressora' && (
+          <section className="cfg-secao" aria-labelledby="cfg-impressora">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="etiqueta" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-impressora">Impressora de etiquetas</h2>
+                <p>Como as etiquetas de gôndola são impressas: folha A4, impressora térmica ou Zebra pela rede.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <label className="campo">
             <span className="campo-rotulo">Formato</span>
             <select
@@ -422,17 +504,39 @@ export function Mercado() {
             Folha A4 e impressora térmica usam a janela de impressão do navegador. O formato escolhido aqui é o padrão
             da tela de Etiquetas.
           </p>
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Fiado">
+        {secao === 'fiado' && (
+          <section className="cfg-secao" aria-labelledby="cfg-fiado">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="usuarios" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-fiado">Fiado</h2>
+                <p>Venda a prazo para clientes cadastrados, com limite de crédito.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Caixa
             rotulo="Vender fiado (a prazo) para clientes cadastrados"
             marcado={form.fiadoAtivo}
             aoMudar={(v) => mudar({ fiadoAtivo: v })}
           />
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Nota fiscal">
+        {secao === 'fiscal' && (
+          <section className="cfg-secao" aria-labelledby="cfg-fiscal">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="documento" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-fiscal">Nota fiscal</h2>
+                <p>Emissão de NFC-e e NF-e e os dados fiscais padrão dos produtos.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Selecao
             rotulo="Provedor"
             valor={form.fiscalProvedor}
@@ -461,9 +565,20 @@ export function Mercado() {
             valor={form.fiscalCsosnPadrao}
             aoMudar={(v) => mudar({ fiscalCsosnPadrao: v })}
           />
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Contador">
+        {secao === 'contador' && (
+          <section className="cfg-secao" aria-labelledby="cfg-contador">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="email" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-contador">Contador</h2>
+                <p>Envio dos XML das notas ao contador.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Campo rotulo="Nome do contador" valor={form.contadorNome} aoMudar={(v) => mudar({ contadorNome: v })} />
           <Campo
             rotulo="E-mail do contador"
@@ -481,9 +596,20 @@ export function Mercado() {
             valor={form.contadorDiaEnvio}
             aoMudar={(v) => mudar({ contadorDiaEnvio: v })}
           />
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Delivery e WhatsApp">
+        {secao === 'delivery' && (
+          <section className="cfg-secao" aria-labelledby="cfg-delivery">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="caminhao" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-delivery">Delivery e WhatsApp</h2>
+                <p>Pedidos pela página pública e avisos de entrega pelo WhatsApp.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Caixa
             rotulo="Delivery ativo"
             marcado={form.deliveryAtivo}
@@ -518,9 +644,20 @@ export function Mercado() {
           <p>
             {dto.whatsappTokenDefinido ? 'Já há um token gravado.' : 'Nenhum token gravado.'}
           </p>
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Integrações">
+        {secao === 'integracoes' && (
+          <section className="cfg-secao" aria-labelledby="cfg-integracoes">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="raio" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-integracoes">Integrações</h2>
+                <p>Serviços externos. Sem contrato, funcionam em modo simulado.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Caixa
             rotulo="iFood Mercado: marketplace (simulado, sem contrato)"
             marcado={form.marketplaceAtivo}
@@ -536,9 +673,20 @@ export function Mercado() {
             marcado={form.mixFiscalAtivo}
             aoMudar={(v) => mudar({ mixFiscalAtivo: v })}
           />
-        </Cartao>
+        </div>
+          </section>
+        )}
 
-        <Cartao titulo="Assistente IA">
+        {secao === 'ia' && (
+          <section className="cfg-secao" aria-labelledby="cfg-ia">
+            <header className="cfg-secao-cabecalho">
+              <span className="cfg-secao-icone"><Icone nome="robo" tamanho={22} /></span>
+              <div>
+                <h2 id="cfg-ia">Assistente IA</h2>
+                <p>Perguntas sobre vendas, estoque e compras.</p>
+              </div>
+            </header>
+            <div className="cfg-campos">
           <Caixa
             rotulo="Assistente ativo"
             marcado={form.iaAtiva}
@@ -555,13 +703,16 @@ export function Mercado() {
               ? 'Já há uma chave gravada.'
               : 'Sem chave: o assistente responde por regras.'}
           </p>
-        </Cartao>
-      </Grade>
-
-      <div className="pagina-acoes">
-        <Botao tipo="submit" desabilitado={ocupado}>
-          Salvar
-        </Botao>
+        </div>
+          </section>
+        )}
+          <div className="cfg-rodape">
+            <span>As mudanças valem para todas as lojas.</span>
+            <Botao tipo="submit" desabilitado={ocupado}>
+              {ocupado ? 'Salvando...' : 'Salvar configurações'}
+            </Botao>
+          </div>
+        </div>
       </div>
     </form>
   );

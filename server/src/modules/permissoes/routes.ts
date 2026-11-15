@@ -7,7 +7,7 @@ import { permitir } from '../../lib/auth';
 import { limparCacheConfiguracao, lerConfiguracao } from '../../lib/email';
 import { ACOES, AcaoSensivel, lerRegras, MODOS, Modo } from '../../lib/autorizacao';
 
-// Permissões do garçom para as ações sensíveis e a senha curta do gestor.
+// Permissões da equipe para as ações sensíveis e a senha curta do gestor.
 // A senha do gestor libera ações na frente do cliente; não é a senha de login.
 
 const router = Router();

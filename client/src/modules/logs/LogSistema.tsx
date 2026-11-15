@@ -348,7 +348,7 @@ export function LogSistema() {
         {carregando && itens.length === 0 && <Carregando />}
 
         {(!carregando || itens.length > 0) && (
-          <section className="cartao logs-cartao-tabela">
+          <section className="logs-cartao-tabela">
             <Tabela<LogDTO>
               colunas={colunas}
               dados={itens}

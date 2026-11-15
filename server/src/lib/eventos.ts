@@ -4,7 +4,7 @@
 export interface Mudanca {
   metodo: string;            // POST, PUT, DELETE
   caminho: string;           // ex.: '/api/pedidos/12/status' (sem query string)
-  modulo: string;            // primeiro trecho depois de /api/ (ex.: 'pedidos', 'mesas', 'cliente')
+  modulo: string;            // primeiro trecho depois de /api/ (ex.: 'pdv', 'estoque', 'entregas')
   status: number;            // status HTTP da resposta (sempre < 400 aqui)
   corpo: unknown;            // corpo JSON recebido (pode ser undefined)
   usuarioId: number | null;  // null em rota pública
