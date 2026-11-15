@@ -1,0 +1,513 @@
+/* PDV, caixa e vendas. Cores só por variáveis da casca (tema claro e escuro). Classes prefixadas por pdv-. */
+
+/* ---------- Tela do PDV: duas colunas (vira uma no celular) ---------- */
+
+.pdv {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 1rem;
+  align-items: start;
+}
+
+.pdv-esquerda,
+.pdv-direita {
+  min-width: 0;
+}
+
+.pdv-caixa-info {
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.pdv-busca {
+  margin-bottom: 0.75rem;
+}
+
+.pdv-codigo-rotulo {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.pdv-codigo {
+  width: 100%;
+  font-size: 1.6rem;
+  padding: 0.7rem 0.9rem;
+  border: 2px solid var(--cor-primaria);
+  border-radius: var(--raio-medio, 8px);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.pdv-codigo:focus {
+  outline: 3px solid var(--cor-primaria-suave);
+  outline-offset: 1px;
+}
+
+/* Itens */
+.pdv-itens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.pdv-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio, 8px);
+  cursor: pointer;
+}
+
+.pdv-item-ultimo {
+  border-color: var(--cor-primaria);
+  box-shadow: inset 4px 0 0 var(--cor-primaria);
+  background: var(--cor-primaria-suave);
+}
+
+.pdv-item-selecionado {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: -2px;
+}
+
+.pdv-item-numero {
+  min-width: 1.8rem;
+  text-align: center;
+  color: var(--cor-texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.pdv-item-corpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pdv-item-nome {
+  overflow-wrap: anywhere;
+}
+
+.pdv-item-detalhe {
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.pdv-item-total {
+  font-weight: 700;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdv-vazio {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--cor-texto-suave);
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio-medio, 8px);
+  list-style: none;
+}
+
+.pdv-acoes-item {
+  margin-top: 0.6rem;
+}
+
+/* Painel direito: cliente, valores e total */
+.pdv-direita {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: sticky;
+  top: 0.5rem;
+}
+
+.pdv-cliente,
+.pdv-resumo {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio, 8px);
+  padding: 0.75rem;
+}
+
+.pdv-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.pdv-linha span {
+  color: var(--cor-texto-suave);
+}
+
+.pdv-linha strong {
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdv-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 2px solid var(--cor-borda);
+}
+
+.pdv-total span {
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.pdv-total strong {
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  color: var(--cor-primaria);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.pdv-botoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.pdv-botoes .botao:first-child {
+  grid-column: 1 / -1;
+  min-height: 3.4rem;
+  font-size: 1.15rem;
+}
+
+.pdv-botoes .botao {
+  min-height: 2.8rem;
+}
+
+/* Rodapé de atalhos */
+.pdv-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  margin-top: 1rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--cor-borda);
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.pdv-atalhos kbd {
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: 4px;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+}
+
+/* Modais (buscas e resultados) */
+.pdv-resultados {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.pdv-resultado {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio, 8px);
+  cursor: pointer;
+  min-height: 2.8rem;
+}
+
+.pdv-resultado:hover {
+  border-color: var(--cor-primaria);
+}
+
+.pdv-acoes-modal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pdv-texto {
+  color: var(--cor-texto-suave);
+  margin: 0.5rem 0;
+  overflow-wrap: anywhere;
+}
+
+.pdv-caixa-abrir {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pdv-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.pdv-filtros .campo {
+  min-width: 10rem;
+  flex: 1 1 10rem;
+}
+
+.pdv-cartoes-caixa,
+.pdv-cartoes-detalhe {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pdv-cartoes-detalhe {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-bottom: 0.75rem;
+}
+
+.pdv-detalhe-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ---------- Caixa ---------- */
+
+.pdv-caixa-texto {
+  color: var(--cor-texto-suave);
+  margin: 0.5rem 0;
+  overflow-wrap: anywhere;
+}
+
+.pdv-caixa-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.pdv-caixa-linha {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.3rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px dashed var(--cor-borda);
+}
+
+.pdv-caixa-linha strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdv-caixa-diferenca {
+  margin: 0.5rem 0;
+  font-weight: 700;
+  min-height: 1.4em;
+}
+
+.pdv-caixa-dif-sobra {
+  color: var(--cor-verde);
+}
+
+.pdv-caixa-dif-falta {
+  color: var(--cor-perigo);
+}
+
+.pdv-caixa-dif-ok {
+  color: var(--cor-texto);
+}
+
+/* ---------- Pagamento ---------- */
+
+.pdv-pagamento-totais {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.pdv-pagamento-totais > div {
+  background: var(--cor-superficie-2);
+  border-radius: var(--raio-medio, 8px);
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.pdv-pagamento-totais span {
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.pdv-pagamento-totais strong {
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdv-pagamentos {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.pdv-pagamentos li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--cor-borda);
+}
+
+.pdv-pagamentos li > span:first-child {
+  flex: 1;
+}
+
+.pdv-pagamentos li > span:nth-child(2) {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.pdv-remover {
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.pdv-formas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.pdv-forma {
+  min-height: 3rem;
+  padding: 0.5rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio, 8px);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pdv-forma:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pdv-forma-ativa {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: var(--cor-sobre-primaria, #fff);
+}
+
+.pdv-pagamento-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pdv-troco-previa {
+  font-weight: 700;
+  color: var(--cor-verde);
+  margin: 0;
+}
+
+.pdv-pix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.pdv-pix-texto {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.pdv-sucesso {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.pdv-sucesso-titulo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.pdv-troco-rotulo {
+  margin: 1rem 0 0;
+  color: var(--cor-texto-suave);
+}
+
+.pdv-troco {
+  margin: 0.25rem 0 0.75rem;
+  font-size: clamp(2.2rem, 8vw, 3.2rem);
+  font-weight: 800;
+  color: var(--cor-primaria);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Celular ---------- */
+
+@media (max-width: 800px) {
+  .pdv {
+    grid-template-columns: 1fr;
+  }
+
+  .pdv-direita {
+    position: static;
+  }
+
+  .pdv-codigo {
+    font-size: 1.3rem;
+  }
+
+  .pdv-itens {
+    max-height: none;
+  }
+
+  .pdv-pagamento-totais strong {
+    font-size: 1.3rem;
+  }
+}

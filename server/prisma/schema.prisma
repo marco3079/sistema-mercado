@@ -1,0 +1,1254 @@
+// CONTRATO DE DADOS do sistema de mercado, padaria e logística de fornecimento.
+// Quantidades usam Decimal(12,3) (produtos pesáveis em kg); valores usam Decimal(12,2).
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+// GESTOR administra tudo. OPERADOR usa o PDV e o caixa. ESTOQUISTA cuida de estoque, recebimento, validade e inventário.
+// PADEIRO cuida da produção. COMPRADOR cuida de fornecedores, cotações e pedidos de compra.
+// MOTORISTA vê e atualiza as entregas da sua rota. VENDEDOR faz pedidos de clientes (força de vendas).
+// CONTADOR só consulta e baixa os documentos fiscais.
+enum Perfil {
+  GESTOR
+  OPERADOR
+  ESTOQUISTA
+  PADEIRO
+  COMPRADOR
+  MOTORISTA
+  VENDEDOR
+  CONTADOR
+}
+
+enum TipoLoja {
+  LOJA
+  CENTRO_DISTRIBUICAO
+}
+
+enum Unidade {
+  UN
+  KG
+  G
+  L
+  ML
+  CX
+  PCT
+  DZ
+}
+
+enum TipoMovimentoEstoque {
+  ENTRADA // recebimento de mercadoria
+  VENDA // saída por venda (quantidade negativa)
+  CANCELAMENTO_VENDA // devolve ao estoque
+  AJUSTE // correção manual (+/-)
+  PERDA // vencido, quebrado, avaria (negativa)
+  PRODUCAO // produto acabado da padaria (positiva)
+  CONSUMO_PRODUCAO // insumo usado na produção (negativa)
+  TRANSFERENCIA_SAIDA
+  TRANSFERENCIA_ENTRADA
+  INVENTARIO // diferença apurada no inventário
+}
+
+enum StatusInventario {
+  ABERTO
+  FINALIZADO
+  CANCELADO
+}
+
+enum StatusProducao {
+  PLANEJADA
+  EM_PRODUCAO
+  CONCLUIDA
+  CANCELADA
+}
+
+enum StatusCaixa {
+  ABERTO
+  FECHADO
+}
+
+enum TipoMovimentoCaixa {
+  SANGRIA
+  SUPRIMENTO
+}
+
+enum StatusVenda {
+  ABERTA
+  CONCLUIDA
+  CANCELADA
+}
+
+enum OrigemVenda {
+  PDV
+  DELIVERY
+  MARKETPLACE
+  FORCA_VENDAS
+  B2B
+}
+
+enum FormaPagamento {
+  DINHEIRO
+  PIX
+  DEBITO
+  CREDITO
+  FIADO
+  VALE_ALIMENTACAO
+  BOLETO
+}
+
+enum TipoCliente {
+  VAREJO
+  ATACADO
+}
+
+enum TipoMovimentoFiado {
+  COMPRA
+  PAGAMENTO
+}
+
+enum TipoLancamento {
+  RECEITA
+  DESPESA
+}
+
+enum OrigemLancamento {
+  MANUAL
+  VENDA
+  COMPRA
+  FIADO
+  BONIFICACAO
+}
+
+enum ModeloNota {
+  NFCE
+  NFE
+}
+
+enum StatusNota {
+  PENDENTE
+  AUTORIZADA
+  REJEITADA
+  CANCELADA
+}
+
+enum ProvedorFiscal {
+  NENHUM
+  SIMULADO
+  FOCUS_NFE
+  WEBMANIA
+  NUVEM_FISCAL
+}
+
+enum AmbienteFiscal {
+  HOMOLOGACAO
+  PRODUCAO
+}
+
+enum TipoPromocao {
+  PRECO_FIXO // preço promocional por unidade/kg
+  PERCENTUAL // desconto em %
+  LEVE_PAGUE // leve X pague Y
+  ATACADO // a partir de qtdMinima, preço = valor
+}
+
+enum StatusCotacao {
+  ABERTA
+  FECHADA
+  CANCELADA
+}
+
+enum StatusPedidoCompra {
+  RASCUNHO
+  ENVIADO
+  CONFIRMADO
+  EM_TRANSITO
+  RECEBIDO_PARCIAL
+  RECEBIDO
+  CANCELADO
+}
+
+enum StatusRecebimento {
+  CONFERINDO
+  CONCLUIDO
+  COM_DIVERGENCIA
+}
+
+enum StatusPedidoVenda {
+  ORCAMENTO
+  PENDENTE
+  APROVADO
+  SEPARANDO
+  FATURADO
+  CANCELADO
+}
+
+enum StatusRota {
+  MONTANDO
+  CARREGADA
+  EM_ROTA
+  CONCLUIDA
+  CANCELADA
+}
+
+enum StatusEntrega {
+  PENDENTE
+  SEPARANDO
+  EM_ROTA
+  ENTREGUE
+  FALHOU
+  CANCELADA
+}
+
+enum StatusTransferencia {
+  SOLICITADA
+  ENVIADA
+  RECEBIDA
+  CANCELADA
+}
+
+// ---------- Lojas (filiais e centro de distribuição) ----------
+
+model Loja {
+  id       Int      @id @default(autoincrement())
+  nome     String
+  tipo     TipoLoja @default(LOJA)
+  cnpj     String?
+  telefone String?
+  endereco String?
+  cidade   String?
+  uf       String?
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+  ativa    Boolean  @default(true)
+  criadoEm DateTime @default(now())
+
+  usuarios        Usuario[]
+  estoques        EstoqueLoja[]
+  movimentos      MovimentoEstoque[]
+  lotes           Lote[]
+  inventarios     Inventario[]
+  ordensProducao  OrdemProducao[]
+  caixas          Caixa[]
+  vendas          Venda[]
+  notas           NotaFiscal[]
+  lancamentos     Lancamento[]
+  pedidosCompra   PedidoCompra[]
+  recebimentos    Recebimento[]
+  pedidosVenda    PedidoVenda[]
+  rotas           Rota[]
+  transfSaida     Transferencia[] @relation("TransferenciaOrigem")
+  transfEntrada   Transferencia[] @relation("TransferenciaDestino")
+}
+
+// ---------- Pessoas ----------
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senhaHash String
+  perfil    Perfil
+  ativo     Boolean  @default(true)
+  cpf       String?
+  telefone  String?
+  foto      String? // endereço http(s) ou data URL
+  criadoEm  DateTime @default(now())
+  lojaId    Int? // loja padrão do usuário (null = todas / gestor)
+  loja      Loja?    @relation(fields: [lojaId], references: [id])
+  // Força de vendas: saldo de flex (vender acima da tabela soma, abaixo desconta) e comissão.
+  saldoFlex          Decimal @default(0) @db.Decimal(12, 2)
+  comissaoPercentual Decimal @default(0) @db.Decimal(5, 2)
+  // Motorista: CNH.
+  cnh String?
+
+  inscricoesPush  InscricaoPush[]
+  caixas          Caixa[]
+  vendas          Venda[]         @relation("VendaOperador")
+  vendasVendedor  Venda[]         @relation("VendaVendedor")
+  pedidosVenda    PedidoVenda[]
+  clientes        Cliente[]
+  rotas           Rota[]
+  entregas        Entrega[]
+  movimentos      MovimentoEstoque[]
+}
+
+// ---------- Catálogo ----------
+
+model Categoria {
+  id       Int       @id @default(autoincrement())
+  nome     String    @unique
+  ordem    Int       @default(0)
+  ativa    Boolean   @default(true)
+  // Departamento da padaria (produção própria) ou mercearia, hortifrúti, açougue, bebidas...
+  setor    String?
+  produtos Produto[]
+  promocoes Promocao[]
+}
+
+model Produto {
+  id           Int      @id @default(autoincrement())
+  codigo       String   @unique // código interno
+  ean          String?  @unique // código de barras (EAN-8/13/14)
+  nome         String
+  descricao    String?
+  marca        String?
+  categoriaId  Int?
+  categoria    Categoria? @relation(fields: [categoriaId], references: [id])
+  unidade      Unidade  @default(UN)
+  pesavel      Boolean  @default(false) // vendido no peso (balança)
+  codigoBalanca Int?    @unique // PLU de 1 a 99999 usado na etiqueta da balança
+  precoCusto   Decimal  @default(0) @db.Decimal(12, 4)
+  precoVenda   Decimal  @default(0) @db.Decimal(12, 2)
+  precoAtacado Decimal? @db.Decimal(12, 2) // preço para cliente ATACADO / força de vendas
+  qtdAtacado   Decimal? @db.Decimal(12, 3) // a partir desta quantidade vale o preço de atacado no PDV
+  estoqueMinimo Decimal @default(0) @db.Decimal(12, 3)
+  estoqueMaximo Decimal? @db.Decimal(12, 3)
+  pesoBrutoKg  Decimal? @db.Decimal(10, 3) // usado na montagem de cargas
+  // Fiscal
+  ncm          String?
+  cest         String?
+  cfop         String?
+  csosn        String?
+  // Padaria
+  produzido    Boolean  @default(false) // fabricação própria (tem receita)
+  insumo       Boolean  @default(false) // matéria-prima (farinha, fermento...) — não aparece no PDV
+  validadeDias Int? // validade padrão após produção/recebimento
+  controlaLote Boolean  @default(false)
+  foto         String?
+  ativo        Boolean  @default(true)
+  fornecedorPadraoId Int?
+  fornecedorPadrao   Fornecedor? @relation("FornecedorPadrao", fields: [fornecedorPadraoId], references: [id])
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  estoques       EstoqueLoja[]
+  movimentos     MovimentoEstoque[]
+  lotes          Lote[]
+  inventarioItens InventarioItem[]
+  receita        Receita?            @relation("ReceitaProduto")
+  usadoEmReceitas ReceitaItem[]
+  ordensProducao OrdemProducao[]
+  vendaItens     VendaItem[]
+  promocoes      Promocao[]
+  fornecedores   ProdutoFornecedor[]
+  cotacaoItens   CotacaoItem[]
+  cotacaoRespostas CotacaoResposta[]
+  pedidoCompraItens PedidoCompraItem[]
+  recebimentoItens RecebimentoItem[]
+  pedidoVendaItens PedidoVendaItem[]
+  transferenciaItens TransferenciaItem[]
+  etiquetas      EtiquetaPendente[]
+  historicoPrecos HistoricoPreco[]
+
+  @@index([nome])
+  @@index([categoriaId])
+}
+
+// Mudanças de preço (formação de preço e etiquetas).
+model HistoricoPreco {
+  id            Int      @id @default(autoincrement())
+  produtoId     Int
+  produto       Produto  @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  precoAnterior Decimal  @db.Decimal(12, 2)
+  precoNovo     Decimal  @db.Decimal(12, 2)
+  custoAnterior Decimal? @db.Decimal(12, 4)
+  custoNovo     Decimal? @db.Decimal(12, 4)
+  usuarioId     Int?
+  criadoEm      DateTime @default(now())
+
+  @@index([produtoId, criadoEm])
+}
+
+// Etiqueta de gôndola a imprimir (criada sempre que o preço muda ou à mão).
+model EtiquetaPendente {
+  id        Int       @id @default(autoincrement())
+  produtoId Int
+  produto   Produto   @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  motivo    String    @default("Preço alterado")
+  criadoEm  DateTime  @default(now())
+  impressaEm DateTime?
+
+  @@index([impressaEm])
+}
+
+// ---------- Estoque ----------
+
+model EstoqueLoja {
+  id         Int     @id @default(autoincrement())
+  produtoId  Int
+  produto    Produto @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  lojaId     Int
+  loja       Loja    @relation(fields: [lojaId], references: [id], onDelete: Cascade)
+  quantidade Decimal @default(0) @db.Decimal(12, 3)
+
+  @@unique([produtoId, lojaId])
+}
+
+// Toda mudança de estoque passa por aqui (quantidade com sinal: + entra, - sai).
+model MovimentoEstoque {
+  id            Int                  @id @default(autoincrement())
+  produtoId     Int
+  produto       Produto              @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  lojaId        Int
+  loja          Loja                 @relation(fields: [lojaId], references: [id])
+  tipo          TipoMovimentoEstoque
+  quantidade    Decimal              @db.Decimal(12, 3)
+  saldoApos     Decimal              @db.Decimal(12, 3)
+  custoUnitario Decimal?             @db.Decimal(12, 4)
+  motivo        String?
+  referencia    String? // ex.: "venda:12", "recebimento:3", "producao:5", "transferencia:2"
+  loteId        Int?
+  usuarioId     Int?
+  usuario       Usuario?             @relation(fields: [usuarioId], references: [id])
+  criadoEm      DateTime             @default(now())
+
+  @@index([produtoId, criadoEm])
+  @@index([lojaId, criadoEm])
+  @@index([tipo, criadoEm])
+}
+
+model Lote {
+  id           Int       @id @default(autoincrement())
+  produtoId    Int
+  produto      Produto   @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  lojaId       Int
+  loja         Loja      @relation(fields: [lojaId], references: [id])
+  codigo       String
+  fabricacao   DateTime?
+  validade     DateTime
+  quantidade   Decimal   @db.Decimal(12, 3) // saldo atual do lote
+  recebimentoId Int?
+  ordemProducaoId Int?
+  criadoEm     DateTime  @default(now())
+
+  @@index([validade])
+  @@index([produtoId])
+}
+
+model Inventario {
+  id           Int              @id @default(autoincrement())
+  lojaId       Int
+  loja         Loja             @relation(fields: [lojaId], references: [id])
+  descricao    String
+  status       StatusInventario @default(ABERTO)
+  categoriaId  Int? // null = loja inteira
+  usuarioId    Int?
+  criadoEm     DateTime         @default(now())
+  finalizadoEm DateTime?
+  itens        InventarioItem[]
+}
+
+model InventarioItem {
+  id                Int        @id @default(autoincrement())
+  inventarioId      Int
+  inventario        Inventario @relation(fields: [inventarioId], references: [id], onDelete: Cascade)
+  produtoId         Int
+  produto           Produto    @relation(fields: [produtoId], references: [id])
+  quantidadeSistema Decimal    @db.Decimal(12, 3)
+  quantidadeContada Decimal?   @db.Decimal(12, 3)
+  contadoEm         DateTime?
+  contadoPorId      Int?
+
+  @@unique([inventarioId, produtoId])
+}
+
+// ---------- Padaria / produção ----------
+
+// Ficha técnica: quanto de cada insumo rende `rendimento` unidades/kg do produto.
+model Receita {
+  id          Int           @id @default(autoincrement())
+  produtoId   Int           @unique
+  produto     Produto       @relation("ReceitaProduto", fields: [produtoId], references: [id], onDelete: Cascade)
+  rendimento  Decimal       @db.Decimal(12, 3)
+  tempoPreparoMin Int?
+  tempoFornoMin   Int?
+  temperaturaForno Int?
+  modoPreparo String?
+  itens       ReceitaItem[]
+  ordens      OrdemProducao[]
+}
+
+model ReceitaItem {
+  id         Int     @id @default(autoincrement())
+  receitaId  Int
+  receita    Receita @relation(fields: [receitaId], references: [id], onDelete: Cascade)
+  insumoId   Int
+  insumo     Produto @relation(fields: [insumoId], references: [id])
+  quantidade Decimal @db.Decimal(12, 4) // na unidade do insumo
+}
+
+// Ordem de produção / fornada.
+model OrdemProducao {
+  id                  Int            @id @default(autoincrement())
+  lojaId              Int
+  loja                Loja           @relation(fields: [lojaId], references: [id])
+  receitaId           Int
+  receita             Receita        @relation(fields: [receitaId], references: [id])
+  produtoId           Int
+  produto             Produto        @relation(fields: [produtoId], references: [id])
+  quantidadePlanejada Decimal        @db.Decimal(12, 3)
+  quantidadeProduzida Decimal?       @db.Decimal(12, 3)
+  perda               Decimal?       @db.Decimal(12, 3)
+  status              StatusProducao @default(PLANEJADA)
+  agendadoPara        DateTime // horário da fornada
+  iniciadoEm          DateTime?
+  concluidoEm         DateTime?
+  custoTotal          Decimal?       @db.Decimal(12, 2)
+  usuarioId           Int?
+  observacao          String?
+  criadoEm            DateTime       @default(now())
+
+  @@index([agendadoPara])
+}
+
+// ---------- Caixa e vendas (PDV) ----------
+
+model Caixa {
+  id                 Int         @id @default(autoincrement())
+  lojaId             Int
+  loja               Loja        @relation(fields: [lojaId], references: [id])
+  terminal           String      @default("PDV 01")
+  usuarioId          Int
+  usuario            Usuario     @relation(fields: [usuarioId], references: [id])
+  status             StatusCaixa @default(ABERTO)
+  valorAbertura      Decimal     @db.Decimal(12, 2)
+  valorInformado     Decimal?    @db.Decimal(12, 2) // contado no fechamento
+  diferenca          Decimal?    @db.Decimal(12, 2)
+  abertoEm           DateTime    @default(now())
+  fechadoEm          DateTime?
+  movimentos         MovimentoCaixa[]
+  vendas             Venda[]
+
+  @@index([status])
+}
+
+model MovimentoCaixa {
+  id        Int                @id @default(autoincrement())
+  caixaId   Int
+  caixa     Caixa              @relation(fields: [caixaId], references: [id], onDelete: Cascade)
+  tipo      TipoMovimentoCaixa
+  valor     Decimal            @db.Decimal(12, 2)
+  motivo    String?
+  usuarioId Int?
+  criadoEm  DateTime           @default(now())
+}
+
+model Venda {
+  id            Int         @id @default(autoincrement())
+  numero        Int         @default(autoincrement())
+  lojaId        Int
+  loja          Loja        @relation(fields: [lojaId], references: [id])
+  caixaId       Int?
+  caixa         Caixa?      @relation(fields: [caixaId], references: [id])
+  usuarioId     Int
+  usuario       Usuario     @relation("VendaOperador", fields: [usuarioId], references: [id])
+  vendedorId    Int?
+  vendedor      Usuario?    @relation("VendaVendedor", fields: [vendedorId], references: [id])
+  clienteId     Int?
+  cliente       Cliente?    @relation(fields: [clienteId], references: [id])
+  origem        OrigemVenda @default(PDV)
+  status        StatusVenda @default(ABERTA)
+  subtotal      Decimal     @default(0) @db.Decimal(12, 2)
+  desconto      Decimal     @default(0) @db.Decimal(12, 2)
+  acrescimo     Decimal     @default(0) @db.Decimal(12, 2) // taxa de entrega etc.
+  total         Decimal     @default(0) @db.Decimal(12, 2)
+  troco         Decimal     @default(0) @db.Decimal(12, 2)
+  custoTotal    Decimal     @default(0) @db.Decimal(12, 2) // soma do custo dos itens (Meu Lucro)
+  cpfNota       String?
+  observacao    String?
+  marketplaceId String? // id do pedido no marketplace
+  motivoCancelamento String?
+  criadoEm      DateTime    @default(now())
+  concluidaEm   DateTime?
+  canceladaEm   DateTime?
+
+  itens       VendaItem[]
+  pagamentos  PagamentoVenda[]
+  notas       NotaFiscal[]
+  entrega     Entrega?
+  fiado       MovimentoFiado[]
+  pedidoVenda PedidoVenda?
+
+  @@index([status, criadoEm])
+  @@index([lojaId, criadoEm])
+  @@index([clienteId])
+}
+
+model VendaItem {
+  id            Int       @id @default(autoincrement())
+  vendaId       Int
+  venda         Venda     @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+  produtoId     Int
+  produto       Produto   @relation(fields: [produtoId], references: [id])
+  descricao     String
+  quantidade    Decimal   @db.Decimal(12, 3)
+  precoUnitario Decimal   @db.Decimal(12, 2)
+  desconto      Decimal   @default(0) @db.Decimal(12, 2)
+  total         Decimal   @db.Decimal(12, 2)
+  custoUnitario Decimal   @default(0) @db.Decimal(12, 4)
+  promocaoId    Int?
+  promocao      Promocao? @relation(fields: [promocaoId], references: [id])
+  cancelado     Boolean   @default(false) // item cancelado no PDV (fica registrado)
+  criadoEm      DateTime  @default(now())
+}
+
+model PagamentoVenda {
+  id       Int            @id @default(autoincrement())
+  vendaId  Int
+  venda    Venda          @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+  forma    FormaPagamento
+  valor    Decimal        @db.Decimal(12, 2)
+  parcelas Int            @default(1)
+  autorizacao String? // NSU / txid do Pix
+  criadoEm DateTime       @default(now())
+}
+
+// ---------- Clientes e fiado ----------
+
+model Cliente {
+  id            Int         @id @default(autoincrement())
+  nome          String
+  tipo          TipoCliente @default(VAREJO)
+  cpfCnpj       String?     @unique
+  razaoSocial   String?
+  inscricaoEstadual String?
+  telefone      String?
+  whatsapp      String?
+  email         String?
+  cep           String?
+  endereco      String?
+  numero        String?
+  bairro        String?
+  cidade        String?
+  uf            String?
+  latitude      Decimal?    @db.Decimal(10, 7)
+  longitude     Decimal?    @db.Decimal(10, 7)
+  limiteCredito Decimal     @default(0) @db.Decimal(12, 2) // fiado / prazo
+  saldoDevedor  Decimal     @default(0) @db.Decimal(12, 2)
+  bloqueado     Boolean     @default(false)
+  observacoes   String?
+  vendedorId    Int? // carteira do vendedor externo
+  vendedor      Usuario?    @relation(fields: [vendedorId], references: [id])
+  codigoB2B     String?     @unique // código de acesso à loja B2B
+  ativo         Boolean     @default(true)
+  criadoEm      DateTime    @default(now())
+
+  vendas       Venda[]
+  fiado        MovimentoFiado[]
+  lancamentos  Lancamento[]
+  pedidosVenda PedidoVenda[]
+  entregas     Entrega[]
+
+  @@index([nome])
+}
+
+model MovimentoFiado {
+  id        Int                @id @default(autoincrement())
+  clienteId Int
+  cliente   Cliente            @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tipo      TipoMovimentoFiado
+  valor     Decimal            @db.Decimal(12, 2) // sempre positivo
+  vendaId   Int?
+  venda     Venda?             @relation(fields: [vendaId], references: [id])
+  formaPagamento FormaPagamento?
+  descricao String?
+  usuarioId Int?
+  criadoEm  DateTime           @default(now())
+
+  @@index([clienteId, criadoEm])
+}
+
+// ---------- Financeiro ----------
+
+model CategoriaFinanceira {
+  id          Int            @id @default(autoincrement())
+  nome        String
+  tipo        TipoLancamento
+  lancamentos Lancamento[]
+
+  @@unique([nome, tipo])
+}
+
+model Lancamento {
+  id             Int               @id @default(autoincrement())
+  tipo           TipoLancamento
+  origem         OrigemLancamento  @default(MANUAL)
+  descricao      String
+  valor          Decimal           @db.Decimal(12, 2)
+  vencimento     DateTime
+  pagoEm         DateTime?
+  valorPago      Decimal?          @db.Decimal(12, 2)
+  formaPagamento FormaPagamento?
+  categoriaId    Int?
+  categoria      CategoriaFinanceira? @relation(fields: [categoriaId], references: [id])
+  lojaId         Int?
+  loja           Loja?             @relation(fields: [lojaId], references: [id])
+  fornecedorId   Int?
+  fornecedor     Fornecedor?       @relation(fields: [fornecedorId], references: [id])
+  clienteId      Int?
+  cliente        Cliente?          @relation(fields: [clienteId], references: [id])
+  documento      String? // nº da nota / boleto
+  linhaDigitavel String? // boleto
+  parcela        Int?
+  totalParcelas  Int?
+  referencia     String? // ex.: "pedidoCompra:4", "venda:10"
+  observacao     String?
+  criadoEm       DateTime          @default(now())
+
+  @@index([tipo, vencimento])
+  @@index([pagoEm])
+}
+
+// ---------- Fiscal ----------
+
+model NotaFiscal {
+  id        Int        @id @default(autoincrement())
+  lojaId    Int
+  loja      Loja       @relation(fields: [lojaId], references: [id])
+  vendaId   Int?
+  venda     Venda?     @relation(fields: [vendaId], references: [id])
+  modelo    ModeloNota @default(NFCE)
+  numero    Int
+  serie     Int        @default(1)
+  chave     String?    @unique
+  protocolo String?
+  status    StatusNota @default(PENDENTE)
+  valor     Decimal    @db.Decimal(12, 2)
+  xml       String? // XML (simulado ou do provedor)
+  motivo    String? // rejeição / cancelamento
+  enviadaContadorEm DateTime?
+  criadoEm  DateTime   @default(now())
+  autorizadaEm DateTime?
+
+  @@index([status, criadoEm])
+}
+
+// ---------- Promoções ----------
+
+model Promocao {
+  id          Int          @id @default(autoincrement())
+  nome        String
+  tipo        TipoPromocao
+  produtoId   Int?
+  produto     Produto?     @relation(fields: [produtoId], references: [id])
+  categoriaId Int?
+  categoria   Categoria?   @relation(fields: [categoriaId], references: [id])
+  valor       Decimal      @db.Decimal(12, 2) // preço (PRECO_FIXO/ATACADO) ou % (PERCENTUAL)
+  levar       Int? // LEVE_PAGUE
+  pagar       Int? // LEVE_PAGUE
+  qtdMinima   Decimal?     @db.Decimal(12, 3) // ATACADO
+  inicio      DateTime
+  fim         DateTime
+  ativa       Boolean      @default(true)
+  // Bonificação da indústria (estilo Scantech): quem patrocina e quanto paga por unidade vendida.
+  industria          String?
+  bonificacaoUnidade Decimal? @db.Decimal(12, 2)
+  criadoEm    DateTime     @default(now())
+  itensVendidos VendaItem[]
+
+  @@index([inicio, fim])
+}
+
+// ---------- Fornecedores e compras ----------
+
+model Fornecedor {
+  id                Int      @id @default(autoincrement())
+  nome              String // nome fantasia
+  razaoSocial       String?
+  cnpj              String?  @unique
+  inscricaoEstadual String?
+  telefone          String?
+  whatsapp          String?
+  email             String?
+  contato           String? // nome do representante
+  endereco          String?
+  cidade            String?
+  uf                String?
+  prazoEntregaDias  Int      @default(3)
+  condicaoPagamento String? // ex.: "28 dias", "7/14/21"
+  pedidoMinimo      Decimal  @default(0) @db.Decimal(12, 2)
+  diasVisita        String? // ex.: "SEG,QUI"
+  avaliacao         Decimal  @default(0) @db.Decimal(3, 2) // média de 0 a 5
+  observacoes       String?
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+
+  produtosPadrao Produto[]           @relation("FornecedorPadrao")
+  produtos       ProdutoFornecedor[]
+  respostas      CotacaoResposta[]
+  convites       CotacaoFornecedor[]
+  pedidos        PedidoCompra[]
+  recebimentos   Recebimento[]
+  lancamentos    Lancamento[]
+  avaliacoes     AvaliacaoFornecedor[]
+}
+
+model ProdutoFornecedor {
+  id               Int        @id @default(autoincrement())
+  produtoId        Int
+  produto          Produto    @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  fornecedorId     Int
+  fornecedor       Fornecedor @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+  codigoFornecedor String?
+  ultimoPreco      Decimal?   @db.Decimal(12, 4)
+  fatorConversao   Decimal    @default(1) @db.Decimal(12, 3) // ex.: caixa com 12 un = 12
+  atualizadoEm     DateTime   @updatedAt
+
+  @@unique([produtoId, fornecedorId])
+}
+
+model AvaliacaoFornecedor {
+  id            Int        @id @default(autoincrement())
+  fornecedorId  Int
+  fornecedor    Fornecedor @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+  recebimentoId Int?
+  pontualidade  Int // 1 a 5
+  qualidade     Int // 1 a 5
+  atendimento   Int // 1 a 5
+  comentario    String?
+  usuarioId     Int?
+  criadoEm      DateTime   @default(now())
+}
+
+model Cotacao {
+  id          Int           @id @default(autoincrement())
+  titulo      String
+  status      StatusCotacao @default(ABERTA)
+  prazo       DateTime?
+  usuarioId   Int?
+  criadoEm    DateTime      @default(now())
+  fechadaEm   DateTime?
+  itens       CotacaoItem[]
+  fornecedores CotacaoFornecedor[]
+  respostas   CotacaoResposta[]
+  pedidos     PedidoCompra[]
+}
+
+model CotacaoItem {
+  id         Int     @id @default(autoincrement())
+  cotacaoId  Int
+  cotacao    Cotacao @relation(fields: [cotacaoId], references: [id], onDelete: Cascade)
+  produtoId  Int
+  produto    Produto @relation(fields: [produtoId], references: [id])
+  quantidade Decimal @db.Decimal(12, 3)
+
+  @@unique([cotacaoId, produtoId])
+}
+
+// Fornecedor convidado para a cotação; `token` permite responder por um link público.
+model CotacaoFornecedor {
+  id           Int        @id @default(autoincrement())
+  cotacaoId    Int
+  cotacao      Cotacao    @relation(fields: [cotacaoId], references: [id], onDelete: Cascade)
+  fornecedorId Int
+  fornecedor   Fornecedor @relation(fields: [fornecedorId], references: [id])
+  token        String     @unique
+  respondidoEm DateTime?
+
+  @@unique([cotacaoId, fornecedorId])
+}
+
+model CotacaoResposta {
+  id           Int        @id @default(autoincrement())
+  cotacaoId    Int
+  cotacao      Cotacao    @relation(fields: [cotacaoId], references: [id], onDelete: Cascade)
+  fornecedorId Int
+  fornecedor   Fornecedor @relation(fields: [fornecedorId], references: [id])
+  produtoId    Int
+  produto      Produto    @relation(fields: [produtoId], references: [id])
+  preco        Decimal    @db.Decimal(12, 4) // por unidade do produto
+  prazoDias    Int?
+  vencedora    Boolean    @default(false)
+  criadoEm     DateTime   @default(now())
+
+  @@unique([cotacaoId, fornecedorId, produtoId])
+}
+
+model PedidoCompra {
+  id                Int                @id @default(autoincrement())
+  numero            Int                @default(autoincrement())
+  fornecedorId      Int
+  fornecedor        Fornecedor         @relation(fields: [fornecedorId], references: [id])
+  lojaId            Int
+  loja              Loja               @relation(fields: [lojaId], references: [id])
+  cotacaoId         Int?
+  cotacao           Cotacao?           @relation(fields: [cotacaoId], references: [id])
+  status            StatusPedidoCompra @default(RASCUNHO)
+  total             Decimal            @default(0) @db.Decimal(12, 2)
+  condicaoPagamento String?
+  previsaoEntrega   DateTime?
+  rastreio          String? // código/transportadora informado pelo fornecedor
+  observacoes       String?
+  usuarioId         Int?
+  criadoEm          DateTime           @default(now())
+  enviadoEm         DateTime?
+  confirmadoEm      DateTime?
+  recebidoEm        DateTime?
+  itens             PedidoCompraItem[]
+  recebimentos      Recebimento[]
+
+  @@index([status])
+}
+
+model PedidoCompraItem {
+  id                 Int          @id @default(autoincrement())
+  pedidoId           Int
+  pedido             PedidoCompra @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produtoId          Int
+  produto            Produto      @relation(fields: [produtoId], references: [id])
+  quantidade         Decimal      @db.Decimal(12, 3)
+  precoUnitario      Decimal      @db.Decimal(12, 4)
+  quantidadeRecebida Decimal      @default(0) @db.Decimal(12, 3)
+}
+
+model Recebimento {
+  id             Int               @id @default(autoincrement())
+  pedidoCompraId Int?
+  pedidoCompra   PedidoCompra?     @relation(fields: [pedidoCompraId], references: [id])
+  fornecedorId   Int
+  fornecedor     Fornecedor        @relation(fields: [fornecedorId], references: [id])
+  lojaId         Int
+  loja           Loja              @relation(fields: [lojaId], references: [id])
+  numeroNota     String?
+  serieNota      String?
+  chaveNfe       String?
+  valorNota      Decimal?          @db.Decimal(12, 2)
+  xml            String? // XML da NF-e importado
+  status         StatusRecebimento @default(CONFERINDO)
+  observacoes    String?
+  usuarioId      Int?
+  criadoEm       DateTime          @default(now())
+  concluidoEm    DateTime?
+  itens          RecebimentoItem[]
+}
+
+model RecebimentoItem {
+  id                 Int         @id @default(autoincrement())
+  recebimentoId      Int
+  recebimento        Recebimento @relation(fields: [recebimentoId], references: [id], onDelete: Cascade)
+  produtoId          Int
+  produto            Produto     @relation(fields: [produtoId], references: [id])
+  quantidadeNota     Decimal     @db.Decimal(12, 3) // o que veio na nota / pedido
+  quantidadeRecebida Decimal?    @db.Decimal(12, 3) // o que foi conferido
+  precoUnitario      Decimal     @db.Decimal(12, 4)
+  lote               String?
+  validade           DateTime?
+  divergencia        String? // ex.: "faltou 2", "avaria"
+}
+
+// ---------- Força de vendas e B2B ----------
+
+model PedidoVenda {
+  id                Int               @id @default(autoincrement())
+  numero            Int               @default(autoincrement())
+  clienteId         Int
+  cliente           Cliente           @relation(fields: [clienteId], references: [id])
+  vendedorId        Int?
+  vendedor          Usuario?          @relation(fields: [vendedorId], references: [id])
+  lojaId            Int
+  loja              Loja              @relation(fields: [lojaId], references: [id])
+  origem            OrigemVenda       @default(FORCA_VENDAS) // FORCA_VENDAS ou B2B
+  status            StatusPedidoVenda @default(PENDENTE)
+  subtotalTabela    Decimal           @default(0) @db.Decimal(12, 2) // pelo preço de tabela
+  total             Decimal           @default(0) @db.Decimal(12, 2) // pelo preço negociado
+  flex              Decimal           @default(0) @db.Decimal(12, 2) // total - subtotalTabela (+ ganhou, - usou)
+  condicaoPagamento String?
+  formaPagamento    FormaPagamento?
+  previsaoEntrega   DateTime?
+  observacoes       String?
+  vendaId           Int?              @unique // venda gerada no faturamento
+  venda             Venda?            @relation(fields: [vendaId], references: [id])
+  criadoEm          DateTime          @default(now())
+  faturadoEm        DateTime?
+  itens             PedidoVendaItem[]
+  entrega           Entrega?
+
+  @@index([status])
+}
+
+model PedidoVendaItem {
+  id             Int         @id @default(autoincrement())
+  pedidoId       Int
+  pedido         PedidoVenda @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produtoId      Int
+  produto        Produto     @relation(fields: [produtoId], references: [id])
+  quantidade     Decimal     @db.Decimal(12, 3)
+  precoTabela    Decimal     @db.Decimal(12, 2)
+  precoNegociado Decimal     @db.Decimal(12, 2)
+  total          Decimal     @db.Decimal(12, 2)
+}
+
+// ---------- Logística: veículos, rotas/cargas, entregas, transferências ----------
+
+model Veiculo {
+  id          Int      @id @default(autoincrement())
+  placa       String   @unique
+  modelo      String
+  tipo        String   @default("Van") // Moto, Carro, Van, Caminhão
+  capacidadeKg Decimal @db.Decimal(10, 2)
+  capacidadeVolumes Int?
+  ativo       Boolean  @default(true)
+  rotas       Rota[]
+}
+
+// Rota de entrega = carga montada para um veículo/motorista.
+model Rota {
+  id          Int        @id @default(autoincrement())
+  codigo      String     @unique
+  lojaId      Int
+  loja        Loja       @relation(fields: [lojaId], references: [id])
+  data        DateTime
+  veiculoId   Int?
+  veiculo     Veiculo?   @relation(fields: [veiculoId], references: [id])
+  motoristaId Int?
+  motorista   Usuario?   @relation(fields: [motoristaId], references: [id])
+  status      StatusRota @default(MONTANDO)
+  pesoTotalKg Decimal    @default(0) @db.Decimal(10, 2)
+  distanciaKm Decimal?   @db.Decimal(10, 2) // estimada na roteirização
+  kmInicial   Int?
+  kmFinal     Int?
+  saidaEm     DateTime?
+  retornoEm   DateTime?
+  observacoes String?
+  criadoEm    DateTime   @default(now())
+  entregas    Entrega[]
+  transferencias Transferencia[]
+}
+
+model Entrega {
+  id            Int           @id @default(autoincrement())
+  codigo        String        @unique // rastreio público
+  vendaId       Int?          @unique
+  venda         Venda?        @relation(fields: [vendaId], references: [id])
+  pedidoVendaId Int?          @unique
+  pedidoVenda   PedidoVenda?  @relation(fields: [pedidoVendaId], references: [id])
+  clienteId     Int?
+  cliente       Cliente?      @relation(fields: [clienteId], references: [id])
+  destinatario  String
+  telefone      String?
+  endereco      String
+  bairro        String?
+  cidade        String?
+  latitude      Decimal?      @db.Decimal(10, 7)
+  longitude     Decimal?      @db.Decimal(10, 7)
+  status        StatusEntrega @default(PENDENTE)
+  rotaId        Int?
+  rota          Rota?         @relation(fields: [rotaId], references: [id])
+  ordem         Int? // posição na rota (roteirização)
+  motoristaId   Int?
+  motorista     Usuario?      @relation(fields: [motoristaId], references: [id])
+  taxa          Decimal       @default(0) @db.Decimal(12, 2)
+  valorCobrar   Decimal       @default(0) @db.Decimal(12, 2) // a receber na entrega
+  pesoKg        Decimal       @default(0) @db.Decimal(10, 3)
+  previsao      DateTime?
+  saiuEm        DateTime?
+  entregueEm    DateTime?
+  recebidoPor   String?
+  motivoFalha   String?
+  observacao    String?
+  avisosWhatsapp Json? // [{status, em, mensagem}] (simulado)
+  criadoEm      DateTime      @default(now())
+
+  @@index([status])
+}
+
+model Transferencia {
+  id             Int                 @id @default(autoincrement())
+  origemLojaId   Int
+  origem         Loja                @relation("TransferenciaOrigem", fields: [origemLojaId], references: [id])
+  destinoLojaId  Int
+  destino        Loja                @relation("TransferenciaDestino", fields: [destinoLojaId], references: [id])
+  status         StatusTransferencia @default(SOLICITADA)
+  rotaId         Int?
+  rota           Rota?               @relation(fields: [rotaId], references: [id])
+  observacoes    String?
+  usuarioId      Int?
+  criadoEm       DateTime            @default(now())
+  enviadaEm      DateTime?
+  recebidaEm     DateTime?
+  itens          TransferenciaItem[]
+}
+
+model TransferenciaItem {
+  id                 Int           @id @default(autoincrement())
+  transferenciaId    Int
+  transferencia      Transferencia @relation(fields: [transferenciaId], references: [id], onDelete: Cascade)
+  produtoId          Int
+  produto            Produto       @relation(fields: [produtoId], references: [id])
+  quantidade         Decimal       @db.Decimal(12, 3)
+  quantidadeRecebida Decimal?      @db.Decimal(12, 3)
+}
+
+// ---------- Assistente IA ----------
+
+model PerguntaAssistente {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  pergunta  String
+  resposta  String
+  criadoEm  DateTime @default(now())
+
+  @@index([usuarioId, criadoEm])
+}
+
+// ---------- Notificações no celular ----------
+
+model InscricaoPush {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  criadoEm  DateTime @default(now())
+
+  @@index([usuarioId])
+}
+
+// ---------- Log de atividades ----------
+
+// Um registro por atividade na plataforma. Visível só para o GESTOR.
+// Não guarda corpo de requisição nem senha. Registros com mais de 90 dias são apagados.
+model LogAtividade {
+  id          Int      @id @default(autoincrement())
+  criadoEm    DateTime @default(now())
+  usuarioId   Int? // sem relação: o log sobrevive à exclusão do usuário
+  usuarioNome String?
+  perfil      String?
+  tipo        String // LOGIN, FALHA_LOGIN, SAIDA, TELA, CONSULTA, CRIACAO, ALTERACAO, EXCLUSAO
+  modulo      String // ex.: pdv, produtos, sessao
+  descricao   String // frase curta em português
+  metodo      String?
+  caminho     String?
+  status      Int?
+  duracaoMs   Int?
+  ip          String?
+  navegador   String?
+
+  @@index([criadoEm])
+  @@index([usuarioId, criadoEm])
+  @@index([tipo, criadoEm])
+}
+
+// ===== Configurações da plataforma (linha única, id = 1) =====
+
+model ConfiguracaoPlataforma {
+  id            Int     @id @default(1)
+  nome          String  @default("Mercado e Padaria")
+  slogan        String  @default("Do forno à gôndola, tudo sob controle.")
+  logo          String?
+  corPrimaria   String  @default("#2563eb")
+  corSecundaria String  @default("#1d4ed8")
+  enderecoSite  String?
+
+  smtpServidor       String?
+  smtpPorta          Int     @default(587)
+  smtpSeguro         Boolean @default(false)
+  smtpUsuario        String?
+  smtpSenhaCifrada   String?
+  emailRemetente     String?
+  emailNomeRemetente String?
+  emailAtivo         Boolean @default(false)
+
+  emailRecuperacao Boolean @default(true)
+  emailBoasVindas  Boolean @default(true)
+
+  // Pix da empresa (QR code no PDV).
+  pixChave  String?
+  pixNome   String?
+  pixCidade String?
+
+  // Preços
+  margemPadrao      Decimal @default(30) @db.Decimal(6, 2) // % sobre o custo na formação de preço
+  arredondarPreco   Boolean @default(true) // termina em ,99 / ,49
+
+  // Balança: etiquetas EAN-13 começadas pelo prefixo, com PLU de 4–5 dígitos e preço ou peso.
+  balancaPrefixo  String  @default("2")
+  balancaModo     String  @default("PRECO") // PRECO ou PESO
+  balancaDigitosPlu Int   @default(4)
+
+  // Fiado
+  fiadoAtivo      Boolean @default(true)
+
+  // Nota fiscal
+  fiscalProvedor            ProvedorFiscal @default(SIMULADO)
+  fiscalAmbiente            AmbienteFiscal @default(HOMOLOGACAO)
+  fiscalCredenciaisCifradas String?
+  fiscalCnpj                String?
+  fiscalEmissaoAutomatica   Boolean        @default(true)
+  fiscalNcmPadrao           String         @default("21069090")
+  fiscalCfopPadrao          String         @default("5102")
+  fiscalCsosnPadrao         String         @default("102")
+  // Contador: envio automático dos XML.
+  contadorNome              String?
+  contadorEmail             String?
+  contadorEnvioAutomatico   Boolean        @default(false)
+  contadorDiaEnvio          Int            @default(5) // dia do mês para mandar o mês anterior
+
+  // Delivery próprio, WhatsApp e marketplace (integrações simuladas sem credenciais).
+  deliveryAtivo        Boolean @default(true)
+  deliveryTaxa         Decimal @default(5) @db.Decimal(10, 2)
+  deliveryPedidoMinimo Decimal @default(30) @db.Decimal(10, 2)
+  whatsappAtivo        Boolean @default(false)
+  whatsappNumero       String?
+  whatsappTokenCifrado String?
+  marketplaceAtivo     Boolean @default(false) // iFood Mercado (simulado)
+  scantechAtivo        Boolean @default(false) // bonificação da indústria (simulado)
+  mixFiscalAtivo       Boolean @default(false) // higienização fiscal dos cadastros (simulado)
+
+  // Assistente IA: usa a API da Anthropic se houver chave; senão responde por regras.
+  iaAtiva          Boolean @default(true)
+  iaChaveCifrada   String?
+
+  // Ações sensíveis: senha do gestor (só o hash) e o que cada ação exige de quem não é gestor.
+  pinHash     String?
+  regrasAcoes Json?
+
+  // Notificações no celular (Web Push).
+  vapidPublica        String?
+  vapidPrivadaCifrada String?
+
+  atualizadoEm DateTime @updatedAt
+}
+
+enum TipoTokenSenha {
+  RECUPERACAO
+  BOAS_VINDAS
+}
+
+model TokenSenha {
+  id        Int            @id @default(autoincrement())
+  usuarioId Int
+  tokenHash String         @unique
+  tipo      TipoTokenSenha
+  expiraEm  DateTime
+  usadoEm   DateTime?
+  criadoEm  DateTime       @default(now())
+
+  @@index([usuarioId])
+}
+
+enum StatusEmail {
+  ENVIADO
+  FALHOU
+}
+
+model EmailEnviado {
+  id       Int         @id @default(autoincrement())
+  para     String
+  assunto  String
+  tipo     String
+  status   StatusEmail
+  erro     String?
+  criadoEm DateTime    @default(now())
+
+  @@index([criadoEm])
+}

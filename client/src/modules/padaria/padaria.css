@@ -1,0 +1,387 @@
+/* Padaria: receitas, produção do dia e painel do forno. Só variáveis de ui/estilo.css (funciona no tema escuro). */
+
+/* ---------- Receitas (cartões) ---------- */
+
+.padaria-cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.padaria-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 1rem;
+  text-align: left;
+  font: inherit;
+  color: var(--cor-texto);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+button.padaria-cartao {
+  cursor: pointer;
+}
+
+button.padaria-cartao:hover {
+  border-color: var(--cor-primaria);
+}
+
+.padaria-cartao-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.padaria-cartao-produto {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.padaria-cartao-dados {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.padaria-cartao-dados dt {
+  font-size: 0.75rem;
+  color: var(--cor-texto-suave);
+}
+
+.padaria-cartao-dados dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.padaria-cartao-tempos,
+.padaria-cartao-rodape {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+}
+
+.padaria-ficha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.padaria-grade-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+}
+
+.padaria-subtitulo {
+  margin: 0.4rem 0 0;
+  font-size: 1rem;
+  color: var(--cor-texto);
+}
+
+.padaria-ajuda {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+}
+
+.padaria-resultados {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.padaria-insumos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.padaria-insumo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+}
+
+.padaria-insumo-nome {
+  font-weight: 600;
+  align-self: center;
+}
+
+.padaria-insumo-custo {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.padaria-totais {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-primaria-suave);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.padaria-acoes-modal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ---------- Produção do dia (kanban) ---------- */
+
+.padaria-dia {
+  align-items: center;
+}
+
+.padaria-dia-titulo {
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--cor-texto);
+}
+
+.padaria-kanban {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.padaria-coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+  border: 1px solid var(--cor-borda);
+}
+
+.padaria-coluna-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--cor-texto);
+}
+
+.padaria-fornada {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+}
+
+.padaria-fornada-alerta {
+  border-color: var(--cor-perigo);
+  background: #fff5f5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .padaria-fornada-alerta {
+    background: #2a1313;
+  }
+}
+
+.padaria-fornada-topo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.padaria-fornada-hora {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-primaria);
+}
+
+.padaria-fornada-produto {
+  font-weight: 600;
+}
+
+.padaria-fornada-quantidade {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.padaria-fornada-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.padaria-falta {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cor-perigo);
+}
+
+.padaria-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.2rem;
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+  border: 1px solid var(--cor-borda);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.padaria-rodape .padaria-ajuda {
+  font-weight: 400;
+}
+
+/* ---------- Painel do forno (tablet) ---------- */
+
+.padaria-painel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.padaria-relogio {
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-primaria);
+}
+
+.padaria-painel-secao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.padaria-painel-titulo {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--cor-texto);
+}
+
+.padaria-painel-vazio {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--cor-texto-suave);
+}
+
+.padaria-painel-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.9rem;
+}
+
+.padaria-painel-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  border: 2px solid var(--cor-borda);
+}
+
+.padaria-painel-alerta {
+  border-color: var(--cor-perigo);
+}
+
+.padaria-painel-pronto {
+  border-color: var(--cor-verde);
+  background: var(--cor-verde-suave);
+}
+
+.padaria-painel-hora {
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-primaria);
+}
+
+.padaria-painel-produto {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.padaria-painel-quantidade {
+  font-size: 1.1rem;
+  color: var(--cor-texto-suave);
+}
+
+.padaria-painel-contagem {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto);
+}
+
+.padaria-painel-cartao .padaria-falta {
+  font-size: 1rem;
+}
+
+.padaria-painel button {
+  min-height: 88px;
+  font-size: 1.4rem;
+  width: 100%;
+}
+
+/* ---------- Telas pequenas ---------- */
+
+@media (max-width: 720px) {
+  .padaria-grade-campos {
+    grid-template-columns: 1fr;
+  }
+
+  .padaria-cartao-dados {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .padaria-insumo {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .padaria-insumo-custo {
+    text-align: left;
+  }
+
+  .padaria-kanban {
+    grid-template-columns: 1fr;
+  }
+}

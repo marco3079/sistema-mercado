@@ -1,0 +1,208 @@
+/* Estoque: saldos, movimentos, validade, inventário e contagem pelo celular. Classes com prefixo estoque-. */
+
+.estoque-numero-positivo {
+  color: var(--cor-verde);
+  font-weight: 700;
+}
+
+.estoque-numero-negativo {
+  color: var(--cor-perigo);
+  font-weight: 700;
+}
+
+.estoque-texto-suave {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.estoque-acoes-linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.estoque-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.estoque-modal-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.estoque-modal-botoes .botao {
+  min-height: 44px;
+}
+
+.estoque-confirmacao {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--cor-superficie-2);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  line-height: 1.5;
+}
+
+.estoque-totais {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.estoque-progresso {
+  height: 12px;
+  width: 100%;
+  background: var(--cor-superficie-2);
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.estoque-progresso-barra {
+  height: 100%;
+  background: var(--cor-primaria);
+  transition: width 0.3s ease;
+}
+
+.estoque-detalhe-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.estoque-lista-ordenada {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.estoque-lista-ordenada li {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+/* ===== Contagem pelo celular: botões e campos grandes ===== */
+.estoque-contagem {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.estoque-contagem-campo .campo-controle {
+  min-height: 64px;
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.estoque-contagem-quantidade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.estoque-contagem-quantidade .campo-controle {
+  min-height: 56px;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.estoque-contagem-modo {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.estoque-contagem-modo .segmentado-item {
+  min-height: 52px;
+  flex: 1 1 140px;
+  font-size: 1rem;
+}
+
+.estoque-contagem-ultimo {
+  padding: 1rem;
+  background: var(--cor-primaria-suave);
+  border: 2px solid var(--cor-primaria);
+  border-radius: var(--raio);
+  text-align: center;
+}
+
+.estoque-contagem-ultimo-nome {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--cor-texto);
+  overflow-wrap: anywhere;
+}
+
+.estoque-contagem-ultimo-quantidade {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--cor-primaria);
+}
+
+.estoque-contagem-vazio {
+  padding: 1rem;
+  text-align: center;
+  color: var(--cor-texto-suave);
+}
+
+.estoque-contagem-botao {
+  min-height: 60px;
+  width: 100%;
+  font-size: 1.1rem;
+}
+
+.estoque-contagem-camera {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.estoque-contagem-camera video {
+  width: 100%;
+  max-height: 320px;
+  background: #000;
+  border-radius: var(--raio-pequeno);
+  object-fit: cover;
+}
+
+.estoque-contagem-lidos li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.estoque-contagem-lidos li span:first-child {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.estoque-contagem-lidos li span:last-child {
+  flex: none;
+  font-weight: 700;
+}
+
+@media (max-width: 519px) {
+  .estoque-contagem-quantidade {
+    grid-template-columns: 1fr;
+  }
+}

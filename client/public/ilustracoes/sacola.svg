@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 220">
+  <defs>
+    <linearGradient id="s1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b9bff"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="s2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#93c5fd"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="s3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <!-- sombra -->
+  <ellipse cx="150" cy="204" rx="110" ry="9" fill="#1d4ed8" opacity="0.12"/>
+  <!-- baguete -->
+  <g transform="rotate(-18 120 70)">
+    <rect x="70" y="40" width="40" height="120" rx="20" fill="url(#s3)"/>
+    <path d="M80 62 l20 -8 M80 84 l20 -8 M80 106 l20 -8" stroke="#b45309" stroke-width="4" stroke-linecap="round" opacity="0.55"/>
+  </g>
+  <!-- folhas -->
+  <path d="M190 74 c-8 -26 6 -44 22 -50 c2 22 -6 40 -22 50z" fill="#60a5fa"/>
+  <path d="M176 80 c-20 -14 -22 -36 -14 -50 c14 12 20 30 14 50z" fill="#93c5fd"/>
+  <!-- sacola -->
+  <path d="M62 96 h176 l-14 104 a8 8 0 0 1 -8 7 h-132 a8 8 0 0 1 -8 -7z" fill="url(#s1)"/>
+  <path d="M62 96 h176 l-2 14 h-172z" fill="#1e40af" opacity="0.35"/>
+  <path d="M110 112 v-18 a40 40 0 0 1 80 0 v18" fill="none" stroke="url(#s2)" stroke-width="9" stroke-linecap="round"/>
+  <!-- etiqueta -->
+  <rect x="120" y="140" width="60" height="34" rx="8" fill="#ffffff" opacity="0.92"/>
+  <path d="M132 157 h36" stroke="#2563eb" stroke-width="5" stroke-linecap="round"/>
+  <!-- brilhos -->
+  <circle cx="246" cy="58" r="5" fill="#93c5fd"/>
+  <circle cx="262" cy="84" r="3" fill="#60a5fa"/>
+  <circle cx="44" cy="70" r="4" fill="#93c5fd"/>
+</svg>

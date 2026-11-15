@@ -1,0 +1,333 @@
+/* ===== Módulo de compras =====
+   Cores, raios e sombras só por variáveis de ui/estilo.css (tema claro e escuro). */
+
+/* ----- Layout de formulários e filtros ----- */
+.compras-filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.compras-grade-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.compras-linha-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.compras-secao {
+  margin-top: 18px;
+}
+
+.compras-secao-titulo {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: var(--cor-texto);
+}
+
+.compras-ajuda {
+  margin: 0 0 12px;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.compras-acumulado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 8px 0 14px;
+  color: var(--cor-texto-suave);
+  font-size: 0.95rem;
+}
+
+.compras-acumulado strong {
+  color: var(--cor-texto);
+}
+
+.compras-vazio {
+  color: var(--cor-texto-suave);
+  margin: 8px 0;
+}
+
+.compras-sub {
+  display: block;
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+
+/* Input de arquivo escondido dentro de um botão (label). */
+.compras-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* ----- Estrelas (avaliação do fornecedor) ----- */
+.compras-estrelas {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.compras-estrela {
+  color: var(--cor-borda);
+  display: inline-flex;
+}
+
+.compras-estrela-cheia {
+  color: var(--cor-laranja);
+}
+
+/* ----- Campos dentro de tabelas ----- */
+.compras-input {
+  width: 100%;
+  min-width: 88px;
+  padding: 8px 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.compras-input-curto {
+  min-width: 70px;
+  max-width: 110px;
+}
+
+.compras-input-grande {
+  width: 100%;
+  font-size: 1.25rem;
+  padding: 12px 14px;
+}
+
+.compras-caixa-tabela {
+  width: 20px;
+  height: 20px;
+}
+
+/* ----- Tabelas largas (rolagem horizontal no celular) ----- */
+.compras-rolagem {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.compras-matriz {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+
+.compras-matriz th,
+.compras-matriz td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--cor-borda);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.compras-matriz th {
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.compras-matriz td.compras-numero,
+.compras-matriz th.compras-numero {
+  text-align: right;
+}
+
+/* Menor preço de cada produto: verde. */
+.compras-melhor {
+  background: var(--cor-verde-suave);
+  color: var(--cor-texto);
+  font-weight: 700;
+}
+
+.compras-vencedora {
+  color: var(--cor-sucesso);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Linha com divergência entre nota e conferido. */
+.compras-divergente td {
+  background: var(--cor-laranja-suave);
+}
+
+.compras-divergente td:first-child {
+  box-shadow: inset 3px 0 0 var(--cor-laranja);
+}
+
+/* ----- Bipagem ----- */
+.compras-bipagem {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px dashed var(--cor-primaria);
+  border-radius: var(--raio);
+  background: var(--cor-primaria-suave);
+}
+
+.compras-bipagem-ajuda {
+  margin: 0;
+  color: var(--cor-texto-suave);
+  font-size: 0.88rem;
+}
+
+/* ----- Busca de produto ----- */
+.compras-busca {
+  display: grid;
+  gap: 8px;
+}
+
+.compras-resultados {
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.compras-resultado {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.compras-resultado:hover {
+  border-color: var(--cor-primaria);
+}
+
+.compras-resultado-texto {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* ----- Ficha do fornecedor ----- */
+.compras-ficha-abas {
+  margin-bottom: 14px;
+}
+
+/* ----- Sugestão ----- */
+.compras-sugestao-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0;
+}
+
+/* ----- Conferência: ações de linha ----- */
+.compras-nao-associados {
+  display: grid;
+  gap: 12px;
+}
+
+.compras-nao-associado {
+  padding: 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+}
+
+.compras-nao-associado-titulo {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.compras-concluir-avisos {
+  display: grid;
+  gap: 10px;
+}
+
+.compras-entra-estoque {
+  color: var(--cor-texto);
+  font-weight: 600;
+}
+
+.compras-entra-estoque small {
+  display: block;
+  color: var(--cor-texto-suave);
+  font-weight: 400;
+}
+
+/* ----- Página pública da cotação (sem casca) ----- */
+.compras-publica {
+  min-height: 100vh;
+  padding: 24px 16px;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+.compras-publica-cartao {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra);
+}
+
+.compras-publica-cabecalho h1 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+}
+
+.compras-publica-cabecalho p {
+  margin: 2px 0;
+  color: var(--cor-texto-suave);
+}
+
+.compras-publica-obrigado {
+  text-align: center;
+  padding: 28px 12px;
+}
+
+.compras-publica-obrigado h2 {
+  margin: 0 0 8px;
+}
+
+.compras-publica-acoes {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .compras-publica-acoes .botao {
+    width: 100%;
+  }
+
+  .compras-resultado {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

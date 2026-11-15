@@ -1,0 +1,213 @@
+/* Financeiro, fluxo de caixa e Meu Lucro. Cores só por variáveis da casca, para funcionar no tema escuro e no celular. */
+
+.financeiro-periodo {
+  margin-bottom: 16px;
+}
+
+.financeiro-datas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.financeiro-filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 12px;
+  margin: 16px 0 6px;
+}
+
+.financeiro-linha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.financeiro-recorrencia {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 8px;
+}
+
+@media (max-width: 420px) {
+  .financeiro-datas,
+  .financeiro-linha {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.financeiro-nota,
+.financeiro-detalhe {
+  margin: 0;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.financeiro-nota {
+  margin: 4px 2px 12px;
+}
+
+.financeiro-vencido {
+  color: var(--cor-perigo);
+  font-weight: 600;
+}
+
+.financeiro-cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.financeiro-cartoes .cartao strong {
+  display: block;
+  font-size: 1.5rem;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
+.financeiro-cartoes .cartao p {
+  margin: 2px 0;
+}
+
+.financeiro-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.financeiro-nome {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.financeiro-situacao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.financeiro-totais {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 24px;
+  margin-top: 12px;
+  font-size: 0.95rem;
+}
+
+.financeiro-form {
+  display: grid;
+  gap: 12px;
+}
+
+.financeiro-form p {
+  margin: 0;
+}
+
+.financeiro-acoes-modal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.financeiro-cliente {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.financeiro-cliente-escolhido {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+}
+
+.financeiro-sugestoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  overflow: hidden;
+}
+
+.financeiro-sugestao {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--cor-borda);
+  background: transparent;
+  color: var(--cor-texto);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.financeiro-sugestao:hover {
+  background: var(--cor-superficie-2);
+}
+
+.financeiro-bloco {
+  display: grid;
+  gap: 6px;
+}
+
+.financeiro-linha-digitavel {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Meu Lucro ---------- */
+
+.lucro-destaques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.lucro-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  min-width: 0;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+}
+
+.lucro-cartao-destaque {
+  border-color: var(--cor-primaria);
+  background: var(--cor-primaria-suave);
+}
+
+.lucro-rotulo {
+  font-size: 0.85rem;
+  color: var(--cor-texto-suave);
+}
+
+.lucro-valor {
+  font-size: 1.6rem;
+  overflow-wrap: anywhere;
+}

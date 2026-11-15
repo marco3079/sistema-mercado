@@ -1,0 +1,152 @@
+/* Módulo de produtos: classes prefixadas por produtos-. Cores vêm da casca (tema claro e escuro). */
+
+.modal:has(.produtos-ficha) {
+  max-width: 920px;
+}
+
+.produtos-ficha .abas {
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.produtos-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.produtos-fieldset:disabled {
+  opacity: 0.85;
+}
+
+.produtos-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: end;
+}
+
+.produtos-campo-largo {
+  grid-column: 1 / -1;
+}
+
+.produtos-caixas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+}
+
+.produtos-resumo-preco {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-fundo);
+}
+
+.produtos-acoes-modal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.produtos-acoes-filtro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.produtos-filtros {
+  margin-bottom: 1rem;
+}
+
+.produtos-marca,
+.produtos-plu {
+  color: var(--cor-texto-suave);
+  font-size: 0.9em;
+}
+
+.produtos-paginacao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  color: var(--cor-texto-suave);
+}
+
+.produtos-subtitulo {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.produtos-historico {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.produtos-legenda {
+  color: var(--cor-texto-suave);
+  margin: 0 0 0.75rem;
+}
+
+.produtos-input-preco {
+  max-width: 9rem;
+  text-align: right;
+}
+
+.produtos-lista-escolha {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+}
+
+.produtos-lista-escolha li {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.produtos-lista-escolha li:last-child {
+  border-bottom: 0;
+}
+
+.produtos-simulacao {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-fundo);
+  color: var(--cor-texto-suave);
+}
+
+.produtos-codigo-balanca {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  color: var(--cor-texto);
+}
+
+@media (max-width: 640px) {
+  .produtos-grade {
+    grid-template-columns: 1fr;
+  }
+
+  .produtos-acoes-modal .botao {
+    flex: 1 1 auto;
+  }
+}

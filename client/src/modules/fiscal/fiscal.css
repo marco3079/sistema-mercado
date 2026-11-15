@@ -1,0 +1,75 @@
+/* Notas fiscais e área do contador. Cores vêm das variáveis da casca (funcionam no tema escuro). */
+
+.fiscal-filtros {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.fiscal-filtros .campo {
+  min-width: 150px;
+  flex: 1 1 150px;
+}
+
+.fiscal-total-valor {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto);
+  overflow-wrap: anywhere;
+}
+
+.fiscal-cancelamento {
+  display: grid;
+  gap: 12px;
+}
+
+.fiscal-acoes {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fiscal-acoes .botao {
+  min-height: 48px;
+  flex: 1 1 220px;
+}
+
+.fiscal-meses {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.fiscal-mes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-superficie);
+}
+
+.fiscal-mes-nome {
+  font-weight: 600;
+  color: var(--cor-texto);
+  min-width: 70px;
+}
+
+.fiscal-mes-texto {
+  color: var(--cor-texto-suave);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .fiscal-filtros .campo {
+    flex: 1 1 100%;
+  }
+
+  .fiscal-acoes .botao {
+    flex: 1 1 100%;
+  }
+}

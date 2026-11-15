@@ -1,0 +1,152 @@
+/* Clientes e fiado. Cores só pelas variáveis da casca (ui/estilo.css), para o tema claro e o escuro. */
+
+.clientes-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.clientes-busca {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.clientes-filtro-tipo {
+  flex: 0 1 180px;
+  min-width: 140px;
+}
+
+.clientes-sem-quebra {
+  white-space: nowrap;
+}
+
+.clientes-devendo {
+  color: var(--cor-perigo);
+  font-weight: 600;
+}
+
+.clientes-ganho {
+  color: var(--cor-sucesso);
+}
+
+.clientes-uso {
+  color: var(--cor-perigo);
+}
+
+/* Ficha do cliente: campos em grade, que vira uma coluna no celular. */
+.clientes-ficha .grade {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.clientes-ficha .pagina-acoes {
+  margin-top: 16px;
+}
+
+.clientes-indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.clientes-indicadores strong {
+  display: block;
+  font-size: 1.35rem;
+  margin-top: 4px;
+}
+
+.clientes-link {
+  word-break: break-all;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.clientes-leitura {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.clientes-leitura dt {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.clientes-leitura dd {
+  margin: 2px 0 0;
+  font-weight: 500;
+}
+
+/* Fiado: cartão de total em aberto e lista de devedores. */
+.fiado-total {
+  margin-bottom: 16px;
+}
+
+.fiado-total .cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 420px;
+}
+
+.fiado-total-rotulo {
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.fiado-total-valor {
+  color: var(--cor-perigo);
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.fiado-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.fiado-extrato {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.fiado-extrato li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.fiado-extrato-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fiado-extrato-texto small {
+  color: var(--cor-texto-suave);
+}
+
+@media (max-width: 640px) {
+  .clientes-filtro-tipo {
+    flex: 1 1 100%;
+  }
+
+  .fiado-acoes {
+    justify-content: flex-start;
+  }
+
+  .fiado-total-valor {
+    font-size: 1.6rem;
+  }
+}
