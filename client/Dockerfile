@@ -1,5 +1,5 @@
 # Estágio 1: build do app React/Vite
-FROM node:20-slim AS build
+FROM node:26-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
