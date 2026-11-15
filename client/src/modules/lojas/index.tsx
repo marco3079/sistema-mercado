@@ -1,5 +1,7 @@
 import type { RotaModulo } from '../../lib/rotas';
+import { paraPerfis } from '../../lib/rotas';
 import { Lojas } from './Lojas';
+import { MapaLojas } from './MapaLojas';
 
 export const rotas: RotaModulo[] = [
   {
@@ -11,4 +13,12 @@ export const rotas: RotaModulo[] = [
     ordem: 80,
     grupo: 'Gestão',
   },
+  ...paraPerfis(['GESTOR', 'ESTOQUISTA', 'COMPRADOR'], {
+    sufixo: 'mapa',
+    rotulo: 'Lojas e mapa',
+    icone: 'mapa',
+    elemento: <MapaLojas />,
+    ordem: 49,
+    grupo: 'Logística',
+  }),
 ];

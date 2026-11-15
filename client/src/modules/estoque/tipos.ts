@@ -41,7 +41,10 @@ export type TipoMovimento =
   | 'CONSUMO_PRODUCAO'
   | 'TRANSFERENCIA_SAIDA'
   | 'TRANSFERENCIA_ENTRADA'
-  | 'INVENTARIO';
+  | 'INVENTARIO'
+  | 'REMESSA_TERCEIRO'
+  | 'RETORNO_TERCEIRO'
+  | 'BAIXA_TERCEIRO';
 
 export const ROTULOS_TIPO_MOVIMENTO: Record<TipoMovimento, string> = {
   ENTRADA: 'Entrada',
@@ -54,6 +57,9 @@ export const ROTULOS_TIPO_MOVIMENTO: Record<TipoMovimento, string> = {
   TRANSFERENCIA_SAIDA: 'Transferência (saída)',
   TRANSFERENCIA_ENTRADA: 'Transferência (entrada)',
   INVENTARIO: 'Inventário',
+  REMESSA_TERCEIRO: 'Remessa a terceiro',
+  RETORNO_TERCEIRO: 'Retorno de terceiro',
+  BAIXA_TERCEIRO: 'Baixa no terceiro',
 };
 
 export interface Movimento {

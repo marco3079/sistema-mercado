@@ -1,0 +1,274 @@
+/* Estoque em terceiros: classes com prefixo terceiros-. Cores vêm das variáveis da casca (tema claro/escuro). */
+
+.terceiros-identidade {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.terceiros-detalhe {
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+}
+
+.terceiros-texto-suave {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.terceiros-atraso {
+  color: var(--cor-erro, #c62828);
+  font-weight: 700;
+}
+
+.terceiros-acoes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.terceiros-acoes-topo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.terceiros-acoes .botao,
+.terceiros-acoes-topo .botao {
+  min-height: 44px;
+}
+
+/* Cartões de terceiros */
+.terceiros-cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.terceiros-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  min-width: 0;
+}
+
+.terceiros-cartao-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.terceiros-cartao-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.terceiros-cartao-titulo strong {
+  overflow-wrap: anywhere;
+}
+
+.terceiros-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--cor-primaria) 14%, transparent);
+  color: var(--cor-primaria);
+}
+
+.terceiros-dados {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.terceiros-dados > div {
+  min-width: 0;
+}
+
+.terceiros-dados dt {
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+}
+
+.terceiros-dados dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.terceiros-cartao-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cor-borda);
+}
+
+/* Formulários em Modal */
+.terceiros-secao {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cor-texto-suave);
+  margin: 1rem 0 0.5rem;
+}
+
+.terceiros-secao:first-child {
+  margin-top: 0;
+}
+
+.terceiros-form-grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.terceiros-form-grade .terceiros-larga {
+  grid-column: 1 / -1;
+}
+
+.terceiros-modal-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.terceiros-modal-botoes .botao {
+  min-height: 44px;
+}
+
+/* Itens escolhidos numa remessa ou retorno */
+.terceiros-busca-resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+.terceiros-busca-resultado li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.terceiros-busca-resultado li:last-child {
+  border-bottom: 0;
+}
+
+.terceiros-lista-itens {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.terceiros-item-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.7fr) minmax(0, 0.8fr) auto;
+  align-items: end;
+  gap: 0.6rem;
+  padding: 0.6rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+.terceiros-item-linha .terceiros-item-remover {
+  min-height: 44px;
+}
+
+/* Visão da remessa (cabeçalho com dados) */
+.terceiros-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.terceiros-info > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.terceiros-info > div > span:first-child {
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+}
+
+.terceiros-info strong {
+  overflow-wrap: anywhere;
+}
+
+.terceiros-info-larga {
+  grid-column: 1 / -1;
+}
+
+.terceiros-info-larga p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.terceiros-pendente {
+  font-weight: 700;
+}
+
+.terceiros-texto-aviso {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+/* Celular */
+@media (max-width: 640px) {
+  .terceiros-form-grade {
+    grid-template-columns: 1fr;
+  }
+
+  .terceiros-item-linha {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .terceiros-item-linha > .celula-produto {
+    grid-column: 1 / -1;
+  }
+
+  .terceiros-item-linha .terceiros-item-remover {
+    justify-self: stretch;
+  }
+
+  .terceiros-dados {
+    grid-template-columns: 1fr;
+  }
+}

@@ -733,3 +733,210 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Rastreadores GPS (Configurações > Rastreadores GPS) ---------- */
+.gps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+.gps-passos {
+  margin: 0 0 0.9rem;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  color: var(--cor-texto);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+.gps-endereco-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.75rem;
+  background: var(--cor-fundo, #f1f5f9);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+.gps-endereco {
+  flex: 1 1 260px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.86rem;
+  color: var(--cor-texto);
+}
+.gps-barra {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+.gps-tag {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.gps-identificador {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.75rem;
+  color: var(--cor-texto-suave);
+  overflow-wrap: anywhere;
+}
+.gps-bateria {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.gps-bateria .barra-nivel {
+  width: 64px;
+}
+.gps-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.gps-form-grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+.gps-largura-total {
+  grid-column: 1 / -1;
+}
+.gps-campo-com-botao {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.gps-campo-com-botao > .campo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.gps-dica {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave);
+  line-height: 1.4;
+}
+.gps-form-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.gps-historico {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+.gps-historico-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+.gps-historico-lista li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.86rem;
+  border-bottom: 1px solid var(--cor-borda);
+}
+.gps-historico-lista li:last-child {
+  border-bottom: none;
+}
+.gps-vazio {
+  margin: 0;
+  color: var(--cor-texto-suave);
+  text-align: center;
+  padding: 1rem;
+}
+@media (max-width: 640px) {
+  .gps-form-grade {
+    grid-template-columns: 1fr;
+  }
+  .gps-endereco-linha .botao {
+    width: 100%;
+  }
+  .gps-barra .botao {
+    width: 100%;
+  }
+  .gps-form-acoes .botao {
+    flex: 1 1 auto;
+  }
+}
+
+/* Formulário da tag: identificador com entrada e botão na mesma linha; rodapé com ativação e botões. */
+.gps-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.gps-grupo > .campo-rotulo {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--cor-texto-suave);
+}
+.gps-entrada-linha {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.gps-entrada-linha > .campo-controle {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+.gps-entrada-linha > .botao {
+  flex: none;
+  height: auto;
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.gps-vinculo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem 1rem;
+  min-width: 0;
+}
+.gps-vinculo-duplo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.gps-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--cor-borda);
+  padding-top: 0.9rem;
+}
+@media (max-width: 640px) {
+  .gps-vinculo-duplo {
+    grid-template-columns: 1fr;
+  }
+  .gps-rodape {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .gps-rodape .gps-form-acoes .botao {
+    flex: 1 1 0;
+  }
+}

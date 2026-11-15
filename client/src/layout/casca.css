@@ -253,7 +253,8 @@
 
 .casca-topo {
   position: relative;
-  z-index: 2;
+  /* Acima do conteúdo da página (mapas, painéis): as caixas de Avisos e da loja abrem por cima. */
+  z-index: 15;
   display: flex;
   align-items: center;
   gap: 1rem;

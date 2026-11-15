@@ -288,6 +288,7 @@ model Usuario {
   rotas           Rota[]
   entregas        Entrega[]
   movimentos      MovimentoEstoque[]
+  rastreadores    RastreadorGps[]
 }
 
 // ---------- Catálogo ----------
@@ -1009,6 +1010,7 @@ model Veiculo {
   capacidadeVolumes Int?
   ativo       Boolean  @default(true)
   rotas       Rota[]
+  rastreadores RastreadorGps[]
 }
 
 // Rota de entrega = carga montada para um veículo/motorista.
@@ -1187,6 +1189,53 @@ model EstoqueTerceiro {
   quantidade Decimal  @default(0) @db.Decimal(12, 3)
 
   @@unique([terceiroId, produtoId, lojaId])
+}
+
+// ---------- Rastreadores GPS (tags) ----------
+// Cada tag manda a posição pelo protocolo OsmAnd (o mesmo do app Traccar Client e do servidor Traccar):
+// GET/POST /api/publico/gps/osmand?id=<identificador>&lat=..&lon=..&speed=..&batt=..&timestamp=..
+// A última posição fica no próprio rastreador; o histórico em PosicaoGps (apagado depois de 30 dias).
+
+enum TipoRastreador {
+  VEICULO
+  MOTORISTA // celular do motorista/entregador
+  CARRINHO // carrinho/gaiola de entrega
+  PALETE
+  EQUIPAMENTO // freezer, expositor em comodato
+  OUTRO
+}
+
+model RastreadorGps {
+  id               Int            @id @default(autoincrement())
+  identificador    String         @unique // id/IMEI que o aparelho manda (campo id do OsmAnd)
+  nome             String
+  tipo             TipoRastreador @default(VEICULO)
+  veiculoId        Int?
+  veiculo          Veiculo?       @relation(fields: [veiculoId], references: [id])
+  usuarioId        Int? // motorista que carrega o aparelho
+  usuario          Usuario?       @relation(fields: [usuarioId], references: [id])
+  ativo            Boolean        @default(true)
+  observacoes      String?
+  ultimaLat        Decimal?       @db.Decimal(10, 7)
+  ultimaLng        Decimal?       @db.Decimal(10, 7)
+  ultimaVelocidade Decimal?       @db.Decimal(6, 1) // km/h
+  ultimaBateria    Int? // %
+  ultimoSinalEm    DateTime?
+  criadoEm         DateTime       @default(now())
+  posicoes         PosicaoGps[]
+}
+
+model PosicaoGps {
+  id           Int           @id @default(autoincrement())
+  rastreadorId Int
+  rastreador   RastreadorGps @relation(fields: [rastreadorId], references: [id], onDelete: Cascade)
+  lat          Decimal       @db.Decimal(10, 7)
+  lng          Decimal       @db.Decimal(10, 7)
+  velocidade   Decimal?      @db.Decimal(6, 1)
+  bateria      Int?
+  registradoEm DateTime      @default(now())
+
+  @@index([rastreadorId, registradoEm])
 }
 
 // ---------- Assistente IA ----------

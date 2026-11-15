@@ -2,9 +2,9 @@
 // Três lojas, equipe de cada perfil, catálogo com balança e padaria, estoque e lotes, 180 dias de vendas
 // (pelo registrarVenda), caixas, promoções, compras, logística e força de vendas. Nenhum dado real.
 
-import type { Caixa, FormaPagamento, Loja, Perfil, PrismaClient, Produto, Promocao, StatusPedidoVenda, TipoCliente, Unidade, Usuario, Veiculo } from '@prisma/client';
+import type { Caixa, FormaPagamento, Loja, Perfil, PrismaClient, Produto, Promocao, StatusPedidoVenda, TipoCliente, TipoTerceiro, Unidade, Usuario, Veiculo } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { atualizarCustoMedio, movimentarEstoque, type Tx } from '../src/lib/estoque';
+import { atualizarCustoMedio, movimentarEstoque, saldoDe, type Tx } from '../src/lib/estoque';
 import { calcularPreco, digitoVerificadorEan, promocoesVigentes, sugerirPrecoVenda } from '../src/lib/precos';
 import { registrarVenda, type ItemEntrada, type PagamentoEntrada } from '../src/lib/vendas';
 import { arred2, arred3, codigoAleatorio, inicioDoDia, num, somarDias } from '../src/lib/numeros';
@@ -1024,6 +1024,9 @@ export async function carregarDemonstracao(prisma: PrismaClient): Promise<void> 
     }
   }, TX_OPCOES);
 
+  await demoTerceiros(prisma, matriz, estoquista);
+  await demoGps(prisma);
+
   // ---------- Resumo ----------
   const segundos = Math.round((Date.now() - inicio) / 1000);
   console.log(
@@ -1043,4 +1046,231 @@ export async function carregarDemonstracao(prisma: PrismaClient): Promise<void> 
     console.log(`${perfil}: ${email}`);
   }
   console.log('=================================================');
+}
+
+// ---------- Estoque em terceiros (demonstração) ----------
+// 2 terceiros e 3 remessas: consignação atrasada (Lanchonete do Zé), comodato de freezer e
+// conserto de balanças com uma já devolvida (remessa parcial). Mesmas regras das rotas de terceiros.
+async function demoTerceiros(prisma: PrismaClient, matriz: Loja, estoquista: Usuario): Promise<void> {
+  const ze = await prisma.terceiro.create({
+    data: {
+      nome: 'Lanchonete do Zé',
+      documento: '12345678000190',
+      contato: 'José Lima',
+      telefone: '(11) 3000-7001',
+      email: 'ze@lanchonete.demo',
+      endereco: 'Rua do Comércio, 45',
+      cidade: 'São Paulo',
+      uf: 'SP',
+      observacoes: 'Recebe pães e salgados em consignação.',
+    },
+  });
+  const frio = await prisma.terceiro.create({
+    data: {
+      nome: 'Assistência Técnica FrioMax',
+      documento: '98765432000110',
+      contato: 'Carla Souza',
+      telefone: '(11) 3000-7002',
+      email: 'contato@frio.demo',
+      cidade: 'São Paulo',
+      uf: 'SP',
+    },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    // Equipamentos fora da venda (insumo: não aparecem no PDV).
+    const freezer = await tx.produto.create({
+      data: { codigo: 'TERC-0001', nome: 'Freezer expositor 300 L', unidade: 'UN', precoCusto: 1100, precoVenda: 1100, insumo: true, estoqueMinimo: 0 },
+    });
+    const balanca = await tx.produto.create({
+      data: { codigo: 'TERC-0002', nome: 'Balança digital 30 kg', unidade: 'UN', precoCusto: 650, precoVenda: 650, insumo: true, estoqueMinimo: 0 },
+    });
+    await movimentarEstoque(tx, { produtoId: freezer.id, lojaId: matriz.id, tipo: 'ENTRADA', quantidade: 1, custoUnitario: 1100, motivo: 'Entrada de demonstração', usuarioId: estoquista.id });
+    await movimentarEstoque(tx, { produtoId: balanca.id, lojaId: matriz.id, tipo: 'ENTRADA', quantidade: 2, custoUnitario: 650, motivo: 'Entrada de demonstração', usuarioId: estoquista.id });
+
+    // 1) Consignação na lanchonete: pães e salgados, previsão de retorno já vencida (atrasada).
+    const pao = await tx.produto.findFirstOrThrow({ where: { nome: 'Pão de queijo' } });
+    const sonho = await tx.produto.findFirstOrThrow({ where: { nome: 'Sonho' } });
+    const itensZe: ItemDemoTerceiro[] = [];
+    for (const [produto, desejada] of [[pao, 12], [sonho, 6]] as [Produto, number][]) {
+      const quantidade = Math.min(desejada, Math.floor(await saldoDe(produto.id, matriz.id, tx)));
+      if (quantidade > 0) itensZe.push({ produto, quantidade });
+    }
+    if (itensZe.length > 0) {
+      await enviarDemoTerceiro(tx, { lojaId: matriz.id, usuarioId: estoquista.id, terceiroId: ze.id, tipo: 'CONSIGNACAO', previsao: somarDias(hoje, -10), itens: itensZe });
+    }
+
+    // 2) Comodato: freezer emprestado à lanchonete, devolução prevista em 90 dias.
+    await enviarDemoTerceiro(tx, { lojaId: matriz.id, usuarioId: estoquista.id, terceiroId: ze.id, tipo: 'COMODATO', previsao: somarDias(hoje, 90), itens: [{ produto: freezer, quantidade: 1 }] });
+
+    // 3) Conserto: duas balanças na assistência; uma já voltou, então a remessa fica parcial.
+    const conserto = await enviarDemoTerceiro(tx, { lojaId: matriz.id, usuarioId: estoquista.id, terceiroId: frio.id, tipo: 'CONSERTO', previsao: somarDias(hoje, 15), itens: [{ produto: balanca, quantidade: 2 }] });
+    const itemBalanca = conserto.itemIds[0];
+    await movimentarEstoque(tx, {
+      produtoId: balanca.id,
+      lojaId: matriz.id,
+      tipo: 'RETORNO_TERCEIRO',
+      quantidade: 1,
+      custoUnitario: 650,
+      motivo: `Retorno da remessa nº ${conserto.numero} (Assistência Técnica FrioMax)`,
+      referencia: `terceiro:${conserto.remessaId}`,
+      usuarioId: estoquista.id,
+    });
+    await tx.remessaTerceiroItem.update({ where: { id: itemBalanca }, data: { quantidadeRetornada: 1 } });
+    await tx.estoqueTerceiro.update({
+      where: { terceiroId_produtoId_lojaId: { terceiroId: frio.id, produtoId: balanca.id, lojaId: matriz.id } },
+      data: { quantidade: { decrement: 1 } },
+    });
+    await tx.remessaTerceiro.update({ where: { id: conserto.remessaId }, data: { status: 'PARCIAL' } });
+  }, TX_OPCOES);
+}
+
+interface ItemDemoTerceiro {
+  produto: Produto;
+  quantidade: number;
+}
+
+// Envio de demonstração: saída do estoque próprio, item com custo e preço de cobrança, saldo com o terceiro.
+async function enviarDemoTerceiro(
+  tx: Tx,
+  p: { lojaId: number; usuarioId: number; terceiroId: number; tipo: TipoTerceiro; previsao: Date; itens: ItemDemoTerceiro[] },
+): Promise<{ remessaId: number; numero: number; itemIds: number[] }> {
+  const remessa = await tx.remessaTerceiro.create({
+    data: { terceiroId: p.terceiroId, lojaId: p.lojaId, tipo: p.tipo, previsaoRetorno: p.previsao, usuarioId: p.usuarioId },
+  });
+  const itemIds: number[] = [];
+  for (const { produto, quantidade } of p.itens) {
+    const custo = num(produto.precoCusto);
+    await movimentarEstoque(tx, {
+      produtoId: produto.id,
+      lojaId: p.lojaId,
+      tipo: 'REMESSA_TERCEIRO',
+      quantidade: -quantidade,
+      custoUnitario: custo,
+      motivo: `Remessa nº ${remessa.numero} para terceiro`,
+      referencia: `terceiro:${remessa.id}`,
+      usuarioId: p.usuarioId,
+    });
+    const item = await tx.remessaTerceiroItem.create({
+      data: { remessaId: remessa.id, produtoId: produto.id, quantidade, custoUnitario: custo, precoCobranca: num(produto.precoVenda) },
+    });
+    itemIds.push(item.id);
+    await tx.estoqueTerceiro.upsert({
+      where: { terceiroId_produtoId_lojaId: { terceiroId: p.terceiroId, produtoId: produto.id, lojaId: p.lojaId } },
+      create: { terceiroId: p.terceiroId, produtoId: produto.id, lojaId: p.lojaId, quantidade },
+      update: { quantidade: { increment: quantidade } },
+    });
+  }
+  return { remessaId: remessa.id, numero: remessa.numero, itemIds };
+}
+
+// ---------- Rastreadores GPS (demonstração) ----------
+// Três tags: Fiorino e Moto (veículos da demonstração) e o celular do motorista. Cada uma com a última posição
+// e 20 pontos de histórico em ruas do centro de São Paulo. As últimas leituras são de minutos atrás, então a
+// tela mostra Online e há N min.
+const ROTA_CENTRO: [number, number][] = [
+  [-23.5505, -46.6333], // Praça da Sé
+  [-23.5483, -46.636], // Rua Direita
+  [-23.544, -46.6375], // Viaduto do Chá
+  [-23.5455, -46.6365], // Rua Libero Badaró
+  [-23.5439, -46.6427], // Praça da República
+];
+
+async function demoGps(prisma: PrismaClient): Promise<void> {
+  const sorteio = gerador(20261115); // semente própria: não mexe na sequência do restante do seed
+  const agora = Date.now();
+  const fiorino = await prisma.veiculo.findUnique({ where: { placa: 'DEM0F01' }, select: { id: true } });
+  const moto = await prisma.veiculo.findUnique({ where: { placa: 'DEM0M02' }, select: { id: true } });
+  const motorista = await prisma.usuario.findUnique({ where: { email: 'motorista@mercado.local' }, select: { id: true } });
+  const c = (v: number): number => Math.round(v * 1e7) / 1e7;
+
+  const tags: {
+    identificador: string;
+    nome: string;
+    tipo: 'VEICULO' | 'MOTORISTA';
+    veiculoId: number | null;
+    usuarioId: number | null;
+    rota: [number, number][];
+    minutosAtras: number;
+    bateria: number;
+    velocidade: number;
+  }[] = [
+    {
+      identificador: 'DEMO-FIORINO',
+      nome: 'Fiorino',
+      tipo: 'VEICULO',
+      veiculoId: fiorino?.id ?? null,
+      usuarioId: null,
+      rota: ROTA_CENTRO,
+      minutosAtras: 1,
+      bateria: 86,
+      velocidade: 32.5,
+    },
+    {
+      identificador: 'DEMO-MOTO',
+      nome: 'Moto',
+      tipo: 'VEICULO',
+      veiculoId: moto?.id ?? null,
+      usuarioId: null,
+      rota: [...ROTA_CENTRO].reverse(),
+      minutosAtras: 12,
+      bateria: 54,
+      velocidade: 0,
+    },
+    {
+      identificador: 'DEMO-CELULAR-MOTORISTA',
+      nome: 'Celular do motorista',
+      tipo: 'MOTORISTA',
+      veiculoId: null,
+      usuarioId: motorista?.id ?? null,
+      rota: [ROTA_CENTRO[0], ROTA_CENTRO[2], ROTA_CENTRO[4]],
+      minutosAtras: 2,
+      bateria: 23,
+      velocidade: 14.8,
+    },
+  ];
+
+  for (const t of tags) {
+    const ultimo = new Date(agora - t.minutosAtras * 60 * 1000);
+    const pontos = Array.from({ length: 20 }, (_, i) => {
+      const f = (i / 19) * (t.rota.length - 1);
+      const k = Math.min(t.rota.length - 2, Math.floor(f));
+      const r = f - k;
+      const [la1, ln1] = t.rota[k];
+      const [la2, ln2] = t.rota[k + 1];
+      const ehUltimo = i === 19;
+      return {
+        lat: c(la1 + (la2 - la1) * r + (sorteio() - 0.5) * 0.0004),
+        lng: c(ln1 + (ln2 - ln1) * r + (sorteio() - 0.5) * 0.0004),
+        velocidade: ehUltimo ? t.velocidade : Math.round(sorteio() * 400) / 10,
+        registradoEm: new Date(ultimo.getTime() - (19 - i) * 5 * 60 * 1000),
+      };
+    });
+    const atual = pontos[pontos.length - 1];
+    const rastreador = await prisma.rastreadorGps.create({
+      data: {
+        identificador: t.identificador,
+        nome: t.nome,
+        tipo: t.tipo,
+        veiculoId: t.veiculoId,
+        usuarioId: t.usuarioId,
+        ativo: true,
+        ultimaLat: atual.lat,
+        ultimaLng: atual.lng,
+        ultimaVelocidade: t.velocidade,
+        ultimaBateria: t.bateria,
+        ultimoSinalEm: ultimo,
+      },
+    });
+    await prisma.posicaoGps.createMany({
+      data: pontos.map((p) => ({
+        rastreadorId: rastreador.id,
+        lat: p.lat,
+        lng: p.lng,
+        velocidade: p.velocidade,
+        bateria: t.bateria,
+        registradoEm: p.registradoEm,
+      })),
+    });
+  }
 }

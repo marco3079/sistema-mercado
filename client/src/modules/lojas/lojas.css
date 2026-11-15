@@ -80,7 +80,25 @@
 
 .lojas-acoes {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+}
+
+.lojas-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--altura-toque, 44px);
+  padding: 0 12px;
+  color: var(--cor-primaria);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 10px;
+}
+
+.lojas-link:hover {
+  background: var(--cor-primaria-suave);
 }
 
 .lojas-vazio {
@@ -89,17 +107,573 @@
   padding: 24px 0;
 }
 
+/* Formulário: seções com título pequeno e campos em grade de 2 colunas. */
+
+.lojas-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lojas-secao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.lojas-secao:first-of-type {
+  padding-top: 0;
+  border-top: none;
+}
+
+.lojas-secao-titulo {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.lojas-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+}
+
+.lojas-campo-larga {
+  grid-column: 1 / -1;
+}
+
+.lojas-previa {
+  margin-top: 4px;
+}
+
 .lojas-formulario-linha {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 12px;
 }
 
+/* Tela "Lojas e mapa" (classes "mapas-lojas-"). Lista à esquerda, mapa à direita; no celular, mapa em cima. */
+
+.mapas-lojas {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.mapas-lojas-area {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mapas-lojas-lista {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mapas-lojas-titulo {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+.mapas-lojas-camadas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mapas-lojas-pilula {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--altura-toque, 44px);
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.mapas-lojas-pilula-ligada {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font-weight: 600;
+}
+
+.mapas-lojas-ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cor-texto-suave);
+  opacity: 0.4;
+}
+
+.mapas-lojas-pilula-ligada .mapas-lojas-ponto {
+  opacity: 1;
+}
+
+.mapas-lojas-pilula-azul.mapas-lojas-pilula-ligada .mapas-lojas-ponto {
+  background: #2563eb;
+}
+
+.mapas-lojas-pilula-roxo.mapas-lojas-pilula-ligada .mapas-lojas-ponto {
+  background: #7c3aed;
+}
+
+.mapas-lojas-pilula-laranja.mapas-lojas-pilula-ligada .mapas-lojas-ponto {
+  background: #f59e0b;
+}
+
+.mapas-lojas-pilula-verde.mapas-lojas-pilula-ligada .mapas-lojas-ponto {
+  background: #059669;
+}
+
+.mapas-lojas-pilula-magenta.mapas-lojas-pilula-ligada .mapas-lojas-ponto {
+  background: #db2777;
+}
+
+.mapas-lojas-mapa {
+  height: max(420px, calc(100vh - 220px));
+  min-width: 0;
+}
+
+.mapas-lojas-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  min-width: 0;
+}
+
+.mapas-lojas-cartao-ativo {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 2px var(--cor-primaria-suave), var(--sombra);
+}
+
+.mapas-lojas-sem-coord {
+  color: var(--cor-aviso);
+}
+
+@media (max-width: 760px) {
+  .mapas-lojas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mapas-lojas-area,
+  .mapas-lojas-lista {
+    grid-column: 1;
+  }
+  .mapas-lojas-area {
+    grid-row: 1;
+  }
+  .mapas-lojas-lista {
+    grid-row: 2;
+  }
+  .mapas-lojas-mapa {
+    height: 360px;
+  }
+}
+
 @media (max-width: 560px) {
   .lojas-grade {
     grid-template-columns: 1fr;
   }
+  .lojas-campos,
   .lojas-formulario-linha {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Lista com abas, busca e itens; mapa com painel de detalhes; topo alinhado nas duas colunas. */
+
+.mapas-lojas {
+  align-items: start;
+}
+
+.mapas-lojas-lista {
+  max-height: max(420px, calc(100vh - 260px));
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.mapas-lojas-mapa {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  grid-column: 2;
+  grid-row: 1;
+  height: max(420px, calc(100vh - 260px));
+  min-width: 0;
+}
+
+.mapas-lojas-abas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  padding: 4px;
+  background: var(--cor-superficie-2);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+}
+
+.mapas-lojas-aba {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 4px;
+  white-space: nowrap;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mapas-lojas-aba-ativa {
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  box-shadow: var(--sombra);
+}
+
+.mapas-lojas-contagem {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--cor-fundo);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.mapas-lojas-busca {
+  width: 100%;
+  min-height: var(--altura-toque, 44px);
+  padding: 0 12px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.mapas-lojas-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mapas-lojas-item-titulo {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.mapas-lojas-item-sub {
+  font-size: 0.86rem;
+  color: var(--cor-texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.mapas-lojas-selo-roxo {
+  background: var(--cor-roxo-suave);
+  color: var(--cor-roxo);
+}
+
+/* Painel de detalhes: lateral por cima da faixa direita do mapa. */
+
+.mapas-painel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, 100%);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  border-left: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra);
+  animation: mapas-painel-entra 0.22s ease-out;
+}
+
+.mapas-painel-fechar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mapas-painel-conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.mapas-painel-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 36px;
+}
+
+.mapas-painel-icone {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.mapas-painel-icone-roxo {
+  background: #7c3aed;
+}
+
+.mapas-painel-icone-laranja {
+  background: #f59e0b;
+}
+
+.mapas-painel-icone-verde {
+  background: #059669;
+}
+
+.mapas-painel-icone-magenta {
+  background: #db2777;
+}
+
+.mapas-painel-icone-azul {
+  background: #2563eb;
+}
+
+.mapas-painel-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.mapas-painel-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cor-borda);
+  font-size: 0.9rem;
+}
+
+.mapas-painel-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mapas-painel-rotulo {
+  flex: 0 0 auto;
+  color: var(--cor-texto-suave);
+}
+
+.mapas-painel-valor {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.mapas-painel-numeros {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mapas-painel-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.mapas-painel-subtitulo {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.mapas-painel-vazio,
+.mapas-painel-aviso {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--cor-texto-suave);
+}
+
+.mapas-painel-aviso {
+  color: var(--cor-aviso);
+}
+
+.mapas-painel-total {
+  margin: 0;
+  font-weight: 600;
+}
+
+.mapas-proxima {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  background: var(--cor-primaria-suave);
+  border-radius: var(--raio-pequeno);
+  overflow-wrap: anywhere;
+}
+
+.mapas-proxima-rotulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--cor-primaria);
+}
+
+.mapas-proxima-tempo {
+  font-weight: 700;
+  color: var(--cor-primaria);
+}
+
+.mapas-paradas {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.mapas-paradas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mapas-paradas-hora {
+  white-space: nowrap;
+  color: var(--cor-texto-suave);
+}
+
+.mapas-placa {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  background: var(--cor-fundo);
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.mapas-bateria {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mapas-bateria .barra-nivel {
+  width: 80px;
+}
+
+@keyframes mapas-painel-entra {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .mapas-lojas-mapa {
+    grid-column: 1;
+    grid-row: 1;
+    height: 360px;
+  }
+  .mapas-lojas-lista {
+    grid-column: 1;
+    grid-row: 2;
+    max-height: none;
+    overflow: visible;
+  }
+  .mapas-painel {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 70vh;
+    border-left: none;
+    border-top: 1px solid var(--cor-borda);
+    border-radius: 16px 16px 0 0;
+    animation: mapas-painel-sobe 0.22s ease-out;
+  }
+  .mapas-painel-fechar {
+    top: 8px;
+  }
+}
+
+@keyframes mapas-painel-sobe {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
   }
 }

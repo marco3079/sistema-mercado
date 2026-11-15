@@ -11,12 +11,14 @@ import { Email } from './Email';
 import { Identidade } from './Identidade';
 import { Mercado } from './Mercado';
 import { Permissoes } from './Permissoes';
+import { Rastreadores } from './Rastreadores';
 import { identidadeDe } from './tipos';
 import type { ConfiguracoesDTO, IdentidadeDados } from './tipos';
 
 const ABAS = [
   { id: 'identidade', rotulo: 'Identidade' },
   { id: 'mercado', rotulo: 'Mercado' },
+  { id: 'gps', rotulo: 'Rastreadores GPS' },
   { id: 'cores', rotulo: 'Cores' },
   { id: 'email', rotulo: 'E-mail' },
   { id: 'atualizacao', rotulo: 'Atualização' },
@@ -112,6 +114,7 @@ export function Configuracoes() {
             <Email config={config} aoSalvo={aoSalvarEmail} />
           </div>
           {aba === 'mercado' && <Mercado />}
+          {aba === 'gps' && <Rastreadores />}
           {aba === 'atualizacao' && <Atualizacao />}
           {aba === 'backup' && <Backup />}
           {aba === 'permissoes' && <Permissoes />}
