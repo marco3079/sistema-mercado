@@ -933,11 +933,34 @@
 }
 
 .casca-seletor-loja select {
+  appearance: none;
+  -webkit-appearance: none;
   border: 0;
+  outline: none;
+  box-shadow: none;
   background: transparent;
   color: inherit;
   font: inherit;
   font-weight: 600;
+  padding: 0 1.4rem 0 0;
+  margin-right: -1.4rem;
   cursor: pointer;
   max-width: 180px;
+  position: relative;
+  z-index: 1;
+}
+
+.casca-seletor-loja select option {
+  color: var(--cor-texto);
+  background: var(--cor-superficie);
+}
+
+.casca-seletor-loja-seta {
+  color: var(--cor-texto-suave);
+  pointer-events: none;
+}
+
+.casca-seletor-loja:focus-within {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor-primaria) 20%, transparent);
 }

@@ -57,6 +57,7 @@ export function SeletorLoja() {
           </option>
         ))}
       </select>
+      <Icone nome="chevron-baixo" tamanho={16} className="casca-seletor-loja-seta" />
     </label>
   );
 }
