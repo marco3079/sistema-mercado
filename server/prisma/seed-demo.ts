@@ -533,6 +533,8 @@ export async function carregarDemonstracao(prisma: PrismaClient): Promise<void> 
         controlaLote: (d.lote ?? false) || (d.produzido ?? false),
         ativo: true,
         fornecedorPadraoId: fornecedorId,
+        // Foto do catálogo de demonstração (client/public/produtos/PR0001.jpg ...).
+        foto: `/produtos/PR${String(i + 1).padStart(4, '0')}.jpg`,
       },
     });
     if (fornecedorId !== null) {

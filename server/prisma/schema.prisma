@@ -1175,6 +1175,16 @@ model ConfiguracaoPlataforma {
   balancaModo     String  @default("PRECO") // PRECO ou PESO
   balancaDigitosPlu Int   @default(4)
 
+  // Impressão de etiquetas de gôndola.
+  // etiquetaModo: A4 (folha pelo navegador), TERMICA (rolo, pelo driver da impressora no navegador) ou ZEBRA (ZPL pela rede).
+  etiquetaModo       String  @default("A4")
+  etiquetaLarguraMm  Int     @default(60)
+  etiquetaAlturaMm   Int     @default(40)
+  etiquetaColunas    Int     @default(1) // etiquetas lado a lado no rolo
+  zebraIp            String? // IP da Zebra na rede local (porta RAW 9100)
+  zebraPorta         Int     @default(9100)
+  zebraDpi           Int     @default(203) // 203 ou 300
+
   // Fiado
   fiadoAtivo      Boolean @default(true)
 

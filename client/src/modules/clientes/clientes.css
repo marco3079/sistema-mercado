@@ -105,9 +105,11 @@
 
 .fiado-acoes {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 6px;
   justify-content: flex-end;
+  white-space: nowrap;
 }
 
 .fiado-extrato {

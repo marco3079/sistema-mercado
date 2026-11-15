@@ -9,8 +9,10 @@ import {
   Campo,
   Carregando,
   Cartao,
+  MenuAcoes,
   Modal,
   Pagina,
+  Selo,
   Selecao,
   Tabela,
   formatarDataHora,
@@ -200,7 +202,14 @@ export function Fiado() {
             {
               titulo: 'Dias em atraso',
               alinhar: 'direita',
-              celula: (d) => (d.diasEmAtraso === null ? '—' : String(d.diasEmAtraso)),
+              celula: (d) =>
+                d.diasEmAtraso === null ? (
+                  '—'
+                ) : (
+                  <Selo cor={d.diasEmAtraso > 60 ? 'vermelho' : d.diasEmAtraso > 30 ? 'amarelo' : 'verde'}>
+                    {d.diasEmAtraso} {d.diasEmAtraso === 1 ? 'dia' : 'dias'}
+                  </Selo>
+                ),
             },
             {
               titulo: 'Ações',
@@ -210,19 +219,24 @@ export function Fiado() {
                   <Botao variante="secundario" aoClicar={() => setRecebendo(d)}>
                     Receber
                   </Botao>
-                  <Botao variante="texto" aoClicar={() => setExtrato(d)}>
-                    Extrato
-                  </Botao>
-                  <Botao
-                    variante="texto"
-                    desabilitado={linkWhatsApp(d) === null}
-                    aoClicar={() => {
-                      const link = linkWhatsApp(d);
-                      if (link) window.open(link, '_blank', 'noopener');
-                    }}
-                  >
-                    WhatsApp
-                  </Botao>
+                  <MenuAcoes
+                    rotulo={`Mais ações para ${d.nome}`}
+                    acoes={[
+                      { rotulo: 'Ver extrato', icone: 'lista', aoClicar: () => setExtrato(d) },
+                      ...(linkWhatsApp(d) !== null
+                        ? [
+                            {
+                              rotulo: 'Cobrar pelo WhatsApp',
+                              icone: 'chat' as const,
+                              aoClicar: () => {
+                                const link = linkWhatsApp(d);
+                                if (link) window.open(link, '_blank', 'noopener');
+                              },
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                 </div>
               ),
             },

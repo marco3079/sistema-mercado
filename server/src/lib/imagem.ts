@@ -11,7 +11,8 @@ const PREFIXOS_DATA_URL = [
 ];
 const MAX_DATA_URL = 200_000;
 const MAX_ENDERECO = 500;
-const FOTO_DO_SITE = /^\/cardapio\/[a-z0-9-]{1,60}\.(jpg|png|webp)$/;
+// Fotos que já vêm no site: /cardapio/... (legado) e /produtos/PR0001.jpg (catálogo de demonstração).
+const FOTO_DO_SITE = /^\/(cardapio|produtos)\/[A-Za-z0-9-]{1,60}\.(jpg|png|webp)$/;
 
 export function validarImagem(
   valor: unknown,

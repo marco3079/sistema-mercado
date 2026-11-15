@@ -889,3 +889,53 @@ textarea.campo-controle {
   background: var(--cor-primaria-suave);
   color: var(--cor-primaria);
 }
+
+
+/* ===== Tabela: escolha tabela/cartões e paginação ===== */
+.tabela-bloco { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+
+.tabela-topo { display: none; align-items: center; justify-content: space-between; gap: 1rem; }
+.tabela-contagem { font-size: 0.85rem; color: var(--cor-texto-suave); font-weight: 600; }
+
+.tabela-visao {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--cor-superficie); border: 1px solid var(--cor-borda); border-radius: 999px;
+}
+.tabela-visao-botao {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+  border: 0; border-radius: 999px; background: transparent; color: var(--cor-texto-suave);
+  font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+.tabela-visao-botao.ativo { background: var(--cor-primaria); color: #fff; }
+
+/* Cartão: título (1ª coluna), pares em duas colunas, ações no rodapé */
+.tabela-cartao { display: flex; flex-direction: column; gap: 0.6rem; }
+.tabela-cartao-titulo { font-weight: 700; min-width: 0; }
+.tabela-cartao-pares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.35rem 1rem; }
+.tabela-cartao .tabela-par { padding: 0; }
+.tabela-par-acoes {
+  display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap;
+  padding-top: 0.6rem; border-top: 1px solid var(--cor-borda);
+}
+
+/* Paginação */
+.paginacao { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.paginacao-info { font-size: 0.85rem; color: var(--cor-texto-suave); font-variant-numeric: tabular-nums; }
+.paginacao-botoes { display: inline-flex; align-items: center; gap: 4px; }
+.paginacao-botao {
+  min-width: 36px; height: 36px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 10px; border: 1px solid var(--cor-borda); background: var(--cor-superficie); color: var(--cor-texto);
+  font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.paginacao-botao.ativo { background: var(--cor-primaria); border-color: var(--cor-primaria); color: #fff; }
+.paginacao-botao:disabled { opacity: 0.45; cursor: default; }
+.paginacao-reticencias { padding: 0 4px; color: var(--cor-texto-suave); }
+
+@media (min-width: 720px) {
+  .tabela-topo { display: flex; }
+  .tabela-cartoes.tabela-cartoes-grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+}

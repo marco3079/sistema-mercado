@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Icone } from './icones';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import './estilo.css';
 
@@ -175,83 +176,217 @@ function classeDaCelula<T>(c: ColunaTabela<T>): string | undefined {
   return undefined;
 }
 
+type VisaoTabela = 'tabela' | 'cartoes';
+
+const CHAVE_VISAO = 'mercado.visao.';
+
+function lerVisao(id: string, padrao: VisaoTabela): VisaoTabela {
+  try {
+    const v = localStorage.getItem(CHAVE_VISAO + id);
+    return v === 'tabela' || v === 'cartoes' ? v : padrao;
+  } catch {
+    return padrao;
+  }
+}
+
+// Números de página a mostrar: primeira, última, a atual e vizinhas; null = reticências.
+function paginasVisiveis(atual: number, total: number): (number | null)[] {
+  const conjunto = new Set<number>([1, total, atual - 1, atual, atual + 1]);
+  const lista = [...conjunto].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const saida: (number | null)[] = [];
+  lista.forEach((n, i) => {
+    if (i > 0 && n - lista[i - 1] > 1) saida.push(null);
+    saida.push(n);
+  });
+  return saida;
+}
+
+// Tabela padrão do sistema: no computador, o usuário escolhe ver em tabela ou em cartões
+// (a escolha fica guardada por tela); no celular são sempre cartões. Paginação de `porPagina`
+// itens (padrão 10; 0 desliga). A primeira coluna vira o título do cartão.
 export function Tabela<T>({
   colunas,
   dados,
   chave,
   vazio,
   aoClicarLinha,
+  porPagina = 10,
+  visaoPadrao = 'tabela',
+  idVisao,
 }: {
   colunas: ColunaTabela<T>[];
   dados: T[];
   chave: (item: T) => string | number;
   vazio?: string;
   aoClicarLinha?: (item: T) => void;
+  porPagina?: number;
+  visaoPadrao?: VisaoTabela;
+  idVisao?: string; // chave para lembrar a visão; padrão: endereço da tela
 }) {
+  const id = idVisao ?? (typeof window !== 'undefined' ? window.location.pathname : 'tabela');
+  const [visao, setVisao] = useState<VisaoTabela>(() => lerVisao(id, visaoPadrao));
+  const [pagina, setPagina] = useState(1);
+
+  const totalPaginas = porPagina > 0 ? Math.max(1, Math.ceil(dados.length / porPagina)) : 1;
+  // Se a lista encolher (filtro, busca), volta para uma página que exista.
+  useEffect(() => {
+    if (pagina > totalPaginas) setPagina(totalPaginas);
+  }, [pagina, totalPaginas]);
+
   if (dados.length === 0) {
     return <p className="tabela-vazia">{vazio ?? 'Nenhum registro encontrado.'}</p>;
   }
 
-  // No cartão, a coluna de ações vai para o fim e aparece sem rótulo.
-  const colunasCartao = [...colunas.filter((c) => !c.acoes), ...colunas.filter((c) => c.acoes)];
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const inicio = porPagina > 0 ? (paginaAtual - 1) * porPagina : 0;
+  const visiveis = porPagina > 0 ? dados.slice(inicio, inicio + porPagina) : dados;
+
+  function trocarVisao(v: VisaoTabela) {
+    setVisao(v);
+    try {
+      localStorage.setItem(CHAVE_VISAO + id, v);
+    } catch {
+      // sem armazenamento: vale só nesta tela
+    }
+  }
+
+  // No cartão: a primeira coluna é o título; a coluna de ações vai para o fim, sem rótulo.
+  const semAcoes = colunas.filter((c) => !c.acoes);
+  const colunaTitulo = semAcoes[0];
+  const demais = semAcoes.slice(1);
+  const colunasAcoes = colunas.filter((c) => c.acoes);
 
   return (
-    <>
-      <div className="tabela-desktop">
-        <table className="tabela">
-          <thead>
-            <tr>
-              {colunas.map((c) => (
-                <th key={c.titulo} scope="col" className={classeDaCelula(c)}>
-                  {c.acoes ? <span className="tabela-oculto-visual">{c.titulo}</span> : c.titulo}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {dados.map((item) => (
-              <tr
-                key={chave(item)}
-                className={aoClicarLinha ? 'clicavel' : undefined}
-                onClick={aoClicarLinha ? () => aoClicarLinha(item) : undefined}
-              >
+    <div className="tabela-bloco">
+      <div className="tabela-topo">
+        <span className="tabela-contagem">
+          {dados.length} {dados.length === 1 ? 'registro' : 'registros'}
+        </span>
+        <div className="tabela-visao" role="group" aria-label="Forma de exibir">
+          <button
+            type="button"
+            className={visao === 'tabela' ? 'tabela-visao-botao ativo' : 'tabela-visao-botao'}
+            aria-pressed={visao === 'tabela'}
+            title="Ver em tabela"
+            onClick={() => trocarVisao('tabela')}
+          >
+            <Icone nome="lista" tamanho={16} />
+            <span>Tabela</span>
+          </button>
+          <button
+            type="button"
+            className={visao === 'cartoes' ? 'tabela-visao-botao ativo' : 'tabela-visao-botao'}
+            aria-pressed={visao === 'cartoes'}
+            title="Ver em cartões"
+            onClick={() => trocarVisao('cartoes')}
+          >
+            <Icone nome="grade" tamanho={16} />
+            <span>Cartões</span>
+          </button>
+        </div>
+      </div>
+
+      {visao === 'tabela' && (
+        <div className="tabela-desktop">
+          <table className="tabela">
+            <thead>
+              <tr>
                 {colunas.map((c) => (
-                  <td
-                    key={c.titulo}
-                    className={classeDaCelula(c)}
-                    onClick={c.acoes ? naoPropagar : undefined}
-                  >
-                    {c.celula(item)}
-                  </td>
+                  <th key={c.titulo} scope="col" className={classeDaCelula(c)}>
+                    {c.acoes ? <span className="tabela-oculto-visual">{c.titulo}</span> : c.titulo}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <ul className="tabela-cartoes">
-        {dados.map((item) => (
+            </thead>
+            <tbody>
+              {visiveis.map((item) => (
+                <tr
+                  key={chave(item)}
+                  className={aoClicarLinha ? 'clicavel' : undefined}
+                  onClick={aoClicarLinha ? () => aoClicarLinha(item) : undefined}
+                >
+                  {colunas.map((c) => (
+                    <td key={c.titulo} className={classeDaCelula(c)} onClick={c.acoes ? naoPropagar : undefined}>
+                      {c.celula(item)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <ul className={visao === 'cartoes' ? 'tabela-cartoes tabela-cartoes-grade' : 'tabela-cartoes'}>
+        {visiveis.map((item) => (
           <li
             key={chave(item)}
             className={aoClicarLinha ? 'tabela-cartao clicavel' : 'tabela-cartao'}
             onClick={aoClicarLinha ? () => aoClicarLinha(item) : undefined}
           >
-            {colunasCartao.map((c) =>
-              c.acoes ? (
-                <div className="tabela-par tabela-par-acoes" key={c.titulo} onClick={naoPropagar}>
-                  <span className="tabela-par-valor">{c.celula(item)}</span>
-                </div>
-              ) : (
+            {colunaTitulo && <div className="tabela-cartao-titulo">{colunaTitulo.celula(item)}</div>}
+            <div className="tabela-cartao-pares">
+              {demais.map((c) => (
                 <div className="tabela-par" key={c.titulo}>
                   <span className="tabela-par-titulo">{c.titulo}</span>
                   <span className="tabela-par-valor">{c.celula(item)}</span>
                 </div>
-              ),
-            )}
+              ))}
+            </div>
+            {colunasAcoes.map((c) => (
+              <div className="tabela-par-acoes" key={c.titulo} onClick={naoPropagar}>
+                {c.celula(item)}
+              </div>
+            ))}
           </li>
         ))}
       </ul>
-    </>
+
+      {porPagina > 0 && totalPaginas > 1 && (
+        <nav className="paginacao" aria-label="Paginação">
+          <span className="paginacao-info">
+            {inicio + 1}–{Math.min(inicio + porPagina, dados.length)} de {dados.length}
+          </span>
+          <div className="paginacao-botoes">
+            <button
+              type="button"
+              className="paginacao-botao"
+              disabled={paginaAtual === 1}
+              aria-label="Página anterior"
+              onClick={() => setPagina(paginaAtual - 1)}
+            >
+              <Icone nome="seta-esquerda" tamanho={16} />
+            </button>
+            {paginasVisiveis(paginaAtual, totalPaginas).map((n, i) =>
+              n === null ? (
+                <span key={'r' + i} className="paginacao-reticencias">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={n}
+                  type="button"
+                  className={n === paginaAtual ? 'paginacao-botao ativo' : 'paginacao-botao'}
+                  aria-current={n === paginaAtual ? 'page' : undefined}
+                  onClick={() => setPagina(n)}
+                >
+                  {n}
+                </button>
+              ),
+            )}
+            <button
+              type="button"
+              className="paginacao-botao"
+              disabled={paginaAtual === totalPaginas}
+              aria-label="Próxima página"
+              onClick={() => setPagina(paginaAtual + 1)}
+            >
+              <Icone nome="seta-direita" tamanho={16} />
+            </button>
+          </div>
+        </nav>
+      )}
+    </div>
   );
 }
 
