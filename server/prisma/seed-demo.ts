@@ -186,7 +186,7 @@ const RECEITAS: { produto: string; rendimento: number; preparo: number; forno: n
     itens: [['Farinha de trigo 25 kg', 1.2], ['Ovos', 0.25], ['Leite integral', 0.3], ['Manteiga', 0.2], ['Sal refinado', 0.01]],
   },
   {
-    produto: 'Bolo de chocolate', rendimento: 1, preparo: 40, forno: 45, temp: 180,
+    produto: 'Bolo de chocolate', rendimento: 2, preparo: 40, forno: 45, temp: 180,
     itens: [['Farinha de trigo 25 kg', 0.5], ['Açúcar cristal', 0.4], ['Ovos', 0.5], ['Leite integral', 0.5], ['Manteiga', 0.2], ['Chocolate em barra', 0.2]],
   },
   {

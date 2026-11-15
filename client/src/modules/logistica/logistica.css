@@ -753,3 +753,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Entregas: caixinha de seleção à esquerda, centralizada com o nome e o endereço */
+.logistica-destino-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+.logistica-destino-linha .logistica-destino {
+  min-width: 0;
+}
+.logistica-destino-linha .logistica-marcar {
+  margin: 0;
+  flex-shrink: 0;
+}

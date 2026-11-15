@@ -12,7 +12,7 @@ import type { ReceitaDTO } from './tipos';
 function SeloMargem({ margem }: { margem: number | null }) {
   if (margem === null) return <Selo cor="cinza">Sem preço</Selo>;
   const cor = margem >= 30 ? 'verde' : margem >= 15 ? 'amarelo' : 'vermelho';
-  return <Selo cor={cor}>Margem {formatarPercentual(margem)}</Selo>;
+  return <Selo cor={cor}>{formatarPercentual(margem)} de margem</Selo>;
 }
 
 function descreverTempos(r: ReceitaDTO): string {
@@ -34,33 +34,43 @@ function CartaoReceita({
 }) {
   return (
     <article className="cartao-produto padaria-receita">
-      <FotoProduto foto={r.foto} nome={r.produto} setor={r.categoria} preencher />
-      <div className="padaria-receita-topo">
-        <strong className="padaria-receita-nome">{r.produto}</strong>
-        <SeloMargem margem={r.margem} />
+      <div className="padaria-receita-foto">
+        <FotoProduto foto={r.foto} nome={r.produto} setor={r.categoria} preencher />
+        <span className="padaria-receita-margem">
+          <SeloMargem margem={r.margem} />
+        </span>
       </div>
+      <strong className="padaria-receita-nome" title={r.produto}>
+        {r.produto}
+      </strong>
       <dl className="padaria-cartao-dados">
         <div>
-          <dt>Rendimento</dt>
+          <dt>Rende</dt>
           <dd className="numero">
             {r.rendimento.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} {r.unidade.toLowerCase()}
           </dd>
         </div>
         <div>
-          <dt>Custo unitário</dt>
+          <dt>Custo/un</dt>
           <dd className="numero">{formatarMoeda(r.custoUnitario)}</dd>
         </div>
         <div>
-          <dt>Preço de venda</dt>
+          <dt>Venda</dt>
           <dd className="numero">{r.precoVenda > 0 ? formatarMoeda(r.precoVenda) : '—'}</dd>
         </div>
       </dl>
-      <p className="padaria-cartao-tempos">
-        <Icone nome="relogio" tamanho={14} />
-        {descreverTempos(r)}
-      </p>
+      <div className="padaria-receita-tempos">
+        {r.tempoPreparoMin !== null && <span>Preparo {r.tempoPreparoMin} min</span>}
+        {r.tempoFornoMin !== null && <span>Forno {r.tempoFornoMin} min</span>}
+        {r.temperaturaForno !== null && <span>{r.temperaturaForno} °C</span>}
+        {r.tempoPreparoMin === null && r.tempoFornoMin === null && r.temperaturaForno === null && (
+          <span>Sem tempos cadastrados</span>
+        )}
+      </div>
       <div className="cartao-produto-rodape">
-        <span className="padaria-ajuda">{r.itens.length} insumo(s)</span>
+        <span className="padaria-ajuda">
+          {r.itens.length} {r.itens.length === 1 ? 'insumo' : 'insumos'}
+        </span>
         {podeEditar && (
           <Botao variante="secundario" aoClicar={aoEditar}>
             Editar

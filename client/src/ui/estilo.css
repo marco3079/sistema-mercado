@@ -946,3 +946,53 @@ textarea.campo-controle {
     grid-column: span 2;
   }
 }
+
+
+/* ===== Caixinha de seleção (checkbox) padrão do sistema ===== */
+input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-content: center;
+  border: 2px solid var(--cor-borda-forte, #94a3b8);
+  border-radius: 6px;
+  background: var(--cor-superficie);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+input[type='checkbox']::before {
+  content: '';
+  width: 10px;
+  height: 6px;
+  border-left: 2.5px solid #fff;
+  border-bottom: 2.5px solid #fff;
+  transform: rotate(-45deg) translate(1px, -1px) scale(0);
+  transition: transform 0.12s ease;
+}
+input[type='checkbox']:checked {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+}
+input[type='checkbox']:checked::before {
+  transform: rotate(-45deg) translate(1px, -1px) scale(1);
+}
+input[type='checkbox']:hover {
+  border-color: var(--cor-primaria);
+}
+input[type='checkbox']:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--cor-primaria) 35%, transparent);
+  outline-offset: 2px;
+}
+input[type='checkbox']:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.caixa input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+}

@@ -347,24 +347,24 @@ export function Entregas() {
     {
       titulo: 'Entrega',
       celula: (e) => (
-        <div className="logistica-destino">
-          <span className="logistica-entrega-nome">
-            {mostrarCarga && (
-              <input
-                type="checkbox"
-                className="logistica-marcar"
-                checked={selecionadas.includes(e.id)}
-                onChange={() => alternar(e.id)}
-                aria-label={`Incluir ${e.codigo} na carga`}
-              />
-            )}
-            <strong>{e.destinatario}</strong>
-          </span>
-          <span className="logistica-suave">
-            <span className="logistica-codigo">{e.codigo}</span>
-            {' · '}
-            {[e.bairro, e.cidade].filter(Boolean).join(' · ') || e.endereco}
-          </span>
+        <div className="logistica-destino-linha">
+          {mostrarCarga && (
+            <input
+              type="checkbox"
+              className="logistica-marcar"
+              checked={selecionadas.includes(e.id)}
+              onChange={() => alternar(e.id)}
+              aria-label={`Incluir ${e.codigo} na carga`}
+            />
+          )}
+          <div className="logistica-destino">
+            <strong className="logistica-entrega-nome">{e.destinatario}</strong>
+            <span className="logistica-suave">
+              <span className="logistica-codigo">{e.codigo}</span>
+              {' · '}
+              {[e.bairro, e.cidade].filter(Boolean).join(' · ') || e.endereco}
+            </span>
+          </div>
         </div>
       ),
     },
