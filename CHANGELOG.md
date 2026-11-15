@@ -6,6 +6,10 @@ O formato segue o Keep a Changelog (em português) e o versionamento segue o Sem
 
 ## [Não lançado]
 
+### Adicionado
+
+- Importar de outro sistema (menu Sistema, só gestor): traz fornecedores, clientes, produtos, estoque inicial, saldo de fiado e contas em aberto. Fontes: planilha (.xlsx ou .csv, com perfis de Softcom, Bling, Tiny, GDOOR, Hiper e MarketUP), SPED Fiscal, Sintegra e XMLs de NF-e. Antes de gravar, mostra a conferência item a item.
+
 ### Alterado
 
 - Node.js 26 nas imagens da API e do build do site (o Node 20 saiu de suporte) e na CI.

@@ -300,7 +300,7 @@ interface EntradaZip {
   local: number;
 }
 
-function indiceZip(buf: Buffer): Map<string, EntradaZip> {
+function indiceZip(buf: Buffer, limiteDescompactado = LIMITE_DESCOMPACTADO): Map<string, EntradaZip> {
   const inicioBusca = Math.max(0, buf.length - 22 - 65535);
   let fim = -1;
   for (let p = buf.length - 22; p >= inicioBusca; p--) {
@@ -326,14 +326,14 @@ function indiceZip(buf: Buffer): Map<string, EntradaZip> {
     const local = buf.readUInt32LE(p + 42);
     const nome = buf.toString('utf8', p + 46, p + 46 + nLen);
     total += descomp;
-    if (total > LIMITE_DESCOMPACTADO) throw grande();
+    if (total > limiteDescompactado) throw grande();
     indice.set(nome, { metodo, comp, local });
     p += 46 + nLen + eLen + cLen;
   }
   return indice;
 }
 
-function lerEntrada(buf: Buffer, entrada: EntradaZip): Buffer {
+function lerEntrada(buf: Buffer, entrada: EntradaZip, limiteDescompactado = LIMITE_DESCOMPACTADO): Buffer {
   const lo = entrada.local;
   if (lo + 30 > buf.length || buf.readUInt32LE(lo) !== 0x04034b50) throw corrompida();
   const nLen = buf.readUInt16LE(lo + 26);
@@ -344,7 +344,7 @@ function lerEntrada(buf: Buffer, entrada: EntradaZip): Buffer {
   if (entrada.metodo === 0) return dados;
   if (entrada.metodo === 8) {
     try {
-      return zlib.inflateRawSync(dados, { maxOutputLength: LIMITE_DESCOMPACTADO });
+      return zlib.inflateRawSync(dados, { maxOutputLength: limiteDescompactado });
     } catch (e) {
       if (e instanceof RangeError) throw grande();
       throw corrompida();
@@ -503,4 +503,21 @@ export function lerPlanilha(arquivo: Buffer, nomeArquivo?: string): string[][] {
   }
   if (nomeArquivo && /\.xlsx$/i.test(nomeArquivo)) throw corrompida();
   return lerCsv(arquivo);
+}
+
+// Lê os arquivos de um .zip (sem pastas). Usado pela migração para .zip com XMLs.
+export function lerArquivosZip(buf: Buffer, limiteTotal = 200 * 1024 * 1024): { nome: string; conteudo: Buffer }[] {
+  const indice = indiceZip(buf, limiteTotal);
+  if (indice.size > 10000) throw new HttpError(400, 'O .zip tem arquivos demais');
+  const arquivos: { nome: string; conteudo: Buffer }[] = [];
+  let total = 0;
+  for (const [caminho, entrada] of indice) {
+    if (caminho.endsWith('/')) continue;
+    const conteudo = lerEntrada(buf, entrada, limiteTotal);
+    total += conteudo.length;
+    if (total > limiteTotal) throw new HttpError(400, 'O .zip é grande demais');
+    const nome = caminho.split(/[\\/]/).pop() ?? caminho;
+    arquivos.push({ nome, conteudo });
+  }
+  return arquivos;
 }

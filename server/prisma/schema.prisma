@@ -653,6 +653,7 @@ model Cliente {
   vendedorId        Int? // carteira do vendedor externo
   vendedor          Usuario?    @relation(fields: [vendedorId], references: [id])
   codigoB2B         String?     @unique // código de acesso à loja B2B
+  codigoAntigo      String? // código do cliente no sistema anterior (migração de dados)
   ativo             Boolean     @default(true)
   criadoEm          DateTime    @default(now())
 
@@ -663,6 +664,7 @@ model Cliente {
   entregas     Entrega[]
 
   @@index([nome])
+  @@index([codigoAntigo])
 }
 
 model MovimentoFiado {
@@ -793,6 +795,7 @@ model Fornecedor {
   diasVisita        String? // ex.: "SEG,QUI"
   avaliacao         Decimal  @default(0) @db.Decimal(3, 2) // média de 0 a 5
   observacoes       String?
+  codigoAntigo      String? // código do fornecedor no sistema anterior (migração de dados)
   ativo             Boolean  @default(true)
   criadoEm          DateTime @default(now())
 
@@ -804,6 +807,8 @@ model Fornecedor {
   recebimentos   Recebimento[]
   lancamentos    Lancamento[]
   avaliacoes     AvaliacaoFornecedor[]
+
+  @@index([codigoAntigo])
 }
 
 model ProdutoFornecedor {
@@ -1459,4 +1464,16 @@ model EmailEnviado {
   criadoEm DateTime    @default(now())
 
   @@index([criadoEm])
+}
+
+// Mapeamento de colunas salvo na migração de dados (ex.: "Softcom" para planilhas de produtos).
+model PerfilMigracao {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  entidade     String // fornecedores | clientes | produtos | estoque | fiado | contas
+  mapeamento   Json // { "<chave do cabeçalho>": "<id do campo>" }
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([nome, entidade])
 }

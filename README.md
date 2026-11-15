@@ -78,6 +78,7 @@ do pedido ao fornecedor até a entrega na casa do cliente. Funciona no navegador
 - Força de vendas (pedido pelo celular com negociação Flex), faturamento em lote e loja B2B para clientes de atacado.
 
 **Gestão**
+- Importação de outros sistemas (Softcom, Bling, Tiny...), por planilha, SPED Fiscal, Sintegra e XML de NF-e.
 - Painel por perfil, contas a pagar e receber, boletos, fluxo de caixa e "Meu Lucro" (lucro real).
 - Relatórios: vendas, curva ABC, margem e produtos parados.
 - NFC-e/NF-e, área do contador com os XML do mês e assistente IA para perguntas sobre vendas, estoque e compras.

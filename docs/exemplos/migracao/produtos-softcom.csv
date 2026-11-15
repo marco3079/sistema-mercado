@@ -1,0 +1,9 @@
+CODIGO;DESCRICAO;COD_BARRAS;UNIDADE;PRECO_CUSTO;PRECO_VENDA;ESTOQUE;GRUPO;MARCA;NCM
+1001;Arroz branco tipo 1 5 kg;7891000010013;UN;22,90;27,90;120;Mercearia;Marca Exemplo;10063021
+1002;Feijão carioca 1 kg;7891000010020;UN;7,40;9,49;80;Mercearia;Marca Exemplo;07133319
+1003;Óleo de soja 900 ml;7891000010037;UN;6,20;8,99;150;Mercearia;Marca Exemplo;15079011
+1004;Açúcar cristal 1 kg;7891000010044;UN;3,80;5,29;200;Mercearia;Marca Exemplo;17019900
+1005;Café torrado e moído 500 g;7891000010051;UN;12,50;16,90;60;Mercearia;Marca Exemplo;09012100
+1006;Leite integral 1 L;7891000010068;UN;4,10;5,79;240;Laticínios;Marca Exemplo;04012010
+1007;Banana prata (granel);2000000010076;KG;4,20;7,99;35,500;Hortifruti;;08039010
+1008;Água mineral sem gás 500 ml;7891000010082;CX12;14,00;19,90;24;Bebidas;Marca Exemplo;22011000

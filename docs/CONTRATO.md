@@ -188,6 +188,18 @@ Respostas com valores em `number` e datas ISO. `?` = opcional.
 **comercial (g10)**: `/pedidos-venda`, `/pedidos-venda/faturar`, `/delivery/pedidos`, `/delivery/marketplace/simular`;
 públicos `/publico/delivery/catalogo`, `/publico/delivery/pedidos`, `/publico/b2b/:codigo/...`; páginas `/pedir`, `/b2b/:codigo`.
 
+**migracao** (GESTOR em todas as rotas; sem rotas públicas)
+- `GET /migracao/campos` → `{ordem, entidades: [{id, rotulo, campos}], perfis: [{id, nome, descricao}]}`
+- `GET /migracao/perfis` → `PerfilSalvo[]` (`{id, nome, entidade, mapeamento, criadoEm}`)
+- `POST /migracao/perfis` `{nome, entidade, mapeamento}` → `PerfilSalvo` (salva o perfil de colunas; upsert por nome e entidade)
+- `DELETE /migracao/perfis/:id` → 204 (apaga um perfil salvo)
+- `GET /migracao/modelo/:entidade` → planilha .xlsx modelo
+- `POST /migracao/planilha/ler?entidade=&perfil=` (corpo cru) → `{cabecalhos, chaves, amostra, totalLinhas, mapeamento}`
+- `POST /migracao/planilha/conferir?entidade=&tipoConta=` (corpo cru, cabeçalho `x-mapeamento`) → `LoteMigracao`
+- `POST /migracao/sped/conferir` (corpo cru: SPED Fiscal ou Sintegra) → `LoteMigracao`
+- `POST /migracao/nfe/conferir` (corpo cru: .xml, pacote ou .zip) → `LoteMigracao`
+- `POST /migracao/aplicar` `{entidade, itens: [{origem, registro, decisao}]}` (máx. 200 itens) → `ResultadoAplicar`
+
 **já existentes (plataforma)**: `/auth/*`, `/usuarios` (GESTOR), `/perfil/*`, `/configuracoes/identidade`, `/configuracoes/email`,
 `/permissoes`, `/logs`, `/backup`, `/atualizacao`, `/eventos`, `/push/*`.
 

@@ -1,0 +1,185 @@
+/* Tela "Importar de outro sistema" (gestor). Classes com prefixo migracao-.
+   Cores vêm da casca (tema claro e escuro). Funciona em 390 px. */
+
+.migracao-intro {
+  margin: 0 0 0.9rem;
+  color: var(--cor-texto-suave);
+}
+
+.migracao-grade {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+
+@media (min-width: 720px) {
+  .migracao-grade {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.migracao-cartao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 1.1rem;
+  text-align: left;
+  font: inherit;
+  color: var(--cor-texto);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.migracao-cartao:hover:not(:disabled),
+.migracao-cartao:focus-visible {
+  border-color: var(--cor-primaria);
+  box-shadow: var(--sombra-primaria);
+  transform: translateY(-1px);
+}
+
+.migracao-cartao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.migracao-cartao-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+}
+
+.migracao-cartao-titulo {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.migracao-cartao-formato {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--cor-primaria);
+}
+
+.migracao-cartao-texto {
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave);
+}
+
+.migracao-ajuda {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+.migracao-ajuda summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.migracao-ajuda ul {
+  margin: 0.7rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--cor-texto-suave);
+}
+
+.migracao-topo-etapa {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0.4rem;
+}
+
+.migracao-planilha {
+  max-width: 880px;
+}
+
+.migracao-acoes-planilha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0.6rem 0 1rem;
+}
+
+.migracao-arquivo {
+  margin: 0.4rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.migracao-mapear-total {
+  margin: 0.6rem 0;
+  font-weight: 600;
+}
+
+.migracao-tabela-rolagem {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+}
+
+.migracao-tabela {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.migracao-tabela th,
+.migracao-tabela td {
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.migracao-tabela th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--cor-texto-suave);
+  background: var(--cor-fundo);
+}
+
+.migracao-tabela tr:last-child td {
+  border-bottom: none;
+}
+
+.migracao-tabela-coluna {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.migracao-tabela-exemplos {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.migracao-tabela-select {
+  min-width: 180px;
+  margin: 0;
+}
+
+.migracao-mapear > .aviso {
+  margin-top: 0.8rem;
+}

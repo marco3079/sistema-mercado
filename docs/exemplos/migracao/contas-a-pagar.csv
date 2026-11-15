@@ -1,0 +1,6 @@
+Fornecedor;CNPJ;Documento;Parcela;Vencimento;Valor;Categoria
+Distribuidora Alfa;12345678000195;NF 1024;1/2;10/12/2026;640,00;Compras de mercadorias
+Distribuidora Alfa;12345678000195;NF 1024;2/2;10/01/2027;640,00;Compras de mercadorias
+Laticínios Vale Verde;23456789000195;NF 5530;1/2;15/12/2026;412,75;Compras de mercadorias
+Laticínios Vale Verde;23456789000195;NF 5530;2/2;15/01/2027;412,75;Compras de mercadorias
+Hortifruti Serra Azul;34567890000130;BOL 77;1/1;20/12/2026;198,30;Compras de mercadorias

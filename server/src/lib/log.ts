@@ -36,6 +36,7 @@ const ROTULOS_MODULO: Record<string, string> = {
   lojas: 'Lojas',
   categorias: 'Produtos',
   produtos: 'Produtos',
+  migracao: 'Migração de dados',
   etiquetas: 'Etiquetas',
   balanca: 'Balança',
   estoque: 'Estoque',

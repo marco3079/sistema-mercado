@@ -1,0 +1,6 @@
+Código;Nome;CPF/CNPJ;Celular;E-mail;Endereço;Número;Bairro;Cidade/UF;CEP;Limite de crédito;Saldo devedor
+CL001;Maria Aparecida Souza;11122233396;(11) 98765-4321;maria.souza@exemplo.com.br;Rua das Flores;120;Centro;São Paulo/SP;01001-000;300,00;35,50
+CL002;José Carlos Lima;98765432100;(19) 97654-3210;jose.lima@exemplo.com.br;Avenida Brasil;45;Jardim Alegre;Campinas/SP;13010-000;200,00;
+CL003;Ana Paula Ferreira;45219678337;(16) 99123-4567;ana.ferreira@exemplo.com.br;Rua Sete de Setembro;310;Centro;Ribeirão Preto/SP;14010-000;150,00;12,00
+CL004;Padaria Pão Quente Ltda;45678901000175;(11) 99876-5432;contato@paoquente.exemplo.com.br;Rua do Comércio;88;Vila Nova;São Paulo/SP;03010-000;1.000,00;
+CL005;Mercearia Estrela do Norte ME;56789012000100;(81) 98888-7777;;Avenida Norte;500;Boa Vista;Recife/PE;50010-000;500,00;

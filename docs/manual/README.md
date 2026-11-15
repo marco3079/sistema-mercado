@@ -24,6 +24,7 @@ Cada área tem uma página própria. Escolha a página pelo que você vai fazer 
 | Logística | Entregas, cargas, roteirização, romaneio, motorista, rastreio público, transferências, frota e rastreadores GPS | [logistica.md](logistica.md) |
 | Força de vendas | Vendedores, carteira de clientes, loja B2B e página para pedidos | [forca-de-vendas.md](forca-de-vendas.md) |
 | Financeiro | Contas, fluxo de caixa, Meu Lucro, notas fiscais, área do contador e relatórios | [financeiro.md](financeiro.md) |
+| Importar de outro sistema | Planilhas (com perfis de Softcom, Bling, Tiny e outros), SPED Fiscal, Sintegra e XML de NF-e, com conferência antes de gravar | [migracao.md](migracao.md) |
 | Gestão | Assistente, equipe e perfis, lojas, configurações, atividades, logs, meu perfil, backup e atualização | [gestao.md](gestao.md) |
 
 ## Por onde começar, por perfil

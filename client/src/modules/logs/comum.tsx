@@ -90,6 +90,7 @@ const ROTULO_MODULO: Record<string, string> = {
   pdv: 'PDV',
   vendas: 'Vendas',
   produtos: 'Produtos',
+  migracao: 'Migração de dados',
   estoque: 'Estoque',
   compras: 'Compras',
   entregas: 'Entregas',
