@@ -10,12 +10,18 @@
   box-sizing: border-box;
 }
 
+.foto-produto { position: relative; }
 .foto-produto img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
+.foto-produto img.carregada { opacity: 1; }
 
 .foto-produto-preencher {
   width: 100%;

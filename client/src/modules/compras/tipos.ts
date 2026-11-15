@@ -105,6 +105,8 @@ export interface ProdutoBuscaDTO {
   unidade: string;
   precoCusto: number;
   precoVenda: number;
+  foto?: string | null;
+  categoria?: string | null;
 }
 
 // Sugestão de compra
@@ -113,6 +115,8 @@ export interface SugestaoDTO {
   codigo: string;
   nome: string;
   unidade: string;
+  foto: string | null;
+  categoria: string | null;
   fornecedorId: number | null;
   fornecedor: string | null;
   estoque: number;
@@ -147,6 +151,8 @@ export interface CotacaoItemDTO {
   produtoId: number;
   nome: string;
   unidade: string;
+  foto: string | null;
+  categoria: string | null;
   quantidade: number;
 }
 
@@ -217,12 +223,15 @@ export interface PedidoLinha {
   previsaoEntrega: string | null;
   itens: number;
   rastreio: string | null;
+  fotos: { nome: string; foto: string | null; categoria: string | null }[];
 }
 
 export interface ItemPedidoDTO {
   id: number;
   produtoId: number;
   nome: string;
+  foto: string | null;
+  categoria: string | null;
   codigo: string;
   unidade: string;
   quantidade: number;
@@ -273,6 +282,8 @@ export interface ItemRecebimentoDTO {
   id: number;
   produtoId: number;
   nome: string;
+  foto: string | null;
+  categoria: string | null;
   codigo: string;
   unidade: string;
   quantidadeNota: number;

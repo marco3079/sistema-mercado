@@ -1,23 +1,5 @@
 /* Notas fiscais e área do contador. Cores vêm das variáveis da casca (funcionam no tema escuro). */
 
-.fiscal-filtros {
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.fiscal-filtros .campo {
-  min-width: 150px;
-  flex: 1 1 150px;
-}
-
-.fiscal-total-valor {
-  font-size: 1.5rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--cor-texto);
-  overflow-wrap: anywhere;
-}
-
 .fiscal-cancelamento {
   display: grid;
   gap: 12px;
@@ -33,43 +15,89 @@
   flex: 1 1 220px;
 }
 
+/* Primeira coluna das notas: número em negrito e chave encurtada embaixo. */
+.fiscal-nota {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fiscal-nota-titulo {
+  font-weight: 600;
+}
+
+.fiscal-nota-chave {
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* Contador: um cartão por mês, em grade. */
 .fiscal-meses {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
 }
 
 .fiscal-mes {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: baseline;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  min-width: 0;
   border: 1px solid var(--cor-borda);
-  border-radius: 8px;
+  border-radius: var(--raio);
   background: var(--cor-superficie);
 }
 
 .fiscal-mes-nome {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.05rem;
   color: var(--cor-texto);
-  min-width: 70px;
 }
 
-.fiscal-mes-texto {
+.fiscal-mes-aviso {
   color: var(--cor-texto-suave);
   font-size: 0.92rem;
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 600px) {
-  .fiscal-filtros .campo {
-    flex: 1 1 100%;
-  }
+.fiscal-mes-dados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
 
-  .fiscal-acoes .botao {
-    flex: 1 1 100%;
-  }
+.fiscal-mes-dados > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fiscal-mes-dados dt {
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+}
+
+.fiscal-mes-dados dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--cor-texto);
+  overflow-wrap: anywhere;
+}
+
+.fiscal-mes-envio {
+  grid-column: 1 / -1;
+}
+
+.fiscal-mes-envio dd {
+  font-weight: 400;
+  font-size: 0.92rem;
 }

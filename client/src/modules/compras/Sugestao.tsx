@@ -6,6 +6,8 @@ import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { formatarQuantidade, lerNumero, mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
 import { Aviso, Botao, Campo, Carregando, Pagina, Selecao, Selo, Tabela, formatarMoeda } from '../../ui';
+import { BarraNivel, CelulaProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 import type { FornecedorLinha, RetornoRascunho, SugestaoDTO } from './tipos';
 
 function numeroParaTexto(n: number): string {
@@ -93,15 +95,51 @@ export function Sugestao() {
         </Botao>
       }
     >
-      <div className="compras-filtros">
-        <Selecao
-          rotulo="Fornecedor"
-          valor={fornecedorId}
-          aoMudar={setFornecedorId}
-          opcoes={(fornecedores ?? []).map((f) => ({ valor: String(f.id), rotulo: f.nome }))}
-          vazio="Todos os fornecedores"
-        />
-        <Campo rotulo="Cobrir quantos dias" tipo="number" valor={dias} aoMudar={setDias} />
+      {dados && (
+        <div className="resumo">
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-azul">
+              <Icone nome="pacote" tamanho={24} />
+            </span>
+            <div>
+              <span className="resumo-valor">
+                {escolhidas.length} de {linhas.length}
+              </span>
+              <span className="resumo-rotulo">Itens marcados</span>
+            </div>
+          </div>
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-roxo">
+              <Icone nome="pedidos" tamanho={24} />
+            </span>
+            <div>
+              <span className="resumo-valor">{fornecedoresEscolhidos}</span>
+              <span className="resumo-rotulo">Fornecedores</span>
+            </div>
+          </div>
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-verde">
+              <Icone nome="dinheiro" tamanho={24} />
+            </span>
+            <div>
+              <span className="resumo-valor">{formatarMoeda(valorEscolhido)}</span>
+              <span className="resumo-rotulo">Valor estimado</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="barra-ferramentas">
+        <div className="filtros">
+          <Selecao
+            rotulo="Fornecedor"
+            valor={fornecedorId}
+            aoMudar={setFornecedorId}
+            opcoes={(fornecedores ?? []).map((f) => ({ valor: String(f.id), rotulo: f.nome }))}
+            vazio="Todos os fornecedores"
+          />
+          <Campo rotulo="Cobrir quantos dias" tipo="number" valor={dias} aoMudar={setDias} />
+        </div>
       </div>
 
       {!diasValidos && <Aviso tipo="erro">Informe de 1 a 180 dias de cobertura.</Aviso>}
@@ -125,80 +163,78 @@ export function Sugestao() {
       {!dados && carregando && <Carregando />}
 
       {dados && (
-        <>
-          <div className="compras-sugestao-resumo">
-            <span className="compras-acumulado">
-              <span>
-                Itens marcados: <strong>{escolhidas.length}</strong> de {linhas.length}
-              </span>
-              <span>
-                Fornecedores: <strong>{fornecedoresEscolhidos}</strong>
-              </span>
-              <span>
-                Valor estimado: <strong>{formatarMoeda(valorEscolhido)}</strong>
-              </span>
-            </span>
-          </div>
-
-          <div className="compras-rolagem">
-            <Tabela
-              colunas={[
-                {
-                  titulo: 'Comprar',
-                  celula: (s) => (
-                    <input
-                      type="checkbox"
-                      className="compras-caixa-tabela"
-                      checked={Boolean(marcados[s.produtoId])}
-                      disabled={s.fornecedorId === null}
-                      onChange={(e) => setMarcados((atual) => ({ ...atual, [s.produtoId]: e.target.checked }))}
-                      aria-label={`Comprar ${s.nome}`}
+        <div className="compras-rolagem">
+          <Tabela
+            colunas={[
+              {
+                titulo: 'Produto',
+                celula: (s) => (
+                  <CelulaProduto foto={s.foto} nome={s.nome} setor={s.categoria} detalhe={s.codigo} />
+                ),
+              },
+              {
+                titulo: 'Fornecedor',
+                celula: (s) => (s.fornecedor ? s.fornecedor : <Selo cor="amarelo">Sem fornecedor</Selo>),
+              },
+              {
+                titulo: 'Estoque',
+                alinhar: 'direita',
+                celula: (s) => (
+                  <span className="compras-nivel">
+                    <span className="numero">{formatarQuantidade(s.estoque, s.unidade)}</span>
+                    <BarraNivel
+                      valor={s.estoque}
+                      maximo={Math.max(s.estoqueMinimo * 2, s.estoque, 1)}
+                      cor={s.estoque < s.estoqueMinimo ? 'vermelho' : 'verde'}
                     />
-                  ),
-                },
-                {
-                  titulo: 'Produto',
-                  celula: (s) => (
-                    <>
-                      {s.nome}
-                      <span className="compras-sub">{s.codigo}</span>
-                    </>
-                  ),
-                },
-                {
-                  titulo: 'Fornecedor',
-                  celula: (s) =>
-                    s.fornecedor ? s.fornecedor : <Selo cor="amarelo">Sem fornecedor</Selo>,
-                },
-                { titulo: 'Estoque', alinhar: 'direita', celula: (s) => formatarQuantidade(s.estoque, s.unidade) },
-                { titulo: 'Mínimo', alinhar: 'direita', celula: (s) => formatarQuantidade(s.estoqueMinimo, s.unidade) },
-                { titulo: 'Venda/dia', alinhar: 'direita', celula: (s) => formatarQuantidade(s.giroDiario, s.unidade) },
-                { titulo: 'Em pedido', alinhar: 'direita', celula: (s) => formatarQuantidade(s.emPedido, s.unidade) },
-                {
-                  titulo: 'Quantidade',
-                  alinhar: 'direita',
-                  celula: (s) => (
-                    <input
-                      className="compras-input compras-input-curto"
-                      inputMode="decimal"
-                      value={quantidades[s.produtoId] ?? ''}
-                      onChange={(e) => setQuantidades((atual) => ({ ...atual, [s.produtoId]: e.target.value }))}
-                      aria-label={`Quantidade de ${s.nome}`}
-                    />
-                  ),
-                },
-                {
-                  titulo: 'Valor estimado',
-                  alinhar: 'direita',
-                  celula: (s) => formatarMoeda((lerNumero(quantidades[s.produtoId] ?? '') ?? 0) * s.ultimoPreco),
-                },
-              ]}
-              dados={linhas}
-              chave={(s) => s.produtoId}
-              vazio="Nada a comprar agora: o estoque cobre os dias escolhidos."
-            />
-          </div>
-        </>
+                  </span>
+                ),
+              },
+              { titulo: 'Mínimo', alinhar: 'direita', celula: (s) => formatarQuantidade(s.estoqueMinimo, s.unidade) },
+              { titulo: 'Giro/dia', alinhar: 'direita', celula: (s) => formatarQuantidade(s.giroDiario, s.unidade) },
+              { titulo: 'Em pedido', alinhar: 'direita', celula: (s) => formatarQuantidade(s.emPedido, s.unidade) },
+              {
+                titulo: 'Quantidade',
+                alinhar: 'direita',
+                celula: (s) => (
+                  <input
+                    className="compras-input compras-input-curto"
+                    inputMode="decimal"
+                    value={quantidades[s.produtoId] ?? ''}
+                    onChange={(e) => setQuantidades((atual) => ({ ...atual, [s.produtoId]: e.target.value }))}
+                    aria-label={`Quantidade de ${s.nome}`}
+                  />
+                ),
+              },
+              {
+                titulo: 'Valor estimado',
+                alinhar: 'direita',
+                celula: (s) => (
+                  <span className="numero">
+                    {formatarMoeda((lerNumero(quantidades[s.produtoId] ?? '') ?? 0) * s.ultimoPreco)}
+                  </span>
+                ),
+              },
+              {
+                titulo: 'Comprar',
+                alinhar: 'centro',
+                celula: (s) => (
+                  <input
+                    type="checkbox"
+                    className="compras-caixa-tabela"
+                    checked={Boolean(marcados[s.produtoId])}
+                    disabled={s.fornecedorId === null}
+                    onChange={(e) => setMarcados((atual) => ({ ...atual, [s.produtoId]: e.target.checked }))}
+                    aria-label={`Comprar ${s.nome}`}
+                  />
+                ),
+              },
+            ]}
+            dados={linhas}
+            chave={(s) => s.produtoId}
+            vazio="Nada a comprar agora: o estoque cobre os dias escolhidos."
+          />
+        </div>
       )}
     </Pagina>
   );

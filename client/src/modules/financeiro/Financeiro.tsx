@@ -20,6 +20,9 @@ import {
   formatarMoeda,
 } from '../../ui';
 import type { AcaoMenu, ColunaTabela } from '../../ui';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
+import '../../ui/foto-produto.css';
 import { Lancamento, SeletorCliente } from './Lancamento';
 import type {
   BoletoCriado,
@@ -39,10 +42,49 @@ const ROTULO_ORIGEM: Record<string, string> = {
   BONIFICACAO: 'Bonificação',
 };
 
-function situacaoDe(l: LancamentoDTO): { cor: 'verde' | 'amarelo' | 'vermelho'; rotulo: string } {
-  if (l.pagoEm) return { cor: 'verde', rotulo: 'Pago' };
-  if (l.vencido) return { cor: 'vermelho', rotulo: 'Vencido' };
-  return { cor: 'amarelo', rotulo: 'Em aberto' };
+// Dias entre hoje e a data AAAA-MM-DD (negativo: já passou).
+function diasAte(iso: string): number {
+  const [ano, mes, dia] = iso.split('-').map(Number);
+  const hoje = new Date();
+  const diff = Date.UTC(ano, mes - 1, dia) - Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  return Math.round(diff / 86400000);
+}
+
+// Selo do vencimento: só para lançamento em aberto.
+function seloVencimento(l: LancamentoDTO) {
+  if (l.pagoEm) return null;
+  const dias = diasAte(l.vencimento);
+  if (dias < 0) {
+    const atraso = -dias;
+    return <Selo cor="vermelho">{`Vencido há ${atraso} ${atraso === 1 ? 'dia' : 'dias'}`}</Selo>;
+  }
+  if (dias === 0) return <Selo cor="amarelo">Vence hoje</Selo>;
+  return <Selo cor="azul">{`Em ${dias} ${dias === 1 ? 'dia' : 'dias'}`}</Selo>;
+}
+
+// Cartão de número do topo (classes .resumo da casca).
+function Indicador({
+  icone,
+  cor,
+  valor,
+  rotulo,
+}: {
+  icone: NomeIcone;
+  cor: 'azul' | 'verde' | 'laranja' | 'roxo' | 'vermelho';
+  valor: string;
+  rotulo: string;
+}) {
+  return (
+    <div className="resumo-item">
+      <span className={`resumo-icone resumo-icone-${cor}`} aria-hidden="true">
+        <Icone nome={icone} tamanho={24} />
+      </span>
+      <div>
+        <span className="resumo-valor">{valor}</span>
+        <span className="resumo-rotulo">{rotulo}</span>
+      </div>
+    </div>
+  );
 }
 
 // Tela de contas a pagar e receber (GESTOR edita; CONTADOR só consulta).
@@ -103,15 +145,7 @@ export function Financeiro() {
 
   function acoesDe(l: LancamentoDTO): AcaoMenu[] {
     const acoes: AcaoMenu[] = [];
-    if (l.pagoEm) {
-      acoes.push({ rotulo: 'Estornar', icone: 'transferir', aoClicar: () => void estornar(l) });
-    } else {
-      acoes.push({
-        rotulo: l.tipo === 'RECEITA' ? 'Registrar recebimento' : 'Registrar pagamento',
-        icone: 'dinheiro',
-        aoClicar: () => setPagando(l),
-      });
-    }
+    if (l.pagoEm) acoes.push({ rotulo: 'Estornar', icone: 'transferir', aoClicar: () => void estornar(l) });
     acoes.push({ rotulo: 'Editar', icone: 'lapis', aoClicar: () => setEdicao({ tipo: l.tipo, lancamento: l }) });
     if (!l.pagoEm && l.origem === 'MANUAL') {
       acoes.push({ rotulo: 'Excluir', icone: 'lixeira', perigo: true, aoClicar: () => void excluir(l) });
@@ -121,17 +155,13 @@ export function Financeiro() {
 
   const colunas: ColunaTabela<LancamentoDTO>[] = [
     {
-      titulo: 'Vencimento',
-      celula: (l) => <span className={l.vencido ? 'financeiro-vencido' : undefined}>{formatarData(l.vencimento)}</span>,
-    },
-    {
       titulo: 'Descrição',
       celula: (l) => {
         const detalhes = [
           l.parcela ? `Parcela ${l.parcela}/${l.totalParcelas}` : null,
-          l.documento ? `Doc. ${l.documento}` : null,
           l.origem !== 'MANUAL' ? ROTULO_ORIGEM[l.origem] : null,
-          aba === 'pagos' ? (l.tipo === 'RECEITA' ? 'Receita' : 'Despesa') : null,
+          l.categoria,
+          l.cliente ?? l.fornecedor,
         ].filter(Boolean);
         return (
           <div className="financeiro-texto">
@@ -141,32 +171,46 @@ export function Financeiro() {
         );
       },
     },
-    { titulo: 'Categoria', celula: (l) => l.categoria ?? '—' },
-    { titulo: 'Cliente / fornecedor', celula: (l) => l.cliente ?? l.fornecedor ?? '—' },
-    { titulo: 'Valor', alinhar: 'direita', celula: (l) => formatarMoeda(l.valor) },
+    {
+      titulo: 'Vencimento',
+      celula: (l) => (
+        <div className="financeiro-situacao">
+          <span className={l.vencido ? 'financeiro-vencido numero' : 'numero'}>{formatarData(l.vencimento)}</span>
+          {seloVencimento(l)}
+        </div>
+      ),
+    },
+    { titulo: 'Valor', alinhar: 'direita', celula: (l) => <span className="numero">{formatarMoeda(l.valor)}</span> },
     {
       titulo: 'Situação',
-      celula: (l) => {
-        const s = situacaoDe(l);
-        return (
+      celula: (l) =>
+        l.pagoEm ? (
           <div className="financeiro-situacao">
-            <Selo cor={s.cor}>{s.rotulo}</Selo>
-            {l.pagoEm && (
-              <span className="financeiro-detalhe">
-                {new Date(l.pagoEm).toLocaleDateString('pt-BR')}
-                {l.formaPagamento ? ` · ${ROTULOS_FORMA_PAGAMENTO[l.formaPagamento] ?? l.formaPagamento}` : ''}
-              </span>
-            )}
+            <Selo cor="verde">Pago</Selo>
+            <span className="financeiro-detalhe">
+              {new Date(l.pagoEm).toLocaleDateString('pt-BR')}
+              {l.formaPagamento ? ` · ${ROTULOS_FORMA_PAGAMENTO[l.formaPagamento] ?? l.formaPagamento}` : ''}
+            </span>
           </div>
-        );
-      },
+        ) : (
+          <Selo cor="amarelo">Em aberto</Selo>
+        ),
     },
   ];
   if (podeEditar) {
     colunas.push({
       titulo: 'Ações',
       acoes: true,
-      celula: (l) => <MenuAcoes rotulo={`Ações de ${l.descricao}`} acoes={acoesDe(l)} />,
+      celula: (l) => (
+        <div className="acoes-linha">
+          {!l.pagoEm && (
+            <Botao variante="secundario" aoClicar={() => setPagando(l)}>
+              {l.tipo === 'RECEITA' ? 'Receber' : 'Pagar'}
+            </Botao>
+          )}
+          <MenuAcoes rotulo={`Ações de ${l.descricao}`} acoes={acoesDe(l)} />
+        </div>
+      ),
     });
   }
 
@@ -193,27 +237,16 @@ export function Financeiro() {
       {resumo.erro && <Aviso tipo="erro">{resumo.erro}</Aviso>}
       {resumo.carregando && !resumoDados && <Carregando />}
       {resumoDados && (
-        <div className="financeiro-cartoes">
-          <div className="cartao">
-            <h2 className="cartao-titulo">Vendas de hoje</h2>
-            <strong>{formatarMoeda(resumoDados.vendasHoje)}</strong>
-            <p className="financeiro-detalhe">No mês: {formatarMoeda(resumoDados.vendasMes)}</p>
-          </div>
-          <div className="cartao">
-            <h2 className="cartao-titulo">A receber</h2>
-            <strong>{formatarMoeda(resumoDados.aReceber)}</strong>
-            <p className="financeiro-detalhe">Vencido: {formatarMoeda(resumoDados.vencidosReceber)}</p>
-          </div>
-          <div className="cartao">
-            <h2 className="cartao-titulo">A pagar</h2>
-            <strong>{formatarMoeda(resumoDados.aPagar)}</strong>
-            <p className="financeiro-detalhe">Vencido: {formatarMoeda(resumoDados.vencidosPagar)}</p>
-          </div>
-          <div className="cartao">
-            <h2 className="cartao-titulo">Saldo do mês</h2>
-            <strong>{formatarMoeda(resumoDados.saldoMes)}</strong>
-            <p className="financeiro-detalhe">Entradas menos saídas pagas no mês</p>
-          </div>
+        <div className="resumo">
+          <Indicador icone="dinheiro" cor="verde" valor={formatarMoeda(resumoDados.aReceber)} rotulo="A receber" />
+          <Indicador icone="transferir" cor="laranja" valor={formatarMoeda(resumoDados.aPagar)} rotulo="A pagar" />
+          <Indicador
+            icone="relogio"
+            cor="vermelho"
+            valor={formatarMoeda(resumoDados.vencidosReceber + resumoDados.vencidosPagar)}
+            rotulo="Vencidos (receber e pagar)"
+          />
+          <Indicador icone="grafico" cor="azul" valor={formatarMoeda(resumoDados.saldoMes)} rotulo="Saldo do mês" />
         </div>
       )}
 
@@ -227,10 +260,12 @@ export function Financeiro() {
         aoMudar={(id) => setAba(id as Aba)}
       />
 
-      <div className="financeiro-filtros">
-        <Campo rotulo="Vencimento de" tipo="date" valor={de} aoMudar={setDe} />
-        <Campo rotulo="até" tipo="date" valor={ate} aoMudar={setAte} />
-        <Campo rotulo="Buscar" valor={busca} aoMudar={setBusca} />
+      <div className="barra-ferramentas financeiro-barra">
+        <div className="filtros">
+          <Campo rotulo="Buscar por descrição, cliente ou fornecedor" valor={busca} aoMudar={setBusca} />
+          <Campo rotulo="Vencimento de" tipo="date" valor={de} aoMudar={setDe} />
+          <Campo rotulo="até" tipo="date" valor={ate} aoMudar={setAte} />
+        </div>
       </div>
       <p className="financeiro-nota">
         {aba === 'pagos'

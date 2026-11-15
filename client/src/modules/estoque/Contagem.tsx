@@ -7,6 +7,7 @@ import { formatarQuantidade, lerNumero, mensagemErro } from '../../lib/mercado';
 import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { useDados } from '../../lib/useDados';
 import { Aviso, Botao, Carregando, Pagina } from '../../ui';
+import { CelulaProduto, FotoProduto } from '../../ui/FotoProduto';
 import type { InventarioDetalhe, ItemInventario } from './tipos';
 import './estoque.css';
 
@@ -240,6 +241,7 @@ export function Contagem() {
 
         {ultimo && (
           <div className="estoque-contagem-ultimo" aria-live="polite">
+            <FotoProduto foto={ultimo.foto} nome={ultimo.nome} setor={ultimo.categoria} tamanho={140} />
             <span className="estoque-texto-suave">Último lido</span>
             <span className="estoque-contagem-ultimo-nome">{ultimo.nome}</span>
             <span className="estoque-contagem-ultimo-quantidade">
@@ -279,7 +281,9 @@ export function Contagem() {
             <ul className="estoque-contagem-lidos" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {lidos.map((i) => (
                 <li key={i.produtoId}>
-                  <span>{i.nome}</span>
+                  <span>
+                    <CelulaProduto foto={i.foto} nome={i.nome} setor={i.categoria} tamanho={36} />
+                  </span>
                   <span>
                     {i.quantidadeContada === null ? '—' : formatarQuantidade(i.quantidadeContada, i.unidade)}
                   </span>

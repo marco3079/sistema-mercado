@@ -5,9 +5,11 @@ import { useAuth } from '../../lib/auth';
 import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { lerNumero, mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
-import { Abas, Aviso, Botao, Campo, Carregando, Modal, Pagina, Selecao, Selo, Tabela, formatarData, formatarMoeda } from '../../ui';
+import { Abas, Aviso, Botao, Campo, Carregando, Modal, Pagina, Selecao, Selo, formatarData, formatarMoeda } from '../../ui';
+import { CelulaProduto, FotoProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 import { ROTULO_STATUS_PEDIDO } from './tipos';
-import type { FornecedorLinha, PedidoDetalhe, PedidoLinha, ProdutoBuscaDTO } from './tipos';
+import type { FornecedorLinha, PedidoDetalhe, PedidoLinha, ProdutoBuscaDTO, StatusPedido } from './tipos';
 
 // Busca de produto usada em pedidos, cotações e fichas. Só consulta a partir de 2 letras.
 export function BuscaProduto({
@@ -57,6 +59,45 @@ export function BuscaProduto({
   );
 }
 
+// Etapas em que o pedido ainda não foi recebido.
+const ETAPAS_ABERTAS: StatusPedido[] = ['RASCUNHO', 'ENVIADO', 'CONFIRMADO', 'EM_TRANSITO'];
+
+// Cartão de pedido: fornecedor, total, previsão e mini fotos dos itens sobrepostas.
+function CartaoPedido({ pedido: p, aoAbrir }: { pedido: PedidoLinha; aoAbrir: () => void }) {
+  const restantes = p.itens - p.fotos.length;
+  return (
+    <article className="cartao-produto compras-pedido">
+      <div className="compras-pedido-topo">
+        <strong className="compras-pedido-numero">Pedido #{p.numero}</strong>
+        <Selo cor={ROTULO_STATUS_PEDIDO[p.status].cor}>{ROTULO_STATUS_PEDIDO[p.status].rotulo}</Selo>
+      </div>
+      <p className="compras-pedido-fornecedor">{p.fornecedor}</p>
+      <div className="compras-pedido-fotos">
+        {p.fotos.map((f, i) => (
+          <FotoProduto key={i} foto={f.foto} nome={f.nome} setor={f.categoria} tamanho={36} />
+        ))}
+        {restantes > 0 && <span className="compras-pedido-mais">+{restantes}</span>}
+      </div>
+      <dl className="compras-pedido-dados">
+        <div>
+          <dt>Total</dt>
+          <dd className="numero">{formatarMoeda(p.total)}</dd>
+        </div>
+        <div>
+          <dt>Previsão</dt>
+          <dd>{p.previsaoEntrega ? formatarData(p.previsaoEntrega) : '—'}</dd>
+        </div>
+      </dl>
+      <div className="cartao-produto-rodape">
+        <span className="compras-ajuda">{p.itens} item(ns)</span>
+        <Botao variante="secundario" aoClicar={aoAbrir}>
+          Abrir
+        </Botao>
+      </div>
+    </article>
+  );
+}
+
 // Abas em funil: cada aba junta os status que cabem nela.
 const FUNIL: { id: string; rotulo: string; status: string[] }[] = [
   { id: 'RASCUNHO', rotulo: 'Rascunho', status: ['RASCUNHO'] },
@@ -80,6 +121,9 @@ export function PedidosCompra() {
   const contagem = (status: string[]) => (dados ? dados.filter((p) => status.includes(p.status)).length : 0);
   const abas = FUNIL.map((a) => ({ id: a.id, rotulo: `${a.rotulo} (${contagem(a.status)})` }));
   const lista = dados ? dados.filter((p) => statusDaAba.includes(p.status)) : [];
+  const emAberto = dados ? dados.filter((p) => ETAPAS_ABERTAS.includes(p.status)) : [];
+  const valorEmAberto = emAberto.reduce((soma, p) => soma + p.total, 0);
+  const recebidos = dados ? dados.filter((p) => p.status === 'RECEBIDO' || p.status === 'RECEBIDO_PARCIAL').length : 0;
 
   return (
     <Pagina
@@ -90,28 +134,45 @@ export function PedidosCompra() {
       {!dados && carregando && <Carregando />}
       {dados && (
         <>
-          <Abas abas={abas} ativa={aba} aoMudar={setAba} />
-          <div className="compras-rolagem">
-            <Tabela
-              colunas={[
-                { titulo: 'Pedido', celula: (p) => `#${p.numero}` },
-                { titulo: 'Fornecedor', celula: (p) => p.fornecedor },
-                {
-                  titulo: 'Status',
-                  celula: (p) => (
-                    <Selo cor={ROTULO_STATUS_PEDIDO[p.status].cor}>{ROTULO_STATUS_PEDIDO[p.status].rotulo}</Selo>
-                  ),
-                },
-                { titulo: 'Itens', alinhar: 'centro', celula: (p) => p.itens },
-                { titulo: 'Total', alinhar: 'direita', celula: (p) => formatarMoeda(p.total) },
-                { titulo: 'Previsão', celula: (p) => (p.previsaoEntrega ? formatarData(p.previsaoEntrega) : '—') },
-              ]}
-              dados={lista}
-              chave={(p) => p.id}
-              vazio="Nenhum pedido nesta etapa."
-              aoClicarLinha={(p) => navegar(`${raiz}/pedidos-compra/${p.id}`)}
-            />
+          <div className="resumo">
+            <div className="resumo-item">
+              <span className="resumo-icone resumo-icone-azul">
+                <Icone nome="pedidos" tamanho={24} />
+              </span>
+              <div>
+                <span className="resumo-valor">{emAberto.length}</span>
+                <span className="resumo-rotulo">Em aberto</span>
+              </div>
+            </div>
+            <div className="resumo-item">
+              <span className="resumo-icone resumo-icone-laranja">
+                <Icone nome="dinheiro" tamanho={24} />
+              </span>
+              <div>
+                <span className="resumo-valor">{formatarMoeda(valorEmAberto)}</span>
+                <span className="resumo-rotulo">Valor em aberto</span>
+              </div>
+            </div>
+            <div className="resumo-item">
+              <span className="resumo-icone resumo-icone-verde">
+                <Icone nome="visto" tamanho={24} />
+              </span>
+              <div>
+                <span className="resumo-valor">{recebidos}</span>
+                <span className="resumo-rotulo">Recebidos</span>
+              </div>
+            </div>
           </div>
+          <Abas abas={abas} ativa={aba} aoMudar={setAba} />
+          {lista.length === 0 ? (
+            <p className="tabela-vazia">Nenhum pedido nesta etapa.</p>
+          ) : (
+            <div className="grade-produtos">
+              {lista.map((p) => (
+                <CartaoPedido key={p.id} pedido={p} aoAbrir={() => navegar(`${raiz}/pedidos-compra/${p.id}`)} />
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -226,7 +287,15 @@ function NovoPedido({ aoCriar }: { aoCriar: (id: number) => void }) {
                 const subtotal = (lerNumero(l.quantidade) ?? 0) * (lerNumero(l.preco) ?? 0);
                 return (
                   <tr key={l.produto.id}>
-                    <td>{l.produto.nome}</td>
+                    <td>
+                      <CelulaProduto
+                        foto={l.produto.foto}
+                        nome={l.produto.nome}
+                        setor={l.produto.categoria}
+                        detalhe={l.produto.codigo}
+                        tamanho={36}
+                      />
+                    </td>
                     <td className="tabela-alinhar-direita">
                       <input
                         className="compras-input compras-input-curto"

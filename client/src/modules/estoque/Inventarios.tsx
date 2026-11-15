@@ -20,6 +20,7 @@ import {
   formatarMoeda,
 } from '../../ui';
 import type { ColunaTabela } from '../../ui';
+import { BarraNivel, CelulaProduto } from '../../ui/FotoProduto';
 import { ROTULOS_STATUS_INVENTARIO } from './tipos';
 import type {
   CategoriaOpcao,
@@ -99,7 +100,7 @@ function JanelaNovo({ aoFechar, aoCriado }: { aoFechar: () => void; aoCriado: (i
   );
 }
 
-// Detalhe de um inventário: progresso, tabela sistema x contado e ações.
+// Detalhe de um inventário: progresso, tabela sistema x contado (com foto) e ações.
 function DetalheInventario({ id, aoVoltar }: { id: number; aoVoltar: () => void }) {
   const { usuario } = useAuth();
   const navegar = useNavigate();
@@ -139,20 +140,26 @@ function DetalheInventario({ id, aoVoltar }: { id: number; aoVoltar: () => void 
   }
 
   const colunas: ColunaTabela<ItemInventario>[] = [
-    { titulo: 'Código', celula: (i) => i.codigo },
-    { titulo: 'Produto', celula: (i) => i.nome },
-    { titulo: 'Sistema', alinhar: 'direita', celula: (i) => formatarQuantidade(i.quantidadeSistema, i.unidade) },
+    {
+      titulo: 'Produto',
+      celula: (i) => (
+        <CelulaProduto foto={i.foto} nome={i.nome} setor={i.categoria} detalhe={`${i.codigo} · ${i.ean ?? 'sem EAN'}`} />
+      ),
+    },
+    { titulo: 'Sistema', alinhar: 'direita', celula: (i) => <span className="numero">{formatarQuantidade(i.quantidadeSistema, i.unidade)}</span> },
     {
       titulo: 'Contado',
       alinhar: 'direita',
-      celula: (i) => (i.quantidadeContada === null ? '—' : formatarQuantidade(i.quantidadeContada, i.unidade)),
+      celula: (i) => (
+        <span className="numero">{i.quantidadeContada === null ? '—' : formatarQuantidade(i.quantidadeContada, i.unidade)}</span>
+      ),
     },
     {
       titulo: 'Diferença',
       alinhar: 'direita',
-      celula: (i) => <span className={classeDaDiferenca(i.diferenca)}>{textoDaDiferenca(i.diferenca, i.unidade)}</span>,
+      celula: (i) => <span className={`numero ${classeDaDiferenca(i.diferenca) ?? ''}`}>{textoDaDiferenca(i.diferenca, i.unidade)}</span>,
     },
-    { titulo: 'Valor da diferença', alinhar: 'direita', celula: (i) => formatarMoeda(i.valorDiferenca) },
+    { titulo: 'Valor da diferença', alinhar: 'direita', celula: (i) => <span className="numero">{formatarMoeda(i.valorDiferenca)}</span> },
   ];
 
   return (
@@ -244,29 +251,59 @@ function DetalheInventario({ id, aoVoltar }: { id: number; aoVoltar: () => void 
   );
 }
 
-type InventarioLinha = InventarioResumo;
+// Lista de inventários em cartões: progresso de contagem e divergências.
+function CartoesInventario({ inventarios, aoAbrir }: { inventarios: InventarioResumo[]; aoAbrir: (id: number) => void }) {
+  return (
+    <div className="grade-produtos">
+      {inventarios.map((inv) => {
+        const percentual = inv.totalItens === 0 ? 0 : Math.round((inv.contados / inv.totalItens) * 100);
+        return (
+          <article className="cartao-produto estoque-inventario" key={inv.id}>
+            <div>
+              <h3 className="estoque-cartao-titulo">{inv.descricao}</h3>
+              <span className="estoque-texto-suave">
+                {inv.categoria ?? 'Loja inteira'} · criado em {formatarData(inv.criadoEm)}
+              </span>
+            </div>
+            <Selo cor={COR_STATUS[inv.status] ?? 'cinza'}>{ROTULOS_STATUS_INVENTARIO[inv.status]}</Selo>
+            <div>
+              <div className="estoque-cartao-linha">
+                <span className="estoque-texto-suave">
+                  {inv.contados} de {inv.totalItens} contados
+                </span>
+                <strong className="numero">{percentual}%</strong>
+              </div>
+              <BarraNivel
+                valor={inv.contados}
+                maximo={inv.totalItens}
+                cor={inv.status === 'FINALIZADO' ? 'verde' : 'azul'}
+              />
+            </div>
+            <div className="estoque-cartao-linha">
+              <span className="estoque-texto-suave">Divergências</span>
+              <strong className={`numero${inv.divergencias > 0 ? ' estoque-numero-negativo' : ''}`}>{inv.divergencias}</strong>
+            </div>
+            <div className="cartao-produto-rodape">
+              <Botao variante="secundario" aoClicar={() => aoAbrir(inv.id)}>
+                Abrir
+              </Botao>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Inventarios() {
   const [parametros] = useSearchParams();
-  const { dados, carregando, erro, recarregar } = useDados<InventarioLinha[]>('/inventarios');
+  const { dados, carregando, erro, recarregar } = useDados<InventarioResumo[]>('/inventarios');
   // ?abrir=ID vem da tela de contagem, para voltar direto ao inventário.
   const [abertoId, setAbertoId] = useState<number | null>(() => {
     const id = Number(parametros.get('abrir'));
     return Number.isInteger(id) && id > 0 ? id : null;
   });
   const [novo, setNovo] = useState(false);
-
-  const colunas: ColunaTabela<InventarioLinha>[] = [
-    { titulo: 'Descrição', celula: (i) => i.descricao },
-    { titulo: 'Categoria', celula: (i) => i.categoria ?? 'Loja inteira' },
-    { titulo: 'Criado em', celula: (i) => formatarData(i.criadoEm) },
-    { titulo: 'Contados', alinhar: 'direita', celula: (i) => `${i.contados} de ${i.totalItens}` },
-    { titulo: 'Divergências', alinhar: 'direita', celula: (i) => String(i.divergencias) },
-    {
-      titulo: 'Status',
-      celula: (i) => <Selo cor={COR_STATUS[i.status] ?? 'cinza'}>{ROTULOS_STATUS_INVENTARIO[i.status]}</Selo>,
-    },
-  ];
 
   if (abertoId !== null) {
     return (
@@ -287,15 +324,8 @@ export function Inventarios() {
     <Pagina titulo="Inventário" acoes={<Botao aoClicar={() => setNovo(true)}>Novo inventário</Botao>}>
       {carregando && !dados && <Carregando />}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
-      {dados && (
-        <Tabela
-          colunas={colunas}
-          dados={dados}
-          chave={(i) => i.id}
-          aoClicarLinha={(i) => setAbertoId(i.id)}
-          vazio="Nenhum inventário ainda. Crie o primeiro."
-        />
-      )}
+      {dados && dados.length === 0 && <p className="tabela-vazia">Nenhum inventário ainda. Crie o primeiro.</p>}
+      {dados && dados.length > 0 && <CartoesInventario inventarios={dados} aoAbrir={setAbertoId} />}
 
       <Modal aberto={novo} titulo="Novo inventário" aoFechar={() => setNovo(false)}>
         {novo && (

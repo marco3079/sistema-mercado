@@ -2,14 +2,6 @@
    Cores, raios e sombras só por variáveis de ui/estilo.css (tema claro e escuro). */
 
 /* ----- Layout de formulários e filtros ----- */
-.compras-filtros {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  align-items: end;
-  margin-bottom: 16px;
-}
-
 .compras-grade-campos {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -235,15 +227,6 @@
 }
 
 /* ----- Sugestão ----- */
-.compras-sugestao-resumo {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  align-items: center;
-  justify-content: space-between;
-  margin: 12px 0;
-}
-
 /* ----- Conferência: ações de linha ----- */
 .compras-nao-associados {
   display: grid;
@@ -330,4 +313,90 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* ---------- Padrão visual com fotos (cartões e barra de nível) ---------- */
+
+/* Sugestão de compra: estoque com barra de nível embaixo do número */
+.compras-nivel {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 110px;
+}
+
+/* Cotações em cartões */
+.compras-cotacao-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+}
+
+.compras-cotacao-titulo {
+  min-width: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+/* Pedidos de compra em cartões */
+.compras-pedido-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
+}
+
+.compras-pedido-numero {
+  font-size: 1.05rem;
+}
+
+.compras-pedido-fornecedor {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Mini fotos dos itens, sobrepostas */
+.compras-pedido-fotos {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+}
+
+.compras-pedido-fotos .foto-produto {
+  border: 2px solid var(--cor-superficie);
+  box-shadow: 0 0 0 1px var(--cor-borda);
+}
+
+.compras-pedido-fotos .foto-produto + .foto-produto {
+  margin-left: -10px;
+}
+
+.compras-pedido-mais {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--cor-texto-suave);
+}
+
+.compras-pedido-dados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.compras-pedido-dados dt {
+  font-size: 0.75rem;
+  color: var(--cor-texto-suave);
+}
+
+.compras-pedido-dados dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }

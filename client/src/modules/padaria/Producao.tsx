@@ -6,6 +6,8 @@ import { assinar, rajada } from '../../lib/tempoReal';
 import { formatarQuantidade, hojeIso, horaCurta, lerNumero, mensagemErro } from '../../lib/mercado';
 import { Aviso, Botao, Campo, Carregando, Caixa, Modal, Pagina, Selecao, Selo, Tabela, formatarMoeda } from '../../ui';
 import type { OrdemDTO, ReceitaDTO, SugestaoDTO, StatusProducao } from './tipos';
+import { CelulaProduto, FotoProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 
 // Produção do dia: fornadas em três colunas (planejada, no forno, concluída).
 // Concluir baixa os insumos proporcionalmente e dá entrada no produto acabado (no servidor).
@@ -258,7 +260,10 @@ function SugestaoDia({
             chave={(s) => s.receitaId}
             vazio="Sem receitas cadastradas."
             colunas={[
-              { titulo: 'Produto', celula: (s) => <span className="produto-nome">{s.produto}</span> },
+              {
+                titulo: 'Produto',
+                celula: (s) => <CelulaProduto foto={s.foto} nome={s.produto} setor={s.categoria} />,
+              },
               { titulo: 'Média vendida', alinhar: 'direita', celula: (s) => formatarQuantidade(s.mediaVendida) },
               { titulo: 'Estoque', alinhar: 'direita', celula: (s) => formatarQuantidade(s.estoque) },
               {
@@ -312,8 +317,11 @@ function CartaoFornada({
   return (
     <article className={`padaria-fornada${faltando ? ' padaria-fornada-alerta' : ''}`}>
       <div className="padaria-fornada-topo">
-        <strong className="padaria-fornada-hora">{horaCurta(ordem.agendadoPara)}</strong>
-        <span className="padaria-fornada-produto">{ordem.produto}</span>
+        <FotoProduto foto={ordem.foto} nome={ordem.produto} setor={ordem.categoria} tamanho={48} />
+        <div className="padaria-fornada-cabeca">
+          <strong className="padaria-fornada-hora">{horaCurta(ordem.agendadoPara)}</strong>
+          <span className="padaria-fornada-produto">{ordem.produto}</span>
+        </div>
       </div>
       <p className="padaria-fornada-quantidade">
         {ordem.status === 'CONCLUIDA' && ordem.quantidadeProduzida !== null
@@ -396,9 +404,9 @@ export function Producao() {
     { status: 'EM_PRODUCAO', titulo: 'No forno' },
     { status: 'CONCLUIDA', titulo: 'Concluída' },
   ];
-  const concluidas = todas.filter((o) => o.status === 'CONCLUIDA');
-  const produzido = concluidas.reduce((soma, o) => soma + (o.quantidadeProduzida ?? 0), 0);
-  const perdas = concluidas.reduce((soma, o) => soma + (o.perda ?? 0), 0);
+  const planejadas = todas.filter((o) => o.status === 'PLANEJADA').length;
+  const noForno = todas.filter((o) => o.status === 'EM_PRODUCAO').length;
+  const concluidas = todas.filter((o) => o.status === 'CONCLUIDA').length;
   const canceladas = todas.filter((o) => o.status === 'CANCELADA').length;
   const diaSemana = (() => {
     const [a, m, d] = dia.split('-').map(Number);
@@ -417,6 +425,45 @@ export function Producao() {
         </>
       }
     >
+      <div className="resumo">
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-azul">
+            <Icone nome="calendario" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{planejadas}</span>
+            <span className="resumo-rotulo">Planejadas</span>
+          </div>
+        </div>
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-laranja">
+            <Icone nome="relogio" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{noForno}</span>
+            <span className="resumo-rotulo">No forno</span>
+          </div>
+        </div>
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-verde">
+            <Icone nome="visto" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{concluidas}</span>
+            <span className="resumo-rotulo">Concluídas</span>
+          </div>
+        </div>
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-vermelho">
+            <Icone nome="lixeira" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{canceladas}</span>
+            <span className="resumo-rotulo">Canceladas</span>
+          </div>
+        </div>
+      </div>
+
       <div className="barra-ferramentas padaria-dia">
         <Botao variante="secundario" aoClicar={() => setDia(deslocarDia(dia, -1))}>
           ‹ Dia anterior
@@ -464,16 +511,6 @@ export function Producao() {
               </section>
             );
           })}
-        </div>
-      )}
-
-      {ordens.dados && todas.length > 0 && (
-        <div className="padaria-rodape">
-          <span>Fornadas concluídas: {concluidas.length}</span>
-          <span>Produzido: {formatarQuantidade(produzido)}</span>
-          <span>Perdas: {formatarQuantidade(perdas)}</span>
-          {canceladas > 0 && <span>Canceladas: {canceladas}</span>}
-          <span className="padaria-ajuda">Somado nas unidades de cada produto.</span>
         </div>
       )}
 

@@ -141,6 +141,177 @@
   color: var(--cor-texto);
 }
 
+/* Lista: filtros em linha; busca mais larga. */
+.barra-ferramentas > .filtros.produtos-filtros {
+  flex: 1 1 100%;
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(140px, 1fr));
+}
+
+.produtos-busca {
+  margin-bottom: 0;
+}
+
+/* Estoque: número e barra de nível empilhados, alinhados à direita. */
+.produtos-estoque {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  min-width: 110px;
+}
+
+.produtos-estoque .barra-nivel {
+  max-width: 120px;
+}
+
+.produtos-estoque-baixo {
+  color: var(--cor-perigo);
+  font-weight: 700;
+}
+
+/* Ficha do produto: foto à esquerda, abas e campos à direita. */
+.produtos-ficha-corpo {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.produtos-ficha-foto {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.produtos-foto-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.produtos-ficha-campos {
+  min-width: 0;
+}
+
+.produtos-arquivo-oculto {
+  display: none;
+}
+
+/* Categorias: grade de cartões. */
+.produtos-cat-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.produtos-cat-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  min-width: 0;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+}
+
+.produtos-cat-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.produtos-cat-texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.produtos-cat-texto h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.produtos-cat-texto span {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.produtos-cat-miniaturas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.produtos-cat-rodape {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Formação de preço: campo de novo preço com margem embaixo; destaca o que mudou. */
+.produtos-novo-preco {
+  display: inline-grid;
+  justify-items: end;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.produtos-novo-diferente {
+  background: var(--cor-azul-suave);
+}
+
+.produtos-novo-margem {
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave);
+  white-space: nowrap;
+}
+
+.produtos-erro-texto {
+  color: var(--cor-perigo);
+}
+
+.produtos-rodape-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--cor-superficie);
+  border-top: 1px solid var(--cor-borda);
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .barra-ferramentas > .filtros.produtos-filtros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .produtos-busca {
+    grid-column: 1 / -1;
+  }
+
+  .produtos-ficha-corpo {
+    grid-template-columns: 1fr;
+  }
+
+  .produtos-ficha-foto {
+    max-width: 260px;
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 640px) {
   .produtos-grade {
     grid-template-columns: 1fr;

@@ -4,15 +4,17 @@ import { api } from '../../lib/api';
 import { mensagemErro } from '../../lib/mercado';
 import { assinarEntrega } from '../../lib/tempoReal';
 import { Aviso, Carregando, formatarDataHora } from '../../ui';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
 import type { RastreioDTO, StatusEntrega } from './tipos';
 
 // Página pública de rastreio (sem login). Atualiza sozinha: pelo fluxo de eventos e a cada 30 s.
 
-const ETAPAS: { chave: StatusEntrega; rotulo: string }[] = [
-  { chave: 'PENDENTE', rotulo: 'Pedido recebido' },
-  { chave: 'SEPARANDO', rotulo: 'Separando' },
-  { chave: 'EM_ROTA', rotulo: 'Saiu para entrega' },
-  { chave: 'ENTREGUE', rotulo: 'Entregue' },
+const ETAPAS: { chave: StatusEntrega; rotulo: string; icone: NomeIcone }[] = [
+  { chave: 'PENDENTE', rotulo: 'Pedido recebido', icone: 'pedidos' },
+  { chave: 'SEPARANDO', rotulo: 'Separando', icone: 'pacote' },
+  { chave: 'EM_ROTA', rotulo: 'Saiu para entrega', icone: 'caminhao' },
+  { chave: 'ENTREGUE', rotulo: 'Entregue', icone: 'visto' },
 ];
 
 const INTERVALO_MS = 30000;
@@ -113,7 +115,7 @@ export function Rastreio() {
                     return (
                       <li key={etapa.chave} className={classe} aria-current={atual ? 'step' : undefined}>
                         <span className="logistica-rastreio-marca" aria-hidden="true">
-                          {feita ? '✓' : ''}
+                          <Icone nome={feita ? 'visto' : etapa.icone} tamanho={16} />
                         </span>
                         <span>{etapa.rotulo}</span>
                       </li>

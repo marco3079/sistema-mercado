@@ -4,7 +4,9 @@ import { api } from '../../lib/api';
 import { useDados } from '../../lib/useDados';
 import { rajada } from '../../lib/tempoReal';
 import { formatarQuantidade, lerNumero, mensagemErro } from '../../lib/mercado';
-import { Aviso, Botao, Campo, Carregando, Cartao, Modal, Pagina, Selo, formatarMoeda } from '../../ui';
+import { Aviso, Botao, Campo, Carregando, Modal, Pagina, Selo, formatarMoeda } from '../../ui';
+import { FotoProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 import { Pagamento } from './Pagamento';
 import type {
   CalculoDTO,
@@ -142,6 +144,9 @@ export function Pdv() {
     return calculo?.itens.find((c) => c.produtoId === produtoId) ?? null;
   }
 
+  // Cálculo do último item lido (destaque no topo da lista).
+  const precoUltimo = ultimo ? precoDe(ultimo.produtoId) : null;
+
   function focarCodigo() {
     codigoRef.current?.focus();
   }
@@ -183,6 +188,8 @@ export function Pdv() {
           unidade: produto.unidade,
           pesavel: produto.pesavel,
           quantidade,
+          foto: produto.foto,
+          categoria: produto.categoria,
         },
       ];
     });
@@ -423,32 +430,51 @@ export function Pdv() {
 
           {aviso && <Aviso tipo={aviso.tipo}>{aviso.texto}</Aviso>}
 
+          {ultimo && (
+            <div
+              className={selecionado?.produtoId === ultimo.produtoId ? 'pdv-destaque pdv-item-selecionado' : 'pdv-destaque'}
+              onClick={() => setSelecionadoId(ultimo.produtoId)}
+            >
+              <FotoProduto foto={ultimo.foto} nome={ultimo.nome} setor={ultimo.categoria} tamanho={96} />
+              <div className="pdv-destaque-corpo">
+                <span className="pdv-destaque-rotulo">Último item lido</span>
+                <strong className="pdv-destaque-nome">{ultimo.nome}</strong>
+                <span className="pdv-item-detalhe">
+                  {formatarQuantidade(ultimo.quantidade, ultimo.unidade)} ×{' '}
+                  {precoUltimo ? formatarMoeda(precoUltimo.precoUnitario) : '…'}
+                </span>
+                {precoUltimo?.descricaoPromocao && <Selo cor="verde">{precoUltimo.descricaoPromocao}</Selo>}
+              </div>
+              <span className="pdv-destaque-total">{precoUltimo ? formatarMoeda(precoUltimo.total) : '…'}</span>
+            </div>
+          )}
+
           <ol className="pdv-itens">
-            {itens.length === 0 ? (
+            {itens.length === 0 && (
               <li className="pdv-vazio">Nenhum item. Bipe um produto ou aperte F2 para buscar.</li>
-            ) : (
-              itens.map((item, n) => {
-                const c = precoDe(item.produtoId);
-                const eUltimo = n === itens.length - 1;
-                const eSelecionado = selecionado?.produtoId === item.produtoId;
-                const classes = ['pdv-item'];
-                if (eUltimo) classes.push('pdv-item-ultimo');
-                if (eSelecionado) classes.push('pdv-item-selecionado');
-                return (
-                  <li key={item.produtoId} className={classes.join(' ')} onClick={() => setSelecionadoId(item.produtoId)}>
-                    <span className="pdv-item-numero">{n + 1}</span>
-                    <div className="pdv-item-corpo">
-                      <strong className="pdv-item-nome">{item.nome}</strong>
-                      <span className="pdv-item-detalhe">
-                        {formatarQuantidade(item.quantidade, item.unidade)} × {c ? formatarMoeda(c.precoUnitario) : '…'}
-                      </span>
-                      {c?.descricaoPromocao && <Selo cor="verde">{c.descricaoPromocao}</Selo>}
-                    </div>
-                    <span className="pdv-item-total">{c ? formatarMoeda(c.total) : '…'}</span>
-                  </li>
-                );
-              })
             )}
+            {itens.slice(0, -1).map((item, n) => {
+              const c = precoDe(item.produtoId);
+              const eSelecionado = selecionado?.produtoId === item.produtoId;
+              return (
+                <li
+                  key={item.produtoId}
+                  className={eSelecionado ? 'pdv-item pdv-item-selecionado' : 'pdv-item'}
+                  onClick={() => setSelecionadoId(item.produtoId)}
+                >
+                  <span className="pdv-item-numero">{n + 1}</span>
+                  <FotoProduto foto={item.foto} nome={item.nome} setor={item.categoria} tamanho={40} />
+                  <div className="pdv-item-corpo">
+                    <strong className="pdv-item-nome">{item.nome}</strong>
+                    <span className="pdv-item-detalhe">
+                      {formatarQuantidade(item.quantidade, item.unidade)} × {c ? formatarMoeda(c.precoUnitario) : '…'}
+                    </span>
+                    {c?.descricaoPromocao && <Selo cor="verde">{c.descricaoPromocao}</Selo>}
+                  </div>
+                  <span className="pdv-item-total">{c ? formatarMoeda(c.total) : '…'}</span>
+                </li>
+              );
+            })}
           </ol>
 
           {selecionado && (
@@ -492,26 +518,28 @@ export function Pdv() {
           </div>
 
           <div className="pdv-botoes">
-            <Botao aoClicar={finalizar} desabilitado={itens.length === 0}>
-              Finalizar (F10)
-            </Botao>
+            <div className="pdv-finalizar">
+              <Botao aoClicar={finalizar} desabilitado={itens.length === 0}>
+                Finalizar <kbd>F10</kbd>
+              </Botao>
+            </div>
             <Botao variante="secundario" aoClicar={() => abrirModal('produto')}>
-              Buscar (F2)
+              <kbd>F2</kbd> Buscar
             </Botao>
             <Botao variante="secundario" aoClicar={() => { if (ultimo) { setValorQuantidade(String(ultimo.quantidade)); abrirModal('quantidade'); } }}>
-              Quantidade (F3)
+              <kbd>F3</kbd> Quantidade
             </Botao>
             <Botao variante="secundario" aoClicar={() => { setBuscaCliente(''); abrirModal('cliente'); }}>
-              Cliente (F4)
+              <kbd>F4</kbd> Cliente
             </Botao>
             <Botao variante="secundario" aoClicar={() => void abrirDesconto()}>
-              Desconto (F6)
+              <kbd>F6</kbd> Desconto
             </Botao>
             <Botao variante="secundario" aoClicar={() => { setValorCpf(cpfNota); abrirModal('cpf'); }}>
-              CPF na nota (F7)
+              <kbd>F7</kbd> CPF na nota
             </Botao>
             <Botao variante="perigo" aoClicar={() => { if (itens.length > 0) abrirModal('cancelarVenda'); }}>
-              Cancelar venda (F9)
+              <kbd>F9</kbd> Cancelar venda
             </Botao>
           </div>
         </aside>
@@ -532,25 +560,26 @@ export function Pdv() {
       <Modal aberto={modal === 'produto'} titulo="Buscar produto" aoFechar={fecharModal}>
         <Campo rotulo="Nome, código ou EAN" valor={buscaProduto} aoMudar={setBuscaProduto} />
         {avisoModal}
-        <ul className="pdv-resultados">
+        <div className="grade-produtos pdv-grade-busca">
           {resultadosProduto.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                className="pdv-resultado"
-                onClick={() => {
-                  adicionar(p, 1);
-                  fecharModal();
-                }}
-              >
-                <span>{p.nome}</span>
-                <span>
-                  {formatarMoeda(p.precoVenda)} · estoque {formatarQuantidade(p.estoque, p.unidade)}
-                </span>
-              </button>
-            </li>
+            <button
+              key={p.id}
+              type="button"
+              className="cartao-produto pdv-cartao-produto"
+              onClick={() => {
+                adicionar(p, 1);
+                fecharModal();
+              }}
+            >
+              <FotoProduto foto={p.foto} nome={p.nome} setor={p.categoria} preencher />
+              <span className="pdv-cartao-nome">{p.nome}</span>
+              <span className="cartao-produto-rodape">
+                <strong className="numero">{formatarMoeda(p.precoVenda)}</strong>
+                <span className="pdv-texto">estoque {formatarQuantidade(p.estoque, p.unidade)}</span>
+              </span>
+            </button>
           ))}
-        </ul>
+        </div>
         {resultadosProduto.length === 0 && <p className="pdv-texto">Nenhum produto encontrado.</p>}
       </Modal>
 
@@ -673,15 +702,19 @@ function CaixaFechadoPdv({ aoAbrir }: { aoAbrir: () => void }) {
   }
 
   return (
-    <Cartao titulo="Caixa fechado">
+    <section className="cartao pdv-caixa-fechado">
+      <span className="pdv-caixa-fechado-icone" aria-hidden="true">
+        <Icone nome="dinheiro" tamanho={40} />
+      </span>
+      <h2 className="pdv-caixa-fechado-titulo">Caixa fechado</h2>
       <p className="pdv-texto">Abra o caixa para começar a vender. Informe o troco que está na gaveta.</p>
       <form className="pdv-caixa-abrir" onSubmit={abrir}>
-        <Campo rotulo="Valor de abertura" valor={valor} aoMudar={setValor} obrigatorio />
+        <Campo rotulo="Valor de abertura (R$)" valor={valor} aoMudar={setValor} obrigatorio />
         {erro && <Aviso tipo="erro">{erro}</Aviso>}
         <Botao tipo="submit" desabilitado={enviando}>
           Abrir caixa
         </Botao>
       </form>
-    </Cartao>
+    </section>
   );
 }

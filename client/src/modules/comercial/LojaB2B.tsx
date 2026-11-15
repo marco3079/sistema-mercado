@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { formatarQuantidade, mensagemErro } from '../../lib/mercado';
+import { mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
 import { Abas, AreaTexto, Aviso, Botao, Carregando, Selo, formatarData, formatarMoeda } from '../../ui';
+import { FotoProduto } from '../../ui/FotoProduto';
 import type { CatalogoB2B, PedidoB2B, ProdutoB2B, StatusPedido } from './tipos';
-import { COR_STATUS_PEDIDO, ROTULO_STATUS_PEDIDO } from './tipos';
+import { COR_STATUS_PEDIDO, ROTULO_STATUS_PEDIDO, quantidadeCurta } from './tipos';
 import './comercial.css';
 
-// Loja B2B (página pública pelo código do cliente): preço de atacado, carrinho e acompanhamento dos pedidos.
+// Loja B2B (página pública pelo código do cliente): vitrine com foto, carrinho e acompanhamento dos pedidos.
+// No computador, o carrinho fica à direita. No celular, a lista tem uma barra de carrinho fixa embaixo.
 
 const UNIDADES_FRACIONADAS = ['KG', 'G', 'L', 'ML'];
 
@@ -95,7 +97,7 @@ export function LojaB2B() {
   const dados = catalogo.dados;
 
   return (
-    <div className="com-pub">
+    <div className="com-pub com-pub-b2b">
       <header className="com-pub-cabecalho">
         <div>
           <h1>{dados.empresa}</h1>
@@ -119,79 +121,104 @@ export function LojaB2B() {
               Pedido nº {enviado.numero} enviado. Total estimado {formatarMoeda(enviado.total)}.
             </Aviso>
           )}
-          <div className="com-pub-filtros">
-            <input
-              className="com-input"
-              type="search"
-              placeholder="Buscar produto"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-            />
+
+          <div className="com-b2b-layout">
+            <section className="com-b2b-vitrine">
+              <div className="com-pub-filtros">
+                <input
+                  className="com-input"
+                  type="search"
+                  placeholder="Buscar produto"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                />
+              </div>
+
+              <div className="com-b2b-produtos">
+                {visiveis.map((p) => {
+                  const qtd = carrinho[p.produtoId] ?? 0;
+                  return (
+                    <article key={p.produtoId} className="com-b2b-card">
+                      <div className="com-b2b-foto">
+                        <FotoProduto foto={p.foto} nome={p.nome} setor={p.categoria} preencher />
+                      </div>
+                      <div className="com-b2b-info">
+                        <strong>{p.nome}</strong>
+                        {p.categoria && <span className="com-suave">{p.categoria}</span>}
+                        <span>
+                          <strong>{formatarMoeda(p.preco)}</strong>
+                          <span className="com-suave"> / {p.unidade}</span>
+                        </span>
+                        {p.qtdAtacado !== null && (
+                          <span className="com-promo">Atacado a partir de {quantidadeCurta(p.qtdAtacado, p.unidade)}</span>
+                        )}
+                      </div>
+                      <div className="com-b2b-acao">
+                        {qtd === 0 ? (
+                          <Botao aoClicar={() => ajustar(p, 1)}>Adicionar</Botao>
+                        ) : (
+                          <div className="com-stepper" role="group" aria-label={`Quantidade de ${p.nome}`}>
+                            <button type="button" onClick={() => ajustar(p, -1)} aria-label="Diminuir">
+                              −
+                            </button>
+                            <span>{quantidadeCurta(qtd, p.unidade)}</span>
+                            <button type="button" onClick={() => ajustar(p, 1)} aria-label="Aumentar">
+                              +
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+                {visiveis.length === 0 && <p className="com-suave">Nenhum produto encontrado.</p>}
+              </div>
+            </section>
+
+            <section id="b2b-carrinho" className="com-b2b-carrinho">
+              <h2 className="com-subtitulo">Seu pedido</h2>
+              {itens.length === 0 ? (
+                <p className="com-suave">Nenhum item no pedido.</p>
+              ) : (
+                <ul className="com-checkout-itens">
+                  {itens.map((i) => (
+                    <li key={i.produto.produtoId}>
+                      <span>
+                        {quantidadeCurta(i.quantidade, i.produto.unidade)} × {i.produto.nome}
+                      </span>
+                      <strong>{formatarMoeda(i.produto.preco * i.quantidade)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {itens.length > 0 && (
+                <div className="com-checkout-totais">
+                  <span>Total estimado</span>
+                  <strong>{formatarMoeda(totalEstimado)}</strong>
+                </div>
+              )}
+              <AreaTexto rotulo="Observações para o pedido" valor={observacoes} aoMudar={setObservacoes} linhas={3} />
+              {erroEnvio && <Aviso tipo="erro">{erroEnvio}</Aviso>}
+              <Botao desabilitado={enviando || itens.length === 0} aoClicar={enviarPedido}>
+                {enviando ? 'Enviando...' : 'Enviar pedido'}
+              </Botao>
+            </section>
           </div>
 
-          <div className="com-pub-produtos">
-            {visiveis.map((p) => {
-              const qtd = carrinho[p.produtoId] ?? 0;
-              return (
-                <article key={p.produtoId} className="com-pub-produto">
-                  <div className="com-pub-produto-texto">
-                    <strong>{p.nome}</strong>
-                    {p.categoria && <span className="com-suave">{p.categoria}</span>}
-                    <span>
-                      <strong>{formatarMoeda(p.preco)}</strong>
-                      <span className="com-suave"> / {p.unidade}</span>
-                    </span>
-                    {p.qtdAtacado !== null && (
-                      <span className="com-promo">Preço de atacado a partir de {formatarQuantidade(p.qtdAtacado, p.unidade)}</span>
-                    )}
-                  </div>
-                  {qtd === 0 ? (
-                    <Botao aoClicar={() => ajustar(p, 1)}>Adicionar</Botao>
-                  ) : (
-                    <div className="com-stepper" role="group" aria-label={`Quantidade de ${p.nome}`}>
-                      <button type="button" onClick={() => ajustar(p, -1)} aria-label="Diminuir">
-                        −
-                      </button>
-                      <span>{formatarQuantidade(qtd, p.unidade)}</span>
-                      <button type="button" onClick={() => ajustar(p, 1)} aria-label="Aumentar">
-                        +
-                      </button>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-            {visiveis.length === 0 && <p className="com-suave">Nenhum produto encontrado.</p>}
-          </div>
-
-          <section className="com-b2b-carrinho">
-            <h2 className="com-subtitulo">Seu pedido</h2>
-            {itens.length === 0 ? (
-              <p className="com-suave">Nenhum item no pedido.</p>
-            ) : (
-              <ul className="com-checkout-itens">
-                {itens.map((i) => (
-                  <li key={i.produto.produtoId}>
-                    <span>
-                      {formatarQuantidade(i.quantidade, i.produto.unidade)} × {i.produto.nome}
-                    </span>
-                    <strong>{formatarMoeda(i.produto.preco * i.quantidade)}</strong>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {itens.length > 0 && (
-              <div className="com-checkout-totais">
-                <span>Total estimado</span>
+          {itens.length > 0 && (
+            <div className="com-b2b-barra">
+              <div>
+                <span className="com-suave">{itens.length} produto(s) no pedido</span>
                 <strong>{formatarMoeda(totalEstimado)}</strong>
               </div>
-            )}
-            <AreaTexto rotulo="Observações para o pedido" valor={observacoes} aoMudar={setObservacoes} linhas={3} />
-            {erroEnvio && <Aviso tipo="erro">{erroEnvio}</Aviso>}
-            <Botao desabilitado={enviando || itens.length === 0} aoClicar={enviarPedido}>
-              {enviando ? 'Enviando...' : 'Enviar pedido'}
-            </Botao>
-          </section>
+              <Botao
+                variante="secundario"
+                aoClicar={() => document.getElementById('b2b-carrinho')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              >
+                Ver pedido
+              </Botao>
+            </div>
+          )}
         </>
       )}
 

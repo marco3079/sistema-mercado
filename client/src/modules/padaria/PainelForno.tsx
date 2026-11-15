@@ -6,6 +6,7 @@ import { formatarQuantidade, hojeIso, horaCurta, mensagemErro } from '../../lib/
 import { Aviso, Botao, Carregando, Pagina } from '../../ui';
 import { ModalConcluir } from './Producao';
 import type { OrdemDTO, ReceitaDTO } from './tipos';
+import { FotoProduto } from '../../ui/FotoProduto';
 
 // Painel do forno: tela grande para o tablet da padaria. Botões grandes e contagem regressiva
 // de quem está no forno (início + tempo de forno da receita).
@@ -111,6 +112,7 @@ export function PainelForno() {
                       key={o.id}
                       className={`padaria-painel-cartao${pronto ? ' padaria-painel-pronto' : ''}`}
                     >
+                      <FotoProduto foto={o.foto} nome={o.produto} setor={o.categoria} preencher />
                       <div className="padaria-painel-produto">{o.produto}</div>
                       <div className="padaria-painel-quantidade">
                         {formatarQuantidade(o.quantidadePlanejada, o.unidade)}
@@ -141,6 +143,7 @@ export function PainelForno() {
                     className={`padaria-painel-cartao${o.faltaInsumo.length > 0 ? ' padaria-painel-alerta' : ''}`}
                   >
                     <div className="padaria-painel-hora">{horaCurta(o.agendadoPara)}</div>
+                    <FotoProduto foto={o.foto} nome={o.produto} setor={o.categoria} preencher />
                     <div className="padaria-painel-produto">{o.produto}</div>
                     <div className="padaria-painel-quantidade">
                       {formatarQuantidade(o.quantidadePlanejada, o.unidade)}

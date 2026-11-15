@@ -30,6 +30,13 @@ export interface PromocaoDTO {
   bonificacaoUnidade: number | null;
   descricao: string;
   precoNormal: number | null;
+  // Preço por unidade já com o desconto (PRECO_FIXO: o valor; PERCENTUAL: preço normal menos o %). Outros: null.
+  precoPromocional: number | null;
+  // Foto do produto (promoção de produto) e até 4 fotos de produtos da categoria (promoção de categoria).
+  foto: string | null;
+  fotos: string[];
+  // Nome da categoria do produto (ou da própria categoria da promoção).
+  setor: string | null;
   unidadesVendidas: number;
 }
 

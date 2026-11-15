@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useDados } from '../../lib/useDados';
@@ -7,10 +7,24 @@ import { usePlataforma } from '../../lib/plataforma';
 import { ROTULOS_FORMA_PAGAMENTO, hojeIso, lerNumero, mensagemErro } from '../../lib/mercado';
 import { dataHora, escapar, imprimirHtml, moeda, ESTILO_BOBINA } from '../../lib/imprimir';
 import { Abas, Aviso, Botao, Campo, Carregando, Cartao, Modal, Pagina, Selo, Tabela, formatarDataHora, formatarMoeda } from '../../ui';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
 import type { CaixaAtualDTO, CaixaHistoricoDTO, FechamentoCaixaDTO } from './tipos';
 
 // Caixa da gaveta: abrir com o troco, sangria, suprimento e fechamento conferindo o dinheiro.
-// O gestor vê também o histórico de caixas.
+// O gestor vê também o histórico de caixas. Ações do caixa no cabeçalho; resumo de números no topo.
+
+const ICONE_FORMA: Record<string, NomeIcone> = {
+  DINHEIRO: 'dinheiro',
+  PIX: 'celular',
+  DEBITO: 'financeiro',
+  CREDITO: 'financeiro',
+  FIADO: 'perfil',
+  VALE_ALIMENTACAO: 'carrinho',
+  BOLETO: 'documento',
+};
+
+type CorResumo = 'azul' | 'verde' | 'laranja' | 'roxo' | 'vermelho';
 
 function centavos(valor: number): number {
   return Math.round(valor * 100);
@@ -70,30 +84,52 @@ function imprimirResumoCaixa(nomeEmpresa: string, f: FechamentoCaixaDTO) {
   imprimirHtml('Resumo do caixa', corpo, ESTILO_BOBINA);
 }
 
+// Cabeçalho comum das telas do caixa: título, ações à direita e as abas do gestor logo abaixo.
+function PaginaCaixa({ acoes, abas, children }: { acoes?: ReactNode; abas: ReactNode; children?: ReactNode }) {
+  return (
+    <Pagina titulo="Caixa" acoes={acoes}>
+      {abas}
+      {children}
+    </Pagina>
+  );
+}
+
+// Cartão de número do topo (ícone colorido + valor grande + rótulo).
+function ResumoItem({ icone, cor, valor, rotulo }: { icone: NomeIcone; cor: CorResumo; valor: string; rotulo: string }) {
+  return (
+    <div className="resumo-item">
+      <span className={`resumo-icone resumo-icone-${cor}`}>
+        <Icone nome={icone} tamanho={22} />
+      </span>
+      <div className="pdv-resumo-texto">
+        <span className="resumo-valor numero">{valor}</span>
+        <span className="resumo-rotulo">{rotulo}</span>
+      </div>
+    </div>
+  );
+}
+
 // Tela de caixa para o operador (e o histórico, para o gestor).
 export function CaixaTela() {
   const { usuario } = useAuth();
   const ehGestor = usuario?.perfil === 'GESTOR';
   const [aba, setAba] = useState<'atual' | 'historico'>('atual');
 
-  return (
-    <Pagina titulo="Caixa">
-      {ehGestor && (
-        <Abas
-          abas={[
-            { id: 'atual', rotulo: 'Caixa' },
-            { id: 'historico', rotulo: 'Histórico de caixas' },
-          ]}
-          ativa={aba}
-          aoMudar={(id) => setAba(id as 'atual' | 'historico')}
-        />
-      )}
-      {aba === 'atual' ? <CaixaAtual /> : <HistoricoCaixas />}
-    </Pagina>
-  );
+  const abas = ehGestor ? (
+    <Abas
+      abas={[
+        { id: 'atual', rotulo: 'Caixa' },
+        { id: 'historico', rotulo: 'Histórico de caixas' },
+      ]}
+      ativa={aba}
+      aoMudar={(id) => setAba(id as 'atual' | 'historico')}
+    />
+  ) : null;
+
+  return aba === 'atual' ? <CaixaAtual abas={abas} /> : <HistoricoCaixas abas={abas} />;
 }
 
-function CaixaAtual() {
+function CaixaAtual({ abas }: { abas: ReactNode }) {
   const caixa = useDados<CaixaAtualDTO | null>('/caixas/atual');
   const { plataforma } = usePlataforma();
   const [abrindo, setAbrindo] = useState('');
@@ -106,8 +142,20 @@ function CaixaAtual() {
   const [contado, setContado] = useState('');
   const [fechamento, setFechamento] = useState<FechamentoCaixaDTO | null>(null);
 
-  if (caixa.carregando && caixa.dados === null) return <Carregando />;
-  if (caixa.erro) return <Aviso tipo="erro">{caixa.erro}</Aviso>;
+  if (caixa.carregando && caixa.dados === null) {
+    return (
+      <PaginaCaixa abas={abas}>
+        <Carregando />
+      </PaginaCaixa>
+    );
+  }
+  if (caixa.erro) {
+    return (
+      <PaginaCaixa abas={abas}>
+        <Aviso tipo="erro">{caixa.erro}</Aviso>
+      </PaginaCaixa>
+    );
+  }
 
   const atual = caixa.dados;
 
@@ -188,96 +236,114 @@ function CaixaAtual() {
   if (fechamento) {
     const dif = fechamento.diferenca;
     return (
-      <Cartao titulo="Caixa fechado">
-        <p className={`pdv-caixa-diferenca ${classeDiferenca(dif)}`}>{textoDiferenca(dif)}</p>
-        <div className="pdv-caixa-linha">
-          <span>Dinheiro esperado</span>
-          <strong>{formatarMoeda(fechamento.dinheiroEsperado)}</strong>
-        </div>
-        <div className="pdv-caixa-linha">
-          <span>Dinheiro contado</span>
-          <strong>{formatarMoeda(fechamento.valorInformado)}</strong>
-        </div>
-        <div className="pdv-caixa-linha">
-          <span>Vendas</span>
-          <strong>{formatarMoeda(fechamento.totalVendas)}</strong>
-        </div>
-        <div className="pdv-caixa-acoes">
-          <Botao variante="secundario" aoClicar={() => imprimirResumoCaixa(plataforma.nome, fechamento)}>
-            Imprimir resumo
-          </Botao>
-          <Botao aoClicar={fecharResumo}>Concluir</Botao>
-        </div>
-      </Cartao>
+      <PaginaCaixa abas={abas}>
+        <Cartao titulo="Caixa fechado">
+          <p className={`pdv-caixa-diferenca ${classeDiferenca(dif)}`}>{textoDiferenca(dif)}</p>
+          <div className="pdv-caixa-linha">
+            <span>Dinheiro esperado</span>
+            <strong>{formatarMoeda(fechamento.dinheiroEsperado)}</strong>
+          </div>
+          <div className="pdv-caixa-linha">
+            <span>Dinheiro contado</span>
+            <strong>{formatarMoeda(fechamento.valorInformado)}</strong>
+          </div>
+          <div className="pdv-caixa-linha">
+            <span>Vendas</span>
+            <strong>{formatarMoeda(fechamento.totalVendas)}</strong>
+          </div>
+          <div className="pdv-caixa-acoes">
+            <Botao variante="secundario" aoClicar={() => imprimirResumoCaixa(plataforma.nome, fechamento)}>
+              Imprimir resumo
+            </Botao>
+            <Botao aoClicar={fecharResumo}>Concluir</Botao>
+          </div>
+        </Cartao>
+      </PaginaCaixa>
     );
   }
 
   if (atual === null) {
     return (
-      <Cartao titulo="Caixa fechado">
-        <p className="pdv-caixa-texto">Abra o caixa informando o troco que está na gaveta.</p>
-        <form onSubmit={abrir}>
-          <Campo rotulo="Valor de abertura" valor={abrindo} aoMudar={setAbrindo} obrigatorio />
-          {erro && <Aviso tipo="erro">{erro}</Aviso>}
-          <div className="pdv-caixa-acoes">
-            <Botao tipo="submit" desabilitado={enviando}>
-              Abrir caixa
-            </Botao>
-          </div>
-        </form>
-      </Cartao>
+      <PaginaCaixa abas={abas}>
+        <Cartao titulo="Caixa fechado">
+          <p className="pdv-caixa-texto">Abra o caixa informando o troco que está na gaveta.</p>
+          <form onSubmit={abrir}>
+            <Campo rotulo="Valor de abertura" valor={abrindo} aoMudar={setAbrindo} obrigatorio />
+            {erro && <Aviso tipo="erro">{erro}</Aviso>}
+            <div className="pdv-caixa-acoes">
+              <Botao tipo="submit" desabilitado={enviando}>
+                Abrir caixa
+              </Botao>
+            </div>
+          </form>
+        </Cartao>
+      </PaginaCaixa>
     );
   }
 
   const dinheiroContado = lerNumero(contado);
   const difAoVivo = dinheiroContado === null ? null : arredDiferenca(dinheiroContado, atual.dinheiroEsperado);
 
+  const acoes = (
+    <div className="pdv-cabecalho-acoes">
+      <Botao
+        variante="secundario"
+        aoClicar={() => {
+          setErro(null);
+          setMovimento('SANGRIA');
+        }}
+      >
+        Sangria
+      </Botao>
+      <Botao
+        variante="secundario"
+        aoClicar={() => {
+          setErro(null);
+          setMovimento('SUPRIMENTO');
+        }}
+      >
+        Suprimento
+      </Botao>
+      <Botao
+        variante="perigo"
+        aoClicar={() => {
+          setErro(null);
+          setFechando(true);
+        }}
+      >
+        Fechar caixa
+      </Botao>
+    </div>
+  );
+
   return (
-    <>
-      <Cartao titulo={`Caixa aberto · ${atual.terminal}`}>
-        <div className="pdv-cartoes-caixa">
-          <div className="pdv-caixa-linha">
-            <span>Abertura</span>
-            <strong>{formatarMoeda(atual.valorAbertura)}</strong>
-          </div>
-          <div className="pdv-caixa-linha">
-            <span>Vendas ({atual.qtdVendas})</span>
-            <strong>{formatarMoeda(atual.totalVendas)}</strong>
-          </div>
-          <div className="pdv-caixa-linha">
-            <span>Dinheiro esperado</span>
-            <strong>{formatarMoeda(atual.dinheiroEsperado)}</strong>
-          </div>
-        </div>
-        <div className="pdv-caixa-acoes">
-          <Botao variante="secundario" aoClicar={() => { setErro(null); setMovimento('SANGRIA'); }}>
-            Sangria
-          </Botao>
-          <Botao variante="secundario" aoClicar={() => { setErro(null); setMovimento('SUPRIMENTO'); }}>
-            Suprimento
-          </Botao>
-          <Botao
-            variante="perigo"
-            aoClicar={() => {
-              setErro(null);
-              setFechando(true);
-            }}
-          >
-            Fechar caixa
-          </Botao>
-        </div>
-      </Cartao>
+    <PaginaCaixa abas={abas} acoes={acoes}>
+      <p className="pdv-caixa-info">Caixa aberto · {atual.terminal}</p>
+
+      <div className="resumo">
+        <ResumoItem icone="dinheiro" cor="azul" rotulo="Abertura" valor={formatarMoeda(atual.valorAbertura)} />
+        <ResumoItem icone="carrinho" cor="verde" rotulo="Vendas" valor={formatarMoeda(atual.totalVendas)} />
+        <ResumoItem icone="dinheiro" cor="laranja" rotulo="Dinheiro esperado" valor={formatarMoeda(atual.dinheiroEsperado)} />
+        <ResumoItem icone="lista" cor="roxo" rotulo="Nº de vendas" valor={String(atual.qtdVendas)} />
+      </div>
 
       <Cartao titulo="Por forma de pagamento">
         {Object.keys(atual.porForma).length === 0 ? (
           <p className="pdv-caixa-texto">Nenhuma venda neste caixa ainda.</p>
         ) : (
-          Object.entries(atual.porForma).map(([forma, valor]) => (
-            <div key={forma} className="pdv-caixa-linha">
-              <span>{ROTULOS_FORMA_PAGAMENTO[forma] ?? forma}</span>
-              <strong>{formatarMoeda(valor)}</strong>
-            </div>
-          ))
+          <div className="pdv-formas-caixa">
+            {Object.entries(atual.porForma).map(([forma, valor]) => (
+              <div key={forma} className="pdv-forma-caixa">
+                <span className="resumo-icone resumo-icone-azul">
+                  <Icone nome={ICONE_FORMA[forma] ?? 'dinheiro'} tamanho={20} />
+                </span>
+                <span className="pdv-forma-caixa-texto">
+                  <span className="resumo-rotulo">{ROTULOS_FORMA_PAGAMENTO[forma] ?? forma}</span>
+                  <strong className="numero">{formatarMoeda(valor)}</strong>
+                </span>
+              </div>
+            ))}
+          </div>
         )}
       </Cartao>
 
@@ -338,7 +404,7 @@ function CaixaAtual() {
           </Botao>
         </div>
       </Modal>
-    </>
+    </PaginaCaixa>
   );
 }
 
@@ -347,17 +413,19 @@ function arredDiferenca(contado: number, esperado: number): number {
   return Math.round((contado - esperado) * 100) / 100;
 }
 
-function HistoricoCaixas() {
+function HistoricoCaixas({ abas }: { abas: ReactNode }) {
   const [inicio, setInicio] = useState(hojeIso(-29));
   const [fim, setFim] = useState(hojeIso(0));
   const caminho = `/caixas?inicio=${inicio}&fim=${fim}`;
   const historico = useDados<CaixaHistoricoDTO[]>(caminho);
 
   return (
-    <>
-      <div className="pdv-filtros">
-        <Campo rotulo="De" tipo="date" valor={inicio} aoMudar={setInicio} />
-        <Campo rotulo="Até" tipo="date" valor={fim} aoMudar={setFim} />
+    <PaginaCaixa abas={abas}>
+      <div className="barra-ferramentas pdv-barra">
+        <div className="filtros">
+          <Campo rotulo="De" tipo="date" valor={inicio} aoMudar={setInicio} />
+          <Campo rotulo="Até" tipo="date" valor={fim} aoMudar={setFim} />
+        </div>
       </div>
       {historico.carregando && historico.dados === null && <Carregando />}
       {historico.erro && <Aviso tipo="erro">{historico.erro}</Aviso>}
@@ -375,7 +443,7 @@ function HistoricoCaixas() {
             {
               titulo: 'Vendas',
               alinhar: 'direita',
-              celula: (c: CaixaHistoricoDTO) => formatarMoeda(c.totalVendas),
+              celula: (c: CaixaHistoricoDTO) => <span className="numero">{formatarMoeda(c.totalVendas)}</span>,
             },
             {
               titulo: 'Contado',
@@ -389,6 +457,6 @@ function HistoricoCaixas() {
           vazio="Nenhum caixa neste período."
         />
       )}
-    </>
+    </PaginaCaixa>
   );
 }

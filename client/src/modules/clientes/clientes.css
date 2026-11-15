@@ -1,21 +1,56 @@
 /* Clientes e fiado. Cores só pelas variáveis da casca (ui/estilo.css), para o tema claro e o escuro. */
 
-.clientes-filtros {
-  display: flex;
-  flex-wrap: wrap;
+/* Primeira coluna: avatar + nome + detalhe (CPF/CNPJ · telefone). */
+.clientes-identidade {
+  display: inline-flex;
+  align-items: center;
   gap: 12px;
-  align-items: flex-end;
-  margin-bottom: 16px;
-}
-
-.clientes-busca {
-  flex: 1 1 260px;
   min-width: 0;
 }
 
-.clientes-filtro-tipo {
-  flex: 0 1 180px;
-  min-width: 140px;
+.clientes-identidade-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.clientes-identidade-nome {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.clientes-identidade-texto small {
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+}
+
+/* Saldo devedor: valor em cima e barra saldo × limite embaixo, alinhados à direita. */
+.clientes-saldo,
+.fiado-saldo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 120px;
+}
+
+/* Busca ocupa as duas colunas da grade de filtros, com o rótulo numa linha só. */
+.clientes-busca {
+  grid-column: span 2;
+  min-width: 0;
+}
+
+.clientes-busca .campo {
+  margin-bottom: 0;
+}
+
+@media (max-width: 519px) {
+  .clientes-busca {
+    grid-column: auto;
+  }
 }
 
 .clientes-sem-quebra {
@@ -80,29 +115,7 @@
   font-weight: 500;
 }
 
-/* Fiado: cartão de total em aberto e lista de devedores. */
-.fiado-total {
-  margin-bottom: 16px;
-}
-
-.fiado-total .cartao {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 420px;
-}
-
-.fiado-total-rotulo {
-  color: var(--cor-texto-suave);
-  font-size: 0.9rem;
-}
-
-.fiado-total-valor {
-  color: var(--cor-perigo);
-  font-size: 2rem;
-  line-height: 1.1;
-}
-
+/* Fiado: ações da linha (Receber + menu). */
 .fiado-acoes {
   display: flex;
   flex-wrap: nowrap;
@@ -140,15 +153,7 @@
 }
 
 @media (max-width: 640px) {
-  .clientes-filtro-tipo {
-    flex: 1 1 100%;
-  }
-
   .fiado-acoes {
     justify-content: flex-start;
-  }
-
-  .fiado-total-valor {
-    font-size: 1.6rem;
   }
 }

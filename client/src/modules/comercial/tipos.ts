@@ -29,6 +29,8 @@ export interface ItemPedidoDetalhe {
   precoTabela: number;
   precoNegociado: number;
   total: number;
+  foto: string | null;
+  categoria: string | null;
 }
 
 export interface PedidoDetalhe extends PedidoLista {
@@ -51,6 +53,8 @@ export interface ProdutoPrecoVenda {
   precoAtacado: number | null;
   estoque: number;
   promocao: string | null;
+  foto: string | null;
+  categoria: string | null;
 }
 
 export interface ResumoVendedor {
@@ -91,7 +95,7 @@ export interface EntregaVenda {
   formas: string[];
   entrega: { id: number; codigo: string; status: string } | null;
   criadoEm: string;
-  itens: { descricao: string; quantidade: number; precoUnitario: number; total: number }[];
+  itens: { descricao: string; quantidade: number; precoUnitario: number; total: number; foto?: string | null }[];
 }
 
 // Página pública de delivery (GET /publico/delivery/catalogo).
@@ -196,6 +200,12 @@ export const FORMAS_DELIVERY: { valor: 'DINHEIRO' | 'PIX' | 'DEBITO' | 'CREDITO'
   { valor: 'DEBITO', rotulo: 'Débito na entrega' },
   { valor: 'CREDITO', rotulo: 'Crédito na entrega' },
 ];
+
+// Quantidade para exibir sem zeros à direita: "0,5", "2", "1,25". Com unidade: "0,5 kg".
+export function quantidadeCurta(qtd: number, unidade?: string): string {
+  const texto = qtd.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+  return unidade ? `${texto} ${unidade.toLowerCase()}` : texto;
+}
 
 export function soDigitos(texto: string): string {
   return texto.replace(/\D/g, '');

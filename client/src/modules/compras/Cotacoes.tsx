@@ -5,7 +5,9 @@ import { useAuth } from '../../lib/auth';
 import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { lerNumero, mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
-import { Aviso, Botao, Caixa, Campo, Carregando, Modal, Pagina, Selo, Tabela, formatarData } from '../../ui';
+import { Aviso, Botao, Caixa, Campo, Carregando, Modal, Pagina, Selo, formatarData } from '../../ui';
+import { CelulaProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 import { BuscaProduto } from './PedidosCompra';
 import { ROTULO_STATUS_COTACAO } from './tipos';
 import type { CotacaoDetalhe, CotacaoLinha, FornecedorLinha, ProdutoBuscaDTO } from './tipos';
@@ -23,24 +25,64 @@ export function Cotacoes() {
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {!dados && carregando && <Carregando />}
       {dados && (
-        <div className="compras-rolagem">
-          <Tabela
-            colunas={[
-              { titulo: 'Título', celula: (c) => c.titulo },
-              {
-                titulo: 'Status',
-                celula: (c) => <Selo cor={ROTULO_STATUS_COTACAO[c.status].cor}>{ROTULO_STATUS_COTACAO[c.status].rotulo}</Selo>,
-              },
-              { titulo: 'Prazo', celula: (c) => (c.prazo ? formatarData(c.prazo) : '—') },
-              { titulo: 'Produtos', alinhar: 'centro', celula: (c) => c.itens },
-              { titulo: 'Respostas', alinhar: 'centro', celula: (c) => `${c.respondidos} de ${c.fornecedores}` },
-              { titulo: 'Criada em', celula: (c) => formatarData(c.criadoEm) },
-            ]}
-            dados={dados}
-            chave={(c) => c.id}
-            vazio="Nenhuma cotação ainda. Crie uma para pedir preços a fornecedores."
-            aoClicarLinha={(c) => navegar(`${raiz}/cotacoes/${c.id}`)}
-          />
+        <div className="resumo">
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-azul">
+              <Icone nome="documento" tamanho={24} />
+            </span>
+            <div>
+              <span className="resumo-valor">{dados.filter((c) => c.status === 'ABERTA').length}</span>
+              <span className="resumo-rotulo">Abertas</span>
+            </div>
+          </div>
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-laranja">
+              <Icone nome="relogio" tamanho={24} />
+            </span>
+            <div>
+              <span className="resumo-valor">
+                {dados.reduce((soma, c) => soma + (c.fornecedores - c.respondidos), 0)}
+              </span>
+              <span className="resumo-rotulo">Respostas pendentes</span>
+            </div>
+          </div>
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-verde">
+              <Icone nome="visto" tamanho={24} />
+            </span>
+            <div>
+              <span className="resumo-valor">{dados.filter((c) => c.status === 'FECHADA').length}</span>
+              <span className="resumo-rotulo">Fechadas</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dados && dados.length === 0 && (
+        <p className="tabela-vazia">Nenhuma cotação ainda. Crie uma para pedir preços a fornecedores.</p>
+      )}
+
+      {dados && dados.length > 0 && (
+        <div className="grade-produtos">
+          {dados.map((c) => (
+            <article key={c.id} className="cartao-produto compras-cotacao">
+              <div className="compras-cotacao-topo">
+                <strong className="compras-cotacao-titulo">{c.titulo}</strong>
+                <Selo cor={ROTULO_STATUS_COTACAO[c.status].cor}>{ROTULO_STATUS_COTACAO[c.status].rotulo}</Selo>
+              </div>
+              <p className="compras-ajuda">
+                {c.itens} produto(s) · criada em {formatarData(c.criadoEm)}
+              </p>
+              <p className="compras-ajuda">
+                Prazo: {c.prazo ? formatarData(c.prazo) : 'sem prazo'} · Respostas: {c.respondidos} de {c.fornecedores}
+              </p>
+              <div className="cartao-produto-rodape">
+                <Botao variante="secundario" aoClicar={() => navegar(`${raiz}/cotacoes/${c.id}`)}>
+                  Abrir
+                </Botao>
+              </div>
+            </article>
+          ))}
         </div>
       )}
 
@@ -142,7 +184,15 @@ function NovaCotacao({ aoCriar }: { aoCriar: (id: number) => void }) {
             <tbody>
               {linhas.map((l) => (
                 <tr key={l.produto.id}>
-                  <td>{l.produto.nome}</td>
+                  <td>
+                    <CelulaProduto
+                      foto={l.produto.foto}
+                      nome={l.produto.nome}
+                      setor={l.produto.categoria}
+                      detalhe={l.produto.codigo}
+                      tamanho={36}
+                    />
+                  </td>
                   <td className="tabela-alinhar-direita">
                     <input
                       className="compras-input compras-input-curto"

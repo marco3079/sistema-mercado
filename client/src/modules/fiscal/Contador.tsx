@@ -3,7 +3,10 @@ import { api, baixarArquivo } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
-import { Aviso, Botao, Carregando, Cartao, Grade, Pagina, formatarDataHora, formatarMoeda } from '../../ui';
+import { Aviso, Botao, Carregando, Cartao, Pagina, formatarDataHora, formatarMoeda } from '../../ui';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
+import '../../ui/foto-produto.css';
 import type { ResultadoEnvioDTO, ResumoMesDTO } from './tipos';
 
 const MESES_NA_LISTA = 12;
@@ -21,11 +24,28 @@ function rotuloMes(mes: string): string {
   return `${numero}/${ano}`;
 }
 
-function Indicador({ rotulo, valor }: { rotulo: string; valor: string }) {
+// Cartão de número do topo (classes .resumo da casca).
+function Indicador({
+  icone,
+  cor,
+  valor,
+  rotulo,
+}: {
+  icone: NomeIcone;
+  cor: 'azul' | 'verde' | 'laranja' | 'roxo' | 'vermelho';
+  valor: string;
+  rotulo: string;
+}) {
   return (
-    <Cartao titulo={rotulo}>
-      <strong className="fiscal-total-valor">{valor}</strong>
-    </Cartao>
+    <div className="resumo-item">
+      <span className={`resumo-icone resumo-icone-${cor}`} aria-hidden="true">
+        <Icone nome={icone} tamanho={24} />
+      </span>
+      <div>
+        <span className="resumo-valor">{valor}</span>
+        <span className="resumo-rotulo">{rotulo}</span>
+      </div>
+    </div>
   );
 }
 
@@ -34,19 +54,34 @@ function enviadoEmTexto(resumo: ResumoMesDTO | null): string {
   return resumo.enviadoEm ? formatarDataHora(resumo.enviadoEm) : 'Ainda não enviado';
 }
 
-// Uma linha da lista dos últimos meses (cada uma busca o próprio resumo).
-function LinhaMes({ mes }: { mes: string }) {
+// Cartão de um mês (cada um busca o próprio resumo).
+function CartaoMes({ mes }: { mes: string }) {
   const resumo = useDados<ResumoMesDTO>(`/contador/arquivos?mes=${mes}`);
+  const dados = resumo.dados;
   return (
     <li className="fiscal-mes">
       <span className="fiscal-mes-nome">{rotuloMes(mes)}</span>
-      {resumo.carregando && !resumo.dados && <span className="fiscal-mes-texto">Carregando...</span>}
-      {resumo.erro && <span className="fiscal-mes-texto">{resumo.erro}</span>}
-      {resumo.dados && (
-        <span className="fiscal-mes-texto">
-          {resumo.dados.notas} nota(s) · {formatarMoeda(resumo.dados.valor)} · {resumo.dados.canceladas} cancelada(s) ·
-          envio: {enviadoEmTexto(resumo.dados)}
-        </span>
+      {resumo.carregando && !dados && <span className="fiscal-mes-aviso">Carregando...</span>}
+      {resumo.erro && <span className="fiscal-mes-aviso">{resumo.erro}</span>}
+      {dados && (
+        <dl className="fiscal-mes-dados">
+          <div>
+            <dt>Notas</dt>
+            <dd className="numero">{dados.notas}</dd>
+          </div>
+          <div>
+            <dt>Valor</dt>
+            <dd className="numero">{formatarMoeda(dados.valor)}</dd>
+          </div>
+          <div>
+            <dt>Canceladas</dt>
+            <dd className="numero">{dados.canceladas}</dd>
+          </div>
+          <div className="fiscal-mes-envio">
+            <dt>Envio ao contador</dt>
+            <dd>{enviadoEmTexto(dados)}</dd>
+          </div>
+        </dl>
       )}
     </li>
   );
@@ -99,18 +134,20 @@ export function Contador() {
 
   return (
     <Pagina titulo="Área do contador">
-      <div className="barra-ferramentas fiscal-filtros">
-        <label className="campo">
-          <span className="campo-rotulo">Mês</span>
-          <input
-            className="campo-controle"
-            type="month"
-            value={mes}
-            onChange={(e) => {
-              if (e.target.value) setMes(e.target.value);
-            }}
-          />
-        </label>
+      <div className="barra-ferramentas">
+        <div className="filtros">
+          <label className="campo">
+            <span className="campo-rotulo">Mês</span>
+            <input
+              className="campo-controle"
+              type="month"
+              value={mes}
+              onChange={(e) => {
+                if (e.target.value) setMes(e.target.value);
+              }}
+            />
+          </label>
+        </div>
       </div>
 
       {aviso && <Aviso tipo="sucesso">{aviso}</Aviso>}
@@ -120,12 +157,12 @@ export function Contador() {
 
       {dados && (
         <>
-          <Grade>
-            <Indicador rotulo="Notas do mês" valor={String(dados.notas)} />
-            <Indicador rotulo="Valor autorizado" valor={formatarMoeda(dados.valor)} />
-            <Indicador rotulo="Canceladas" valor={String(dados.canceladas)} />
-            <Indicador rotulo="Último envio ao contador" valor={enviadoEmTexto(dados)} />
-          </Grade>
+          <div className="resumo">
+            <Indicador icone="documento" cor="azul" valor={String(dados.notas)} rotulo="Notas do mês" />
+            <Indicador icone="dinheiro" cor="verde" valor={formatarMoeda(dados.valor)} rotulo="Valor autorizado" />
+            <Indicador icone="fechar" cor="vermelho" valor={String(dados.canceladas)} rotulo="Canceladas" />
+            <Indicador icone="enviar" cor="roxo" valor={enviadoEmTexto(dados)} rotulo="Último envio ao contador" />
+          </div>
 
           <div className="pagina-acoes fiscal-acoes">
             <Botao variante="secundario" desabilitado={baixando} aoClicar={() => void baixarZip()}>
@@ -143,7 +180,7 @@ export function Contador() {
       <Cartao titulo="Últimos meses">
         <ul className="fiscal-meses">
           {meses.map((m) => (
-            <LinhaMes key={m} mes={m} />
+            <CartaoMes key={m} mes={m} />
           ))}
         </ul>
       </Cartao>

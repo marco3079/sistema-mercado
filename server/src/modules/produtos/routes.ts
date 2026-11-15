@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { asyncHandler, HttpError, idParam, validar } from '../../lib/erros';
+import { validarImagem } from '../../lib/imagem';
 import { permitir } from '../../lib/auth';
 import { exigirAcao } from '../../lib/autorizacao';
 import { lojaDaRequisicao } from '../../lib/lojas';
@@ -10,6 +11,7 @@ import { lerConfiguracao } from '../../lib/email';
 import { arred2, arred3, arred4, num, numOuNull } from '../../lib/numeros';
 import type { Tx } from '../../lib/estoque';
 import {
+  calcularPreco,
   descreverPromocao,
   eanValido,
   gerarEtiquetaBalanca,
@@ -56,7 +58,7 @@ const CAMPOS = z.object({
   insumo: z.boolean().optional(),
   validadeDias: z.number().int().min(0).max(999).nullable().optional(),
   controlaLote: z.boolean().optional(),
-  foto: z.string().trim().max(500).nullable().optional(),
+  foto: z.string().trim().max(300000).nullable().optional(),
   ativo: z.boolean().optional(),
 });
 // PUT: todos os campos são opcionais; o que não vier no corpo fica como está no banco.
@@ -478,7 +480,7 @@ router.post('/produtos', permitir(...EDITORES), asyncHandler(async (req, res) =>
         insumo: dados.insumo ?? false,
         validadeDias: dados.validadeDias ?? null,
         controlaLote: dados.controlaLote ?? false,
-        foto: dados.foto ?? null,
+        foto: dados.foto === undefined ? null : validarImagem(dados.foto, { aceitaEndereco: true }),
         ativo: dados.ativo ?? true,
       },
     });
@@ -535,7 +537,7 @@ router.put('/produtos/:id', permitir(...EDITORES), asyncHandler(async (req, res)
         insumo: dados.insumo,
         validadeDias: dados.validadeDias,
         controlaLote: dados.controlaLote,
-        foto: dados.foto,
+        foto: dados.foto === undefined ? undefined : validarImagem(dados.foto, { aceitaEndereco: true }),
         ativo: dados.ativo,
       },
     });
@@ -584,7 +586,7 @@ router.get('/etiquetas', permitir(...EDITORES), asyncHandler(async (req, res) =>
   const pendentes = texto(req.query.pendentes) === '1';
   const lista = await prisma.etiquetaPendente.findMany({
     where: pendentes ? { impressaEm: null } : {},
-    include: { produto: true },
+    include: { produto: { include: { categoria: { select: { nome: true } } } } },
     orderBy: { criadoEm: 'asc' },
   });
   const promocoes = await promocoesVigentes(lista.map((e) => ({ id: e.produto.id, categoriaId: e.produto.categoriaId })));
@@ -605,6 +607,14 @@ router.get('/etiquetas', permitir(...EDITORES), asyncHandler(async (req, res) =>
         precoAtacado: numOuNull(p.precoAtacado),
         qtdAtacado: numOuNull(p.qtdAtacado),
         promocao: promo ? descreverPromocao(promo) : null,
+        // Preço de oferta por unidade (1 un/kg) quando a promoção baixa o preço unitário; senão null.
+        precoOferta: (() => {
+          if (!promo) return null;
+          const calc = calcularPreco(p, 1, [promo]);
+          return calc.origem === 'PROMOCAO' && calc.precoUnitario < num(p.precoVenda) ? calc.precoUnitario : null;
+        })(),
+        foto: p.foto,
+        categoria: p.categoria?.nome ?? null,
         motivo: e.motivo,
         criadoEm: e.criadoEm.toISOString(),
       };
@@ -655,7 +665,17 @@ router.get('/balanca/produtos', permitir('GESTOR', 'ESTOQUISTA'), asyncHandler(a
   const produtos = await prisma.produto.findMany({
     where: { pesavel: true, ativo: true, codigoBalanca: { not: null } },
     orderBy: { codigoBalanca: 'asc' },
-    select: { id: true, nome: true, unidade: true, codigoBalanca: true, precoVenda: true, validadeDias: true },
+    select: {
+      id: true,
+      nome: true,
+      unidade: true,
+      codigoBalanca: true,
+      precoVenda: true,
+      validadeDias: true,
+      foto: true,
+      ean: true,
+      categoria: { select: { nome: true } },
+    },
   });
   res.json(
     produtos.map((p) => ({
@@ -665,6 +685,9 @@ router.get('/balanca/produtos', permitir('GESTOR', 'ESTOQUISTA'), asyncHandler(a
       plu: p.codigoBalanca,
       precoVenda: num(p.precoVenda),
       validadeDias: p.validadeDias,
+      foto: p.foto,
+      ean: p.ean,
+      categoria: p.categoria?.nome ?? null,
     })),
   );
 }));

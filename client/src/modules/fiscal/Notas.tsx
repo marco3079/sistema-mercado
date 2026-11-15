@@ -11,8 +11,6 @@ import {
   Botao,
   Campo,
   Carregando,
-  Cartao,
-  Grade,
   MenuAcoes,
   Modal,
   Pagina,
@@ -22,7 +20,10 @@ import {
   formatarDataHora,
   formatarMoeda,
 } from '../../ui';
-import type { AcaoMenu } from '../../ui';
+import type { AcaoMenu, ColunaTabela } from '../../ui';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
+import '../../ui/foto-produto.css';
 import {
   ROTULOS_MODELO,
   STATUS_NOTA,
@@ -33,12 +34,34 @@ import {
 
 const MOTIVO_MINIMO = 15;
 
-function Total({ rotulo, valor }: { rotulo: string; valor: string }) {
+// Cartão de número do topo (classes .resumo da casca).
+function Indicador({
+  icone,
+  cor,
+  valor,
+  rotulo,
+}: {
+  icone: NomeIcone;
+  cor: 'azul' | 'verde' | 'laranja' | 'roxo' | 'vermelho';
+  valor: string;
+  rotulo: string;
+}) {
   return (
-    <Cartao titulo={rotulo}>
-      <strong className="fiscal-total-valor">{valor}</strong>
-    </Cartao>
+    <div className="resumo-item">
+      <span className={`resumo-icone resumo-icone-${cor}`} aria-hidden="true">
+        <Icone nome={icone} tamanho={24} />
+      </span>
+      <div>
+        <span className="resumo-valor">{valor}</span>
+        <span className="resumo-rotulo">{rotulo}</span>
+      </div>
+    </div>
   );
+}
+
+// Chave de acesso encurtada: início e fim, para caber na linha.
+function chaveCurta(chave: string): string {
+  return `${chave.slice(0, 6)} … ${chave.slice(-6)}`;
 }
 
 export function Notas() {
@@ -98,10 +121,9 @@ export function Notas() {
     }
   }
 
+  // Ações além do XML (que fica num botão à vista): ver a venda e, para o gestor, cancelar.
   function acoesDe(nota: NotaFiscalDTO): AcaoMenu[] {
-    const acoes: AcaoMenu[] = [
-      { rotulo: 'Baixar XML', icone: 'documento', aoClicar: () => void baixarXml(nota) },
-    ];
+    const acoes: AcaoMenu[] = [];
     if (nota.vendaId) {
       const vendaId = nota.vendaId;
       acoes.push({ rotulo: 'Ver venda', icone: 'busca', aoClicar: () => navigate(`${raiz}/vendas/${vendaId}`) });
@@ -110,6 +132,7 @@ export function Notas() {
       acoes.push({
         rotulo: 'Cancelar nota',
         icone: 'lixeira',
+        perigo: true,
         aoClicar: () => {
           setErro(null);
           setAviso(null);
@@ -133,34 +156,36 @@ export function Notas() {
       {lista.erro && <Aviso tipo="erro">{lista.erro}</Aviso>}
 
       {totais && (
-        <Grade>
-          <Total rotulo="Notas" valor={String(totais.quantidade)} />
-          <Total rotulo="Valor autorizado" valor={formatarMoeda(totais.valor)} />
-          <Total rotulo="Autorizadas" valor={String(totais.autorizadas)} />
-          <Total rotulo="Canceladas" valor={String(totais.canceladas)} />
-        </Grade>
+        <div className="resumo">
+          <Indicador icone="documento" cor="azul" valor={String(totais.quantidade)} rotulo="Notas" />
+          <Indicador icone="dinheiro" cor="verde" valor={formatarMoeda(totais.valor)} rotulo="Valor autorizado" />
+          <Indicador icone="visto" cor="verde" valor={String(totais.autorizadas)} rotulo="Autorizadas" />
+          <Indicador icone="fechar" cor="vermelho" valor={String(totais.canceladas)} rotulo="Canceladas" />
+        </div>
       )}
 
-      <div className="barra-ferramentas fiscal-filtros">
-        <Campo rotulo="De" tipo="date" valor={inicio} aoMudar={setInicio} />
-        <Campo rotulo="Até" tipo="date" valor={fim} aoMudar={setFim} />
-        <Selecao
-          rotulo="Modelo"
-          valor={modelo}
-          aoMudar={setModelo}
-          vazio="Todos"
-          opcoes={[
-            { valor: 'NFCE', rotulo: 'NFC-e' },
-            { valor: 'NFE', rotulo: 'NF-e' },
-          ]}
-        />
-        <Selecao
-          rotulo="Situação"
-          valor={status}
-          aoMudar={setStatus}
-          vazio="Todas"
-          opcoes={Object.entries(STATUS_NOTA).map(([valor, s]) => ({ valor, rotulo: s.rotulo }))}
-        />
+      <div className="barra-ferramentas">
+        <div className="filtros">
+          <Campo rotulo="De" tipo="date" valor={inicio} aoMudar={setInicio} />
+          <Campo rotulo="Até" tipo="date" valor={fim} aoMudar={setFim} />
+          <Selecao
+            rotulo="Modelo"
+            valor={modelo}
+            aoMudar={setModelo}
+            vazio="Todos"
+            opcoes={[
+              { valor: 'NFCE', rotulo: 'NFC-e' },
+              { valor: 'NFE', rotulo: 'NF-e' },
+            ]}
+          />
+          <Selecao
+            rotulo="Situação"
+            valor={status}
+            aoMudar={setStatus}
+            vazio="Todas"
+            opcoes={Object.entries(STATUS_NOTA).map(([valor, s]) => ({ valor, rotulo: s.rotulo }))}
+          />
+        </div>
       </div>
 
       {lista.carregando && !lista.dados && <Carregando />}
@@ -171,23 +196,31 @@ export function Notas() {
           chave={(n) => n.id}
           vazio="Nenhuma nota neste período."
           colunas={[
-            { titulo: 'Nº', celula: (n) => <span className="sem-quebra">{n.numero}</span> },
-            { titulo: 'Série', celula: (n) => n.serie },
-            { titulo: 'Modelo', celula: (n) => <Selo cor="azul">{ROTULOS_MODELO[n.modelo]}</Selo> },
-            { titulo: 'Data', celula: (n) => <span className="sem-quebra">{formatarDataHora(n.criadoEm)}</span> },
             {
-              titulo: 'Cliente',
+              titulo: 'Nota',
               celula: (n) => (
-                <span className="produto-texto">
-                  <span>{n.cliente ?? 'Consumidor'}</span>
-                  {n.vendaNumero !== null && <span className="produto-descricao">Venda nº {n.vendaNumero}</span>}
+                <span className="fiscal-nota">
+                  <span className="fiscal-nota-titulo sem-quebra">
+                    {ROTULOS_MODELO[n.modelo]} nº {n.numero}
+                  </span>
+                  {n.chave && <span className="fiscal-nota-chave">{chaveCurta(n.chave)}</span>}
                 </span>
               ),
             },
             {
+              titulo: 'Data',
+              celula: (n) => (
+                <span className="fiscal-nota">
+                  <span className="sem-quebra">{formatarDataHora(n.criadoEm)}</span>
+                  <span className="fiscal-nota-chave">{n.vendaNumero !== null ? `Venda nº ${n.vendaNumero}` : 'Sem venda'}</span>
+                </span>
+              ),
+            },
+            { titulo: 'Cliente', celula: (n) => n.cliente ?? 'Consumidor' },
+            {
               titulo: 'Valor',
               alinhar: 'direita',
-              celula: (n) => <strong className="sem-quebra">{formatarMoeda(n.valor)}</strong>,
+              celula: (n) => <span className="numero">{formatarMoeda(n.valor)}</span>,
             },
             {
               titulo: 'Status',
@@ -196,7 +229,14 @@ export function Notas() {
             {
               titulo: 'Ações',
               acoes: true,
-              celula: (n) => <MenuAcoes rotulo={`Ações da nota ${n.numero}`} acoes={acoesDe(n)} />,
+              celula: (n) => (
+                <div className="acoes-linha">
+                  <Botao variante="secundario" aoClicar={() => void baixarXml(n)}>
+                    XML
+                  </Botao>
+                  <MenuAcoes rotulo={`Ações da nota ${n.numero}`} acoes={acoesDe(n)} />
+                </div>
+              ),
             },
           ]}
         />

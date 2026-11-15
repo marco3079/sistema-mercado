@@ -6,15 +6,18 @@ import { useDados } from '../../lib/useDados';
 import { usePlataforma } from '../../lib/plataforma';
 import { ROTULOS_FORMA_PAGAMENTO, ROTULOS_ORIGEM_VENDA, formatarQuantidade, mensagemErro } from '../../lib/mercado';
 import { Aviso, AreaTexto, Botao, Cartao, Carregando, Modal, Pagina, Selo, Tabela, formatarDataHora, formatarMoeda } from '../../ui';
+import { CelulaProduto } from '../../ui/FotoProduto';
 import { imprimirCupom } from './cupom';
 import type { DetalheVendaDTO } from './tipos';
 
-// Uma venda por inteiro: itens, pagamentos, notas (XML), entrega e as ações (reimprimir e cancelar).
+// Uma venda por inteiro: itens (com foto), pagamentos, notas (XML), entrega e as ações (reimprimir e cancelar).
 
 interface ItemDetalhe {
   descricao: string;
   quantidade: number;
   unidade: string;
+  foto: string | null;
+  categoria: string | null;
   precoUnitario: number;
   desconto: number;
   total: number;
@@ -242,7 +245,10 @@ export function DetalheVenda() {
       <Cartao titulo="Itens">
         <Tabela
           colunas={[
-            { titulo: 'Descrição', celula: (i: ItemDetalhe) => i.descricao },
+            {
+              titulo: 'Produto',
+              celula: (i: ItemDetalhe) => <CelulaProduto foto={i.foto} nome={i.descricao} setor={i.categoria} />,
+            },
             {
               titulo: 'Quantidade',
               alinhar: 'direita',

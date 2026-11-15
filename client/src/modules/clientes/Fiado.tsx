@@ -4,11 +4,11 @@ import { api } from '../../lib/api';
 import { useDados } from '../../lib/useDados';
 import { lerNumero, mensagemErro, ROTULOS_FORMA_PAGAMENTO } from '../../lib/mercado';
 import {
+  Avatar,
   Aviso,
   Botao,
   Campo,
   Carregando,
-  Cartao,
   MenuAcoes,
   Modal,
   Pagina,
@@ -18,7 +18,9 @@ import {
   formatarDataHora,
   formatarMoeda,
 } from '../../ui';
-import { soDigitos } from './FichaCliente';
+import { BarraNivel } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
+import { formatarTelefone, soDigitos } from './FichaCliente';
 import type { DevedorDTO, ExtratoFiadoDTO, FormaRecebimento, ResumoFiadoDTO } from './tipos';
 import './clientes.css';
 
@@ -164,6 +166,9 @@ export function Fiado() {
   const devedores: DevedorDTO[] = resumo.dados?.clientes ?? [];
   const total = resumo.dados?.totalEmAberto ?? 0;
   const origem = resumo;
+  // Maior atraso entre os devedores que têm data (null se nenhum tem).
+  const atrasos = devedores.map((d) => d.diasEmAtraso).filter((dias): dias is number => dias !== null);
+  const maiorAtraso = atrasos.length > 0 ? Math.max(...atrasos) : null;
 
   function depoisDeReceber(mensagem: string) {
     setAviso(mensagem);
@@ -172,15 +177,37 @@ export function Fiado() {
 
   return (
     <Pagina titulo="Fiado">
-      <div className="fiado-total">
-        <Cartao>
-          <span className="fiado-total-rotulo">Total em aberto</span>
-          <strong className="fiado-total-valor">{formatarMoeda(total)}</strong>
-          <span>
-            {devedores.length === 1 ? '1 cliente devendo' : `${devedores.length} clientes devendo`}
-          </span>
-        </Cartao>
-      </div>
+      {origem.dados && (
+        <div className="resumo">
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-vermelho">
+              <Icone nome="dinheiro" tamanho={22} />
+            </span>
+            <div>
+              <span className="resumo-valor">{formatarMoeda(total)}</span>
+              <span className="resumo-rotulo">Total em aberto</span>
+            </div>
+          </div>
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-azul">
+              <Icone nome="usuarios" tamanho={22} />
+            </span>
+            <div>
+              <span className="resumo-valor">{devedores.length}</span>
+              <span className="resumo-rotulo">Devedores</span>
+            </div>
+          </div>
+          <div className="resumo-item">
+            <span className="resumo-icone resumo-icone-laranja">
+              <Icone nome="relogio" tamanho={22} />
+            </span>
+            <div>
+              <span className="resumo-valor">{maiorAtraso === null ? '—' : `${maiorAtraso} ${maiorAtraso === 1 ? 'dia' : 'dias'}`}</span>
+              <span className="resumo-rotulo">Maior atraso</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {aviso && <Aviso tipo="sucesso">{aviso}</Aviso>}
       {origem.erro && <Aviso tipo="erro">{origem.erro}</Aviso>}
@@ -192,11 +219,31 @@ export function Fiado() {
           chave={(d) => d.id}
           vazio="Ninguém devendo no fiado."
           colunas={[
-            { titulo: 'Cliente', celula: (d) => <strong>{d.nome}</strong> },
+            {
+              titulo: 'Cliente',
+              celula: (d) => (
+                <span className="clientes-identidade">
+                  <Avatar nome={d.nome} tamanho={36} />
+                  <span className="clientes-identidade-texto">
+                    <strong>{d.nome}</strong>
+                    <small>{formatarTelefone(d.whatsapp ?? d.telefone)}</small>
+                  </span>
+                </span>
+              ),
+            },
             {
               titulo: 'Saldo devedor',
               alinhar: 'direita',
-              celula: (d) => <span className="clientes-devendo">{formatarMoeda(d.saldoDevedor)}</span>,
+              celula: (d) => (
+                <span className="fiado-saldo">
+                  <span className="clientes-devendo numero">{formatarMoeda(d.saldoDevedor)}</span>
+                  <BarraNivel
+                    valor={d.saldoDevedor}
+                    maximo={d.limiteCredito > 0 ? d.limiteCredito : d.saldoDevedor}
+                    cor="vermelho"
+                  />
+                </span>
+              ),
             },
             { titulo: 'Limite', alinhar: 'direita', celula: (d) => formatarMoeda(d.limiteCredito) },
             {

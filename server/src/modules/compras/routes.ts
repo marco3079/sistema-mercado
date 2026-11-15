@@ -491,6 +491,8 @@ router.get(
         estoqueMinimo: true,
         estoqueMaximo: true,
         fornecedorPadraoId: true,
+        foto: true,
+        categoria: { select: { nome: true } },
         fornecedores: { select: { fornecedorId: true, ultimoPreco: true } },
       },
       orderBy: { nome: 'asc' },
@@ -565,6 +567,8 @@ router.get(
         codigo: p.codigo,
         nome: p.nome,
         unidade: p.unidade,
+        foto: p.foto ?? null,
+        categoria: p.categoria?.nome ?? null,
         fornecedorId: idFornecedor,
         fornecedor: fornecedor ? fornecedor.nome : null,
         estoque,
@@ -656,7 +660,7 @@ async function detalheCotacao(id: number) {
     include: {
       itens: {
         orderBy: { id: 'asc' },
-        include: { produto: { select: { id: true, nome: true, unidade: true } } },
+        include: { produto: { select: { id: true, nome: true, unidade: true, foto: true, categoria: { select: { nome: true } } } } },
       },
       fornecedores: {
         orderBy: { id: 'asc' },
@@ -687,6 +691,8 @@ async function detalheCotacao(id: number) {
     itens: c.itens.map((i) => ({
       produtoId: i.produtoId,
       nome: i.produto.nome,
+      foto: i.produto.foto ?? null,
+      categoria: i.produto.categoria?.nome ?? null,
       unidade: i.produto.unidade,
       quantidade: num(i.quantidade),
     })),
@@ -1006,7 +1012,9 @@ async function detalhePedido(id: number, lojaId: number) {
       fornecedor: { select: { id: true, nome: true, whatsapp: true, telefone: true, email: true } },
       itens: {
         orderBy: { id: 'asc' },
-        include: { produto: { select: { id: true, nome: true, codigo: true, unidade: true } } },
+        include: {
+          produto: { select: { id: true, nome: true, codigo: true, unidade: true, foto: true, categoria: { select: { nome: true } } } },
+        },
       },
       recebimentos: { orderBy: { id: 'asc' }, select: { id: true, status: true, criadoEm: true } },
     },
@@ -1034,6 +1042,8 @@ async function detalhePedido(id: number, lojaId: number) {
         id: i.id,
         produtoId: i.produtoId,
         nome: i.produto.nome,
+        foto: i.produto.foto ?? null,
+        categoria: i.produto.categoria?.nome ?? null,
         codigo: i.produto.codigo,
         unidade: i.produto.unidade,
         quantidade,
@@ -1078,7 +1088,15 @@ router.get(
       where,
       orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }],
       take: 300,
-      include: { fornecedor: { select: { nome: true } }, _count: { select: { itens: true } } },
+      include: {
+        fornecedor: { select: { nome: true } },
+        _count: { select: { itens: true } },
+        itens: {
+          take: 4,
+          orderBy: { id: 'asc' },
+          select: { produto: { select: { nome: true, foto: true, categoria: { select: { nome: true } } } } },
+        },
+      },
     });
     res.json(
       lista.map((p) => ({
@@ -1091,6 +1109,11 @@ router.get(
         criadoEm: p.criadoEm.toISOString(),
         previsaoEntrega: iso(p.previsaoEntrega),
         itens: p._count.itens,
+        fotos: p.itens.map((i) => ({
+          nome: i.produto.nome,
+          foto: i.produto.foto ?? null,
+          categoria: i.produto.categoria?.nome ?? null,
+        })),
         rastreio: p.rastreio,
       })),
     );
@@ -1394,7 +1417,18 @@ async function detalheRecebimento(id: number, lojaId: number) {
       itens: {
         orderBy: { id: 'asc' },
         include: {
-          produto: { select: { id: true, nome: true, codigo: true, unidade: true, precoCusto: true, precoVenda: true } },
+          produto: {
+            select: {
+              id: true,
+              nome: true,
+              codigo: true,
+              unidade: true,
+              precoCusto: true,
+              precoVenda: true,
+              foto: true,
+              categoria: { select: { nome: true } },
+            },
+          },
         },
       },
     },
@@ -1418,6 +1452,8 @@ async function detalheRecebimento(id: number, lojaId: number) {
       id: i.id,
       produtoId: i.produtoId,
       nome: i.produto.nome,
+      foto: i.produto.foto ?? null,
+      categoria: i.produto.categoria?.nome ?? null,
       codigo: i.produto.codigo,
       unidade: i.produto.unidade,
       quantidadeNota: num(i.quantidadeNota),

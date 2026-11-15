@@ -6,6 +6,7 @@ import { lerNumero, mensagemErro } from '../../lib/mercado';
 import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { useDados } from '../../lib/useDados';
 import { AreaTexto, Aviso, Botao, Campo, Carregando, Pagina, Selecao, formatarMoeda } from '../../ui';
+import { FotoProduto } from '../../ui/FotoProduto';
 import type { ClienteResumo, PedidoDetalhe, ProdutoPrecoVenda, ResumoVendedor } from './tipos';
 import { FORMAS_PEDIDO } from './tipos';
 import './comercial.css';
@@ -20,6 +21,8 @@ interface LinhaPedido {
   codigo: string;
   unidade: string;
   precoTabela: number;
+  foto: string | null;
+  categoria: string | null;
   quantidadeTexto: string;
   precoTexto: string;
 }
@@ -85,6 +88,8 @@ export function NovoPedido() {
       d.itens.map((i) => ({
         produtoId: i.produtoId,
         nome: i.produto,
+        foto: i.foto ?? null,
+        categoria: i.categoria ?? null,
         codigo: '',
         unidade: i.unidade,
         precoTabela: i.precoTabela,
@@ -185,6 +190,8 @@ export function NovoPedido() {
         {
           produtoId: p.produtoId,
           nome: p.nome,
+          foto: p.foto,
+          categoria: p.categoria,
           codigo: p.codigo,
           unidade: p.unidade,
           precoTabela: p.precoTabela,
@@ -333,15 +340,31 @@ export function NovoPedido() {
             <div className="com-catalogo">
               {catalogo.map((p) => (
                 <button key={p.produtoId} type="button" className="com-produto-card" onClick={() => adicionar(p)}>
-                  <strong>{p.nome}</strong>
-                  <span className="com-suave">
-                    {p.codigo} · {p.unidade} · estoque {p.estoque}
+                  <span className="com-produto-card-topo">
+                    <FotoProduto foto={p.foto} nome={p.nome} setor={p.categoria} tamanho={56} />
+                    <span className="com-produto-card-texto">
+                      <strong>{p.nome}</strong>
+                      <span className="com-suave">
+                        {p.codigo} · {p.unidade} · estoque {p.estoque}
+                      </span>
+                    </span>
                   </span>
-                  <span>
-                    Tabela <strong>{formatarMoeda(p.precoTabela)}</strong>
-                    {p.precoAtacado !== null && <span className="com-suave"> · atacado {formatarMoeda(p.precoAtacado)}</span>}
+                  <span className="com-precos">
+                    <span>
+                      Tabela <strong>{formatarMoeda(p.precoTabela)}</strong>
+                    </span>
+                    {(() => {
+                      const noPedido = linhas.find((l) => l.produtoId === p.produtoId);
+                      return noPedido ? (
+                        <span>
+                          Negociado <strong>{formatarMoeda(precoNegociadoDaLinha(noPedido))}</strong>
+                        </span>
+                      ) : null;
+                    })()}
                   </span>
+                  {p.precoAtacado !== null && <span className="com-suave">Atacado {formatarMoeda(p.precoAtacado)}</span>}
                   {p.promocao && <span className="com-promo">{p.promocao}</span>}
+                  {linhas.some((l) => l.produtoId === p.produtoId) && <span className="com-no-pedido">Já no pedido: toque para somar 1</span>}
                 </button>
               ))}
               {!carregandoCatalogo && !erroCatalogo && catalogo.length === 0 && (
@@ -359,7 +382,7 @@ export function NovoPedido() {
                 return (
                   <div key={l.produtoId} className="com-item">
                     <div className="com-item-topo">
-                      <strong>{l.nome}</strong>
+                      <span className="com-item-produto"><FotoProduto foto={l.foto} nome={l.nome} setor={l.categoria} tamanho={44} /><strong>{l.nome}</strong></span>
                       <button type="button" className="com-remover" onClick={() => remover(l.produtoId)} aria-label="Remover item">
                         ×
                       </button>

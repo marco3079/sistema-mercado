@@ -4,6 +4,9 @@ import { formatarQuantidade } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
 import { Aviso, Campo, Carregando, Pagina, Selecao, Selo, Tabela, formatarDataHora, formatarMoeda } from '../../ui';
 import type { ColunaTabela } from '../../ui';
+import { CelulaProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
 import { ROTULOS_TIPO_MOVIMENTO, queryString } from './tipos';
 import type { Movimento, RespostaEstoque, TipoMovimento } from './tipos';
 import './estoque.css';
@@ -27,6 +30,44 @@ function quantidadeComSinal(quantidade: number, unidade: string): string {
   return texto;
 }
 
+// Totais pelo custo unitário, somando só os movimentos listados (até 500).
+function totaisDosMovimentos(lista: Movimento[]) {
+  let entradas = 0;
+  let saidas = 0;
+  let perdas = 0;
+  for (const m of lista) {
+    const valor = Math.abs(m.quantidade) * (m.custoUnitario ?? 0);
+    if (m.tipo === 'PERDA') perdas += valor;
+    else if (m.quantidade > 0) entradas += valor;
+    else if (m.quantidade < 0) saidas += valor;
+  }
+  return { entradas, saidas, perdas };
+}
+
+function ResumoMovimentos({ lista }: { lista: Movimento[] }) {
+  const t = totaisDosMovimentos(lista);
+  const itens: { rotulo: string; valor: number; icone: NomeIcone; cor: string }[] = [
+    { rotulo: 'Valor de entradas', valor: t.entradas, icone: 'dinheiro', cor: 'verde' },
+    { rotulo: 'Valor de saídas', valor: t.saidas, icone: 'pacote', cor: 'azul' },
+    { rotulo: 'Valor de perdas', valor: t.perdas, icone: 'lixeira', cor: 'vermelho' },
+  ];
+  return (
+    <div className="resumo">
+      {itens.map((i) => (
+        <div className="resumo-item" key={i.rotulo}>
+          <span className={`resumo-icone resumo-icone-${i.cor}`}>
+            <Icone nome={i.icone} tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{formatarMoeda(i.valor)}</span>
+            <span className="resumo-rotulo">{i.rotulo}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Movimentos() {
   const [parametros] = useSearchParams();
   // Vindo do botão "Ver movimentos" da tela de estoque, já chega filtrado pelo produto.
@@ -40,8 +81,10 @@ export function Movimentos() {
   const { dados, carregando, erro } = useDados<Movimento[]>(caminho);
 
   const colunas: ColunaTabela<Movimento>[] = [
-    { titulo: 'Data e hora', celula: (m) => formatarDataHora(m.criadoEm) },
-    { titulo: 'Produto', celula: (m) => m.produto },
+    {
+      titulo: 'Produto',
+      celula: (m) => <CelulaProduto foto={m.foto} nome={m.produto} setor={m.categoria} detalhe={formatarDataHora(m.criadoEm)} />,
+    },
     {
       titulo: 'Tipo',
       celula: (m) => <Selo cor={corDoMovimento(m.quantidade)}>{ROTULOS_TIPO_MOVIMENTO[m.tipo] ?? m.tipo}</Selo>,
@@ -50,7 +93,7 @@ export function Movimentos() {
       titulo: 'Quantidade',
       alinhar: 'direita',
       celula: (m) => (
-        <span className={m.quantidade < 0 ? 'estoque-numero-negativo' : m.quantidade > 0 ? 'estoque-numero-positivo' : undefined}>
+        <span className={`numero${m.quantidade < 0 ? ' estoque-numero-negativo' : m.quantidade > 0 ? ' estoque-numero-positivo' : ''}`}>
           {quantidadeComSinal(m.quantidade, m.unidade)}
         </span>
       ),
@@ -58,12 +101,12 @@ export function Movimentos() {
     {
       titulo: 'Saldo após',
       alinhar: 'direita',
-      celula: (m) => formatarQuantidade(m.saldoApos, m.unidade),
+      celula: (m) => <span className="numero">{formatarQuantidade(m.saldoApos, m.unidade)}</span>,
     },
     {
       titulo: 'Custo',
       alinhar: 'direita',
-      celula: (m) => (m.custoUnitario === null ? '—' : formatarMoeda(m.custoUnitario)),
+      celula: (m) => <span className="numero">{m.custoUnitario === null ? '—' : formatarMoeda(m.custoUnitario)}</span>,
     },
     {
       titulo: 'Motivo',
@@ -103,6 +146,7 @@ export function Movimentos() {
 
       {carregando && !dados && <Carregando />}
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
+      {dados && <ResumoMovimentos lista={dados} />}
       {dados && (
         <Tabela
           colunas={colunas}

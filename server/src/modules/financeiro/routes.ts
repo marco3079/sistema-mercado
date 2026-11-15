@@ -734,7 +734,7 @@ router.get(
           quantidade: true,
           total: true,
           custoUnitario: true,
-          produto: { select: { nome: true, categoria: { select: { nome: true } } } },
+          produto: { select: { nome: true, foto: true, categoria: { select: { nome: true } } } },
         },
       }),
       prisma.lancamento.findMany({
@@ -785,6 +785,7 @@ router.get(
     interface Acumulado {
       produtoId: number;
       nome: string;
+      foto: string | null;
       categoria: string;
       quantidade: number;
       fat: number;
@@ -797,6 +798,7 @@ router.get(
       const a = porProduto.get(it.produtoId) ?? {
         produtoId: it.produtoId,
         nome: it.produto.nome,
+        foto: it.produto.foto ?? null,
         categoria: it.produto.categoria?.nome ?? 'Sem categoria',
         quantidade: 0,
         fat: 0,
@@ -827,6 +829,8 @@ router.get(
     const produtos = Array.from(porProduto.values()).map((a) => ({
       produtoId: a.produtoId,
       produto: a.nome,
+      foto: a.foto,
+      categoria: a.categoria,
       quantidade: arred2(a.quantidade),
       faturamento: reais(a.fat),
       lucro: reais(a.fat - a.custo),

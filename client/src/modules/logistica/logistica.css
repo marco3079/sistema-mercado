@@ -184,7 +184,234 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
-  align-items: start;
+  align-items: stretch;
+}
+
+/* Ações de uma parada da carga: setas para ordenar e menu (⋯) à direita. */
+.logistica-acoes-parada {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.logistica-seta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+.logistica-seta:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.logistica-entrega-nome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* Escolha de status (modal com botões grandes) */
+.logistica-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.logistica-opcao {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.logistica-opcao:hover,
+.logistica-opcao:focus-visible {
+  border-color: var(--cor-primaria);
+}
+
+/* Progresso da rota (motorista) */
+.logistica-progresso {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+/* ---------- Cartões de rota e de veículo (grades) ---------- */
+
+.logistica-grade-rotas,
+.logistica-grade-frota {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.logistica-cartao-lista,
+.logistica-cartao-veiculo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra);
+  min-width: 0;
+}
+
+.logistica-cartao-veiculo-inativo {
+  opacity: 0.7;
+}
+
+.logistica-cartao-lista-topo,
+.logistica-cartao-veiculo-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.logistica-cartao-lista-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  font-size: 0.9rem;
+}
+
+.logistica-cartao-lista-acao {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.logistica-veiculo-linha,
+.logistica-motorista-linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 2rem;
+}
+
+.logistica-icone-veiculo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: var(--cor-azul-suave);
+  color: var(--cor-primaria);
+}
+
+.logistica-icone-veiculo-grande {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 14px;
+}
+
+/* Placa no estilo Mercosul: faixa azul com BR à esquerda, fundo claro e letras escuras. */
+.logistica-placa {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem 0.15rem 1.6rem;
+  border: 2px solid #1f2937;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #111827;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.logistica-placa::before {
+  content: 'BR';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.logistica-placa-grande {
+  padding: 0.3rem 0.75rem 0.3rem 2.1rem;
+  font-size: 1.25rem;
+}
+
+.logistica-placa-grande::before {
+  width: 1.5rem;
+  font-size: 0.65rem;
+}
+
+.logistica-ocupacao-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.logistica-ocupacao-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.logistica-cartao-veiculo-numeros {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.logistica-cartao-veiculo-numero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  background: var(--cor-superficie-2);
+  min-width: 0;
+}
+
+.logistica-valor-forte {
+  font-size: 1.15rem;
+  font-weight: 800;
 }
 
 @media (max-width: 760px) {
@@ -252,6 +479,7 @@
 /* ---------- Mapa da rota (SVG) ---------- */
 
 .logistica-mapa {
+  display: block;
   width: 100%;
   height: auto;
   margin-top: 0.75rem;
@@ -263,15 +491,47 @@
   fill: var(--cor-superficie-2);
 }
 
+/* Grade suave ao fundo do mapa */
+.logistica-mapa-grade {
+  fill: none;
+  stroke: var(--cor-borda);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
 .logistica-mapa-linha {
   fill: none;
   stroke: var(--cor-primaria);
-  stroke-width: 2.5;
-  stroke-dasharray: 6 4;
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.85;
 }
 
+/* Loja: quadrado destacado na cor primária, com nome em uma pílula */
 .logistica-mapa-loja {
-  fill: var(--cor-texto);
+  fill: var(--cor-primaria);
+  stroke: var(--cor-superficie);
+  stroke-width: 2.5;
+}
+
+.logistica-mapa-rotulo-fundo {
+  fill: var(--cor-superficie);
+  stroke: var(--cor-borda);
+  stroke-width: 1;
+}
+
+.logistica-mapa-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio);
+  color: var(--cor-texto-suave);
+  text-align: center;
 }
 
 .logistica-mapa-texto {
@@ -425,10 +685,26 @@
 }
 
 .logistica-rastreio-etapa {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.65rem;
   color: var(--cor-texto-suave);
+}
+
+/* Linha do tempo: liga uma etapa à seguinte, em cinza ou na cor primária quando já foi feita */
+.logistica-rastreio-etapa:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: calc(0.8rem - 1px);
+  top: 1.7rem;
+  bottom: -0.75rem;
+  width: 2px;
+  background: var(--cor-borda);
+}
+
+.logistica-rastreio-etapa-feita:not(:last-child)::after {
+  background: var(--cor-primaria);
 }
 
 .logistica-rastreio-etapa-feita {

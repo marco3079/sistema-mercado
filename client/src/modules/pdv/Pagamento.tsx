@@ -4,6 +4,8 @@ import { useDados } from '../../lib/useDados';
 import { usePlataforma } from '../../lib/plataforma';
 import { ROTULOS_FORMA_PAGAMENTO, lerNumero, mensagemErro } from '../../lib/mercado';
 import { Aviso, Botao, Campo, Selecao, formatarMoeda } from '../../ui';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
 import { imprimirCupom } from './cupom';
 import type {
   ConfigMercadoPublico,
@@ -31,13 +33,13 @@ interface PagamentoProps {
   aoNovaVenda: () => void;
 }
 
-const FORMAS: { id: FormaPagamentoPdv; rotulo: string }[] = [
-  { id: 'DINHEIRO', rotulo: 'Dinheiro' },
-  { id: 'PIX', rotulo: 'Pix' },
-  { id: 'DEBITO', rotulo: 'Débito' },
-  { id: 'CREDITO', rotulo: 'Crédito' },
-  { id: 'VALE_ALIMENTACAO', rotulo: 'Vale-alimentação' },
-  { id: 'FIADO', rotulo: 'Fiado' },
+const FORMAS: { id: FormaPagamentoPdv; rotulo: string; icone: NomeIcone }[] = [
+  { id: 'DINHEIRO', rotulo: 'Dinheiro', icone: 'dinheiro' },
+  { id: 'PIX', rotulo: 'Pix', icone: 'celular' },
+  { id: 'DEBITO', rotulo: 'Débito', icone: 'financeiro' },
+  { id: 'CREDITO', rotulo: 'Crédito', icone: 'financeiro' },
+  { id: 'VALE_ALIMENTACAO', rotulo: 'Vale-alimentação', icone: 'carrinho' },
+  { id: 'FIADO', rotulo: 'Fiado', icone: 'perfil' },
 ];
 
 const PARCELAS = Array.from({ length: 12 }, (_, i) => ({ valor: String(i + 1), rotulo: `${i + 1}x` }));
@@ -261,7 +263,8 @@ export function Pagamento({
               disabled={bloqueada}
               onClick={() => escolherForma(f.id)}
             >
-              {f.rotulo}
+              <Icone nome={f.icone} tamanho={24} />
+              <span>{f.rotulo}</span>
             </button>
           );
         })}

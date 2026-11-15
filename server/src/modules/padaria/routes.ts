@@ -64,17 +64,39 @@ const concluirSchema = z.object({
 // ---------- Consultas com o formato usado nas respostas ----------
 
 const INCLUIR_RECEITA = {
-  produto: { select: { nome: true, unidade: true, precoVenda: true } },
+  produto: {
+    select: { nome: true, unidade: true, precoVenda: true, foto: true, categoria: { select: { nome: true } } },
+  },
   itens: {
     orderBy: { id: 'asc' },
-    include: { insumo: { select: { id: true, nome: true, unidade: true, precoCusto: true } } },
+    include: {
+      insumo: {
+        select: {
+          id: true,
+          nome: true,
+          unidade: true,
+          precoCusto: true,
+          foto: true,
+          categoria: { select: { nome: true } },
+        },
+      },
+    },
   },
 } as const;
 
 type ReceitaComDados = Prisma.ReceitaGetPayload<{ include: typeof INCLUIR_RECEITA }>;
 
 const INCLUIR_ORDEM = {
-  produto: { select: { nome: true, unidade: true, controlaLote: true, validadeDias: true } },
+  produto: {
+    select: {
+      nome: true,
+      unidade: true,
+      controlaLote: true,
+      validadeDias: true,
+      foto: true,
+      categoria: { select: { nome: true } },
+    },
+  },
   receita: {
     select: {
       rendimento: true,
@@ -118,6 +140,8 @@ function paraReceita(r: ReceitaComDados, estoques: Map<number, number>) {
       id: i.id,
       insumoId: i.insumoId,
       insumo: i.insumo.nome,
+      insumoFoto: i.insumo.foto ?? null,
+      insumoCategoria: i.insumo.categoria?.nome ?? null,
       unidade: i.insumo.unidade,
       quantidade,
       custoUnitario,
@@ -131,6 +155,8 @@ function paraReceita(r: ReceitaComDados, estoques: Map<number, number>) {
     id: r.id,
     produtoId: r.produtoId,
     produto: r.produto.nome,
+    foto: r.produto.foto ?? null,
+    categoria: r.produto.categoria?.nome ?? null,
     unidade: r.produto.unidade,
     rendimento,
     tempoPreparoMin: r.tempoPreparoMin ?? null,
@@ -180,6 +206,8 @@ function paraOrdem(o: OrdemComDados, estoques: Map<number, number>) {
     id: o.id,
     produtoId: o.produtoId,
     produto: o.produto.nome,
+    foto: o.produto.foto ?? null,
+    categoria: o.produto.categoria?.nome ?? null,
     unidade: o.produto.unidade,
     receitaId: o.receitaId,
     quantidadePlanejada: num(o.quantidadePlanejada),
@@ -377,7 +405,7 @@ router.get(
     const fim = fimDoDia(somarDias(dia, -7));
 
     const receitas = await prisma.receita.findMany({
-      include: { produto: { select: { nome: true } } },
+      include: { produto: { select: { nome: true, foto: true, categoria: { select: { nome: true } } } } },
       orderBy: { produto: { nome: 'asc' } },
     });
     const vendas = await prisma.vendaItem.findMany({
@@ -405,6 +433,8 @@ router.get(
         return {
           receitaId: r.id,
           produto: r.produto.nome,
+          foto: r.produto.foto ?? null,
+          categoria: r.produto.categoria?.nome ?? null,
           mediaVendida: arred2(mediaVendida),
           estoque: arred3(estoque),
           sugerido: arred3(fornadas * rendimento),
@@ -429,16 +459,26 @@ router.get(
         quantidadeProduzida: true,
         perda: true,
         custoTotal: true,
-        produto: { select: { nome: true, unidade: true } },
+        produto: { select: { nome: true, unidade: true, foto: true, categoria: { select: { nome: true } } } },
       },
     });
     const grupos = new Map<
       number,
-      { produto: string; unidade: string; produzido: number; perda: number; custoTotal: number }
+      {
+        produto: string;
+        foto: string | null;
+        categoria: string | null;
+        unidade: string;
+        produzido: number;
+        perda: number;
+        custoTotal: number;
+      }
     >();
     for (const o of ordens) {
       const g = grupos.get(o.produtoId) ?? {
         produto: o.produto.nome,
+        foto: o.produto.foto ?? null,
+        categoria: o.produto.categoria?.nome ?? null,
         unidade: o.produto.unidade,
         produzido: 0,
         perda: 0,
@@ -455,6 +495,8 @@ router.get(
         return {
           produtoId,
           produto: g.produto,
+          foto: g.foto,
+          categoria: g.categoria,
           unidade: g.unidade,
           produzido: arred3(g.produzido),
           perda: arred3(g.perda),

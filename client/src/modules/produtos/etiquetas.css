@@ -1,0 +1,198 @@
+/* Etiquetas de gôndola e de balança (módulo de produtos). Classes com prefixo etiq-.
+   Este arquivo também é lido como texto para a impressão (import ?inline), então as regras da etiqueta
+   valem igual na tela e no papel. Medidas da etiqueta vêm de variáveis definidas pelo componente:
+   --etiq-w (largura), --etiq-h (altura), --etiq-p (altura do preço), --etiq-colunas. */
+
+/* ---------- Etiqueta (vale na tela e no papel) ---------- */
+
+.etiq {
+  box-sizing: border-box;
+  width: var(--etiq-w, 60mm);
+  height: var(--etiq-h, 40mm);
+  padding: 2mm;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  break-inside: avoid;
+}
+
+.etiq-nome {
+  font-size: calc(var(--etiq-p, 13mm) * 0.22);
+  font-weight: 700;
+  line-height: 1.15;
+  max-height: 2.4em;
+  overflow: hidden;
+}
+
+.etiq-preco {
+  display: flex;
+  align-items: flex-start;
+  line-height: 1;
+  margin-top: 0.6mm;
+  white-space: nowrap;
+}
+
+.etiq-rs {
+  font-size: calc(var(--etiq-p, 13mm) * 0.3);
+  font-weight: 700;
+  margin: calc(var(--etiq-p, 13mm) * 0.06) 0.4mm 0 0;
+}
+
+.etiq-inteiro {
+  font-size: var(--etiq-p, 13mm);
+  font-weight: 800;
+  letter-spacing: -0.2mm;
+}
+
+.etiq-centavos {
+  font-size: calc(var(--etiq-p, 13mm) * 0.38);
+  font-weight: 800;
+  margin: calc(var(--etiq-p, 13mm) * 0.02) 0 0 0.3mm;
+}
+
+.etiq-unidade {
+  font-size: calc(var(--etiq-p, 13mm) * 0.24);
+  font-weight: 700;
+  align-self: flex-end;
+  margin: 0 0 calc(var(--etiq-p, 13mm) * 0.08) 0.6mm;
+}
+
+/* Faixa de oferta: amarela na tela; no papel monocromático vira clara com texto preto. */
+.etiq-oferta {
+  align-self: flex-start;
+  margin-top: 0.8mm;
+  padding: 0.4mm 1.2mm;
+  background: #facc15;
+  color: #000;
+  font-size: 2.6mm;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.etiq-oferta-antigo {
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.etiq-atacado {
+  margin-top: 0.7mm;
+  font-size: 2.4mm;
+  font-weight: 600;
+}
+
+.etiq-barras {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 0.8mm;
+}
+
+.etiq-barras svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.etiq-rodape {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+  font-size: 2.2mm;
+  line-height: 1.2;
+}
+
+/* ---------- Telas (prévia, passos, atalhos) ---------- */
+
+.etiq-previa {
+  display: grid;
+  grid-template-columns: repeat(var(--etiq-colunas, 3), var(--etiq-w, 60mm));
+  gap: 8px;
+  justify-content: start;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-fundo);
+}
+
+.etiq-previa .etiq {
+  border: 1px dashed #9ca3af;
+}
+
+.etiq-previa-vazia {
+  margin: 0;
+  color: var(--cor-texto-suave);
+}
+
+.etiq-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.etiq-passos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etiq-passo {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  background: var(--cor-superficie);
+}
+
+.etiq-passo-icone {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cor-primaria) 14%, transparent);
+  color: var(--cor-primaria);
+}
+
+.etiq-passo strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.etiq-passo span {
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+}
+
+.etiq-simulada {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  margin-top: 0.75rem;
+}
+
+.etiq-simulada-valores {
+  color: var(--cor-texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .etiq-previa {
+    grid-template-columns: repeat(var(--etiq-colunas, 3), var(--etiq-w, 60mm));
+  }
+
+  .etiq-passos {
+    grid-template-columns: 1fr;
+  }
+}

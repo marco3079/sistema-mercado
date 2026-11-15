@@ -1,32 +1,89 @@
 /* Promoções e bonificação da indústria. Cores só pelas variáveis da casca (ui/estilo.css). */
 
+/* Grade de cartões de mesma altura: foto no topo, corpo, rodapé com ações colado embaixo. */
 .promocoes-grade {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
+  align-items: stretch;
 }
 
 .promocoes-cartao {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 16px;
+  overflow: hidden;
   border: 1px solid var(--cor-borda);
-  border-radius: 12px;
+  border-radius: var(--raio, 16px);
   background: var(--cor-superficie);
+  box-shadow: var(--sombra);
   min-width: 0;
 }
 
-.promocoes-cartao h3 {
-  margin: 0;
-  font-size: 1.05rem;
-  overflow-wrap: anywhere;
+.promocoes-cartao-encerrada {
+  opacity: 0.75;
 }
 
-.promocoes-cartao-cabecalho {
+.promocoes-foto {
+  padding: 12px 12px 0;
+}
+
+.promocoes-foto .foto-produto-preencher {
+  border-radius: 12px;
+}
+
+/* Mosaico 2×2 das fotos de produtos de uma categoria. */
+.promocoes-mosaico {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Cada célula é um FotoProduto que ocupa a célula toda (sem a proporção quadrada própria). */
+.promocoes-mosaico .foto-produto {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+}
+
+.promocoes-corpo {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  flex: 1 1 auto;
+  padding: 12px 16px 0;
+  min-width: 0;
+}
+
+/* Selo grande com a oferta ("-10%", "Leve 3 pague 2", "R$ 6,49"). */
+.promocoes-selo-oferta {
+  align-self: flex-start;
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: var(--cor-primaria);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.promocoes-cartao-encerrada .promocoes-selo-oferta {
+  background: var(--cor-texto-suave);
+}
+
+.promocoes-cartao h3 {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
 }
 
 .promocoes-selos {
@@ -35,11 +92,32 @@
   gap: 6px;
 }
 
-.promocoes-descricao {
+.promocoes-precos {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   margin: 0;
-  font-weight: 600;
-  color: var(--cor-primaria);
-  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.promocoes-precos s {
+  color: var(--cor-texto-suave);
+  font-size: 0.92rem;
+}
+
+.promocoes-precos strong {
+  color: var(--cor-texto);
+  font-size: 1.3rem;
+}
+
+.promocoes-linha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .promocoes-texto {
@@ -53,12 +131,15 @@
   color: var(--cor-texto);
 }
 
-.promocoes-acoes {
+/* Rodapé colado embaixo do cartão: botão Editar + menu (⋯). */
+.promocoes-rodape {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-top: auto;
-  padding-top: 8px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--cor-borda);
 }
 
 .promocoes-sugestoes {

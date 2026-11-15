@@ -39,7 +39,7 @@ const promocaoSchema = z.object({
 type PromocaoEntrada = z.infer<typeof promocaoSchema>;
 
 const INCLUIR = {
-  produto: { select: { nome: true, precoVenda: true } },
+  produto: { select: { nome: true, precoVenda: true, foto: true, categoria: { select: { nome: true } } } },
   categoria: { select: { nome: true } },
 } as const;
 
@@ -81,7 +81,46 @@ async function unidadesVendidas(ids: number[]): Promise<Map<number, number>> {
   return mapa;
 }
 
-function paraPromocaoDTO(p: PromocaoLida, unidades: number) {
+// Até 4 fotos de produtos ativos de cada categoria (mosaico do cartão de promoção por categoria).
+async function fotosDasCategorias(ids: number[]): Promise<Map<number, string[]>> {
+  const mapa = new Map<number, string[]>();
+  if (ids.length === 0) return mapa;
+  const produtos = await prisma.produto.findMany({
+    where: { categoriaId: { in: ids }, ativo: true, foto: { not: null } },
+    select: { categoriaId: true, foto: true },
+    orderBy: { nome: 'asc' },
+  });
+  for (const produto of produtos) {
+    if (produto.categoriaId === null || !produto.foto) continue;
+    const lista = mapa.get(produto.categoriaId) ?? [];
+    if (lista.length < 4) {
+      lista.push(produto.foto);
+      mapa.set(produto.categoriaId, lista);
+    }
+  }
+  return mapa;
+}
+
+// Preço promocional por unidade: preço fixo, ou preço normal com o desconto em %. Outros tipos: null.
+function precoPromocionalDe(tipo: TipoPromocao, valor: number, precoNormal: number | null): number | null {
+  if (tipo === 'PRECO_FIXO') return arred2(valor);
+  if (tipo === 'PERCENTUAL' && precoNormal !== null) return arred2(precoNormal * (1 - valor / 100));
+  return null;
+}
+
+// Converte as promoções para a resposta, já com fotos e setor (nome da categoria) de cada uma.
+async function paraPromocoesDTO(lista: PromocaoLida[], unidades: Map<number, number>) {
+  const categoriaIds = [...new Set(lista.map((p) => p.categoriaId).filter((id): id is number => id !== null))];
+  const fotosPorCategoria = await fotosDasCategorias(categoriaIds);
+  return lista.map((p) =>
+    paraPromocaoDTO(p, unidades.get(p.id) ?? 0, p.categoriaId !== null ? (fotosPorCategoria.get(p.categoriaId) ?? []) : []),
+  );
+}
+
+type TipoPromocao = (typeof TIPOS)[number];
+
+function paraPromocaoDTO(p: PromocaoLida, unidades: number, fotos: string[]) {
+  const precoNormal = p.produto ? num(p.produto.precoVenda) : null;
   return {
     id: p.id,
     nome: p.nome,
@@ -100,7 +139,11 @@ function paraPromocaoDTO(p: PromocaoLida, unidades: number) {
     industria: p.industria,
     bonificacaoUnidade: numOuNull(p.bonificacaoUnidade),
     descricao: descreverPromocao(p),
-    precoNormal: p.produto ? num(p.produto.precoVenda) : null,
+    precoNormal,
+    precoPromocional: precoPromocionalDe(p.tipo, num(p.valor), precoNormal),
+    foto: p.produto?.foto ?? null,
+    fotos,
+    setor: p.produto?.categoria?.nome ?? p.categoria?.nome ?? null,
     unidadesVendidas: unidades,
   };
 }
@@ -186,7 +229,7 @@ router.get(
       orderBy: [{ inicio: 'desc' }, { id: 'desc' }],
     });
     const unidades = await unidadesVendidas(lista.map((p) => p.id));
-    res.json(lista.map((p) => paraPromocaoDTO(p, unidades.get(p.id) ?? 0)));
+    res.json(await paraPromocoesDTO(lista, unidades));
   })
 );
 
@@ -197,7 +240,8 @@ router.post(
     const dados = validar(promocaoSchema, req.body);
     await conferirPromocao(dados);
     const criada = await prisma.promocao.create({ data: { ...dadosDaPromocao(dados), ativa: true }, include: INCLUIR });
-    res.status(201).json(paraPromocaoDTO(criada, 0));
+    const [dto] = await paraPromocoesDTO([criada], new Map());
+    res.status(201).json(dto);
   })
 );
 
@@ -212,7 +256,8 @@ router.put(
     await conferirPromocao(dados);
     const alterada = await prisma.promocao.update({ where: { id }, data: dadosDaPromocao(dados), include: INCLUIR });
     const unidades = await unidadesVendidas([id]);
-    res.json(paraPromocaoDTO(alterada, unidades.get(id) ?? 0));
+    const [dto] = await paraPromocoesDTO([alterada], unidades);
+    res.json(dto);
   })
 );
 
@@ -243,7 +288,8 @@ router.post(
     const fim = atual.fim < agora ? atual.fim : agora;
     const encerrada = await prisma.promocao.update({ where: { id }, data: { fim }, include: INCLUIR });
     const unidades = await unidadesVendidas([id]);
-    res.json(paraPromocaoDTO(encerrada, unidades.get(id) ?? 0));
+    const [dto] = await paraPromocoesDTO([encerrada], unidades);
+    res.json(dto);
   })
 );
 

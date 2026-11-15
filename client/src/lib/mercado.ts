@@ -23,10 +23,10 @@ export function horaCurta(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-// Quantidade com até 3 casas (kg) e a unidade: "1,250 kg", "3 un".
+// Quantidade com até 3 casas (kg) e a unidade: "1,25 kg", "3 un".
 export function formatarQuantidade(qtd: number, unidade?: string): string {
-  const inteiro = Number.isInteger(qtd);
-  const texto = qtd.toLocaleString('pt-BR', { minimumFractionDigits: inteiro ? 0 : 3, maximumFractionDigits: 3 });
+  // Até 3 casas, só as necessárias: "2", "0,5", "1,25", "0,125".
+  const texto = qtd.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
   return unidade ? `${texto} ${unidade.toLowerCase()}` : texto;
 }
 

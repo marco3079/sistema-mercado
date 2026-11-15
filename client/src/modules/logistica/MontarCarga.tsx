@@ -6,7 +6,8 @@ import { escapar, imprimirHtml, moeda } from '../../lib/imprimir';
 import { formatarQuantidade, lerNumero, mensagemErro } from '../../lib/mercado';
 import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { useDados } from '../../lib/useDados';
-import { Aviso, Botao, Campo, Caixa, Cartao, Carregando, Pagina, Selecao, Selo, formatarData } from '../../ui';
+import { Aviso, Botao, Campo, Caixa, Cartao, Carregando, MenuAcoes, Pagina, Selecao, Selo, formatarData } from '../../ui';
+import { Icone } from '../../ui/icones';
 import { MapaRota } from './MapaRota';
 import { COR_ENTREGA, COR_ROTA, COR_TRANSFERENCIA, ROTULO_ENTREGA, ROTULO_ROTA, ROTULO_TRANSFERENCIA } from './tipos';
 import type {
@@ -331,24 +332,38 @@ export function MontarCarga() {
                 </div>
                 <Selo cor={COR_ENTREGA[e.status]}>{ROTULO_ENTREGA[e.status]}</Selo>
                 {editavel && (
-                  <div className="logistica-setas">
-                    <Botao
-                      variante="texto"
-                      desabilitado={ocupado || indice === 0}
-                      aoClicar={() => mover(indice, -1, idsDaCarga)}
-                    >
-                      ↑
-                    </Botao>
-                    <Botao
-                      variante="texto"
-                      desabilitado={ocupado || indice === carga.length - 1}
-                      aoClicar={() => mover(indice, 1, idsDaCarga)}
-                    >
-                      ↓
-                    </Botao>
-                    <Botao variante="texto" desabilitado={ocupado} aoClicar={() => remover(e)}>
-                      Remover
-                    </Botao>
+                  <div className="logistica-acoes-parada">
+                    <div className="logistica-setas">
+                      <button
+                        type="button"
+                        className="logistica-seta"
+                        aria-label={`Subir ${e.codigo} na ordem`}
+                        disabled={ocupado || indice === 0}
+                        onClick={() => mover(indice, -1, idsDaCarga)}
+                      >
+                        <Icone nome="seta-cima" tamanho={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className="logistica-seta"
+                        aria-label={`Descer ${e.codigo} na ordem`}
+                        disabled={ocupado || indice === carga.length - 1}
+                        onClick={() => mover(indice, 1, idsDaCarga)}
+                      >
+                        <Icone nome="seta-baixo" tamanho={16} />
+                      </button>
+                    </div>
+                    <MenuAcoes
+                      rotulo={`Mais ações da parada ${e.codigo}`}
+                      acoes={[
+                        {
+                          rotulo: 'Remover da carga',
+                          icone: 'lixeira',
+                          perigo: true,
+                          aoClicar: () => remover(e),
+                        },
+                      ]}
+                    />
                   </div>
                 )}
               </li>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Icone } from './icones';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import './estilo.css';
+import './foto-produto.css'; // classes gerais: .numero, .acoes-linha, .grade-produtos, .barra-nivel
 
 // ---------- Formatação ----------
 
@@ -446,12 +447,14 @@ export function Campo({
   aoMudar,
   tipo = 'text',
   obrigatorio,
+  placeholder,
 }: {
   rotulo: string;
   valor: string;
   aoMudar: (valor: string) => void;
-  tipo?: 'text' | 'email' | 'password' | 'number' | 'date' | 'time' | 'datetime-local';
+  tipo?: 'text' | 'email' | 'password' | 'number' | 'date' | 'time' | 'datetime-local' | 'search';
   obrigatorio?: boolean;
+  placeholder?: string; // texto de exemplo dentro do campo (ex.: "Buscar por nome, código ou EAN")
 }) {
   return (
     <label className="campo">
@@ -464,6 +467,7 @@ export function Campo({
         type={tipo}
         value={valor}
         required={obrigatorio}
+        placeholder={placeholder}
         onChange={(e) => aoMudar(e.target.value)}
       />
     </label>

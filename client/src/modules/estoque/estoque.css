@@ -134,6 +134,10 @@
 }
 
 .estoque-contagem-ultimo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
   padding: 1rem;
   background: var(--cor-primaria-suave);
   border: 2px solid var(--cor-primaria);
@@ -205,4 +209,88 @@
   .estoque-contagem-quantidade {
     grid-template-columns: 1fr;
   }
+}
+
+/* ===== Padrão visual com fotos (telas de estoque) ===== */
+
+/* Busca ocupa a largura toda; em telas maiores, duas colunas da grade de filtros. */
+.estoque-filtro-busca {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 760px) {
+  .estoque-filtro-busca {
+    grid-column: span 2;
+  }
+}
+
+/* Quantidade alinhada à direita, com a barra de nível embaixo. */
+.estoque-quantidade {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 110px;
+}
+
+.estoque-quantidade .barra-nivel {
+  min-width: 90px;
+}
+
+/* Topo de cartão: foto + título. */
+.estoque-cartao-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.estoque-cartao-topo > div {
+  min-width: 0;
+}
+
+.estoque-cartao-titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.estoque-cartao-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+/* Selo grande de vencimento (vence em N dias). */
+.estoque-vencimento {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.estoque-vencimento-vermelho {
+  color: var(--cor-perigo);
+  background: color-mix(in srgb, var(--cor-perigo) 14%, transparent);
+}
+
+.estoque-vencimento-amarelo {
+  color: var(--cor-laranja);
+  background: color-mix(in srgb, var(--cor-laranja) 16%, transparent);
+}
+
+.estoque-vencimento-verde {
+  color: var(--cor-verde);
+  background: color-mix(in srgb, var(--cor-verde) 14%, transparent);
+}
+
+.estoque-grade-lotes .cartao-produto,
+.estoque-inventario {
+  height: 100%;
 }

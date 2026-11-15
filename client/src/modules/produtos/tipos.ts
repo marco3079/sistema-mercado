@@ -1,4 +1,7 @@
 // Tipos da API de produtos (g02) e pequenas regras de cálculo usadas nas telas.
+import { useEffect, useState } from 'react';
+import { api } from '../../lib/api';
+import { mensagemErro } from '../../lib/mercado';
 
 export interface CategoriaDTO {
   id: number;
@@ -119,6 +122,48 @@ export const SETORES = ['Mercearia', 'Padaria', 'Hortifrúti', 'Açougue', 'Frio
 
 // Quem pode editar produtos (o OPERADOR só lê; o servidor decide o resto).
 export const PODE_EDITAR_PRODUTO = ['GESTOR', 'COMPRADOR', 'ESTOQUISTA'];
+
+// O servidor devolve no máximo 500 por página. Telas com a lista inteira (cartões, resumo, filtros
+// no navegador) buscam todas as páginas e deixam a Tabela paginar.
+const TAMANHO_PAGINA = 500;
+
+// Todos os produtos (ativos e inativos), com recarregar(). Carrega só na primeira vez; depois, recarregar
+// troca os dados sem piscar a tela.
+export function useProdutosCompletos() {
+  const [versao, setVersao] = useState(0);
+  const [dados, setDados] = useState<ProdutoDTO[] | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      try {
+        const caminho = (p: number) => `/produtos?pagina=${p}&porPagina=${TAMANHO_PAGINA}&ativo=todos`;
+        const primeira = await api.get<ListaProdutosDTO>(caminho(1));
+        const itens = [...primeira.itens];
+        const paginas = Math.ceil(primeira.total / TAMANHO_PAGINA);
+        for (let p = 2; p <= paginas; p++) {
+          const pagina = await api.get<ListaProdutosDTO>(caminho(p));
+          itens.push(...pagina.itens);
+        }
+        if (vivo) {
+          setDados(itens);
+          setErro(null);
+        }
+      } catch (e) {
+        if (vivo) setErro(mensagemErro(e));
+      } finally {
+        if (vivo) setCarregando(false);
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [versao]);
+
+  return { dados, carregando, erro, recarregar: () => setVersao((v) => v + 1) };
+}
 
 // Margem sobre a venda (%), igual ao servidor.
 export function margemDe(custo: number, venda: number): number {

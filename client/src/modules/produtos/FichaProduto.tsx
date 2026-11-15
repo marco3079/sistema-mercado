@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../../lib/api';
 import { useDados } from '../../lib/useDados';
@@ -19,6 +19,7 @@ import {
   formatarMoeda,
 } from '../../ui';
 import type { ColunaTabela } from '../../ui';
+import { FotoProduto } from '../../ui/FotoProduto';
 import type {
   CategoriaDTO,
   ConfiguracaoPublicaDTO,
@@ -29,6 +30,41 @@ import type {
 } from './tipos';
 import { corDaMargem, markupDe, margemDe, numeroParaCampo, sugerirPreco } from './tipos';
 import './produtos.css';
+
+// Foto: lado do quadrado em px e tamanho máximo do texto enviado (o servidor aceita até ~200 KB em data URL).
+const LADO_FOTO = 400;
+const LIMITE_FOTO = 200_000;
+
+// Reduz a imagem para LADO_FOTO × LADO_FOTO (recorte central, JPG). Baixa a qualidade se ainda ficar grande.
+async function reduzirFoto(arquivo: File): Promise<string> {
+  const url = URL.createObjectURL(arquivo);
+  try {
+    const imagem = await new Promise<HTMLImageElement>((ok, falha) => {
+      const img = new Image();
+      img.onload = () => ok(img);
+      img.onerror = () => falha(new Error('Não consegui ler esta imagem.'));
+      img.src = url;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = LADO_FOTO;
+    canvas.height = LADO_FOTO;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Este navegador não consegue processar a imagem.');
+    const menor = Math.min(imagem.naturalWidth, imagem.naturalHeight);
+    const sx = (imagem.naturalWidth - menor) / 2;
+    const sy = (imagem.naturalHeight - menor) / 2;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, LADO_FOTO, LADO_FOTO);
+    ctx.drawImage(imagem, sx, sy, menor, menor, 0, 0, LADO_FOTO, LADO_FOTO);
+    for (const qualidade of [0.85, 0.7, 0.55]) {
+      const dataUrl = canvas.toDataURL('image/jpeg', qualidade);
+      if (dataUrl.length <= LIMITE_FOTO) return dataUrl;
+    }
+    throw new Error('Foto grande demais mesmo reduzida. Tente outra imagem.');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 // Campos do formulário: tudo em texto (vírgula decimal) e converte na hora de salvar.
 interface Rascunho {
@@ -164,11 +200,13 @@ const COLUNAS_FORNECEDORES: ColunaTabela<FornecedorProdutoDTO>[] = [
 // Ficha do produto (novo ou edição). Só carrega o detalhe quando é edição.
 export function FichaProduto({
   produtoId,
+  abaInicial,
   somenteLeitura,
   aoFechar,
   aoSalvo,
 }: {
   produtoId: number | null;
+  abaInicial?: string;
   somenteLeitura: boolean;
   aoFechar: () => void;
   aoSalvo: (mensagem: string) => void;
@@ -185,6 +223,7 @@ export function FichaProduto({
           <Formulario
             key={dados?.id ?? 'novo'}
             inicial={dados}
+            abaInicial={abaInicial}
             somenteLeitura={somenteLeitura}
             aoFechar={aoFechar}
             aoSalvo={aoSalvo}
@@ -197,25 +236,71 @@ export function FichaProduto({
 
 function Formulario({
   inicial,
+  abaInicial,
   somenteLeitura,
   aoFechar,
   aoSalvo,
 }: {
   inicial: ProdutoFichaDTO | null;
+  abaInicial?: string;
   somenteLeitura: boolean;
   aoFechar: () => void;
   aoSalvo: (mensagem: string) => void;
 }) {
   const [f, setF] = useState<Rascunho>(() => rascunhoDe(inicial));
-  const [aba, setAba] = useState('geral');
+  const [aba, setAba] = useState(abaInicial ?? 'geral');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [erroFoto, setErroFoto] = useState<string | null>(null);
+  const inputFoto = useRef<HTMLInputElement>(null);
   const categorias = useDados<CategoriaDTO[]>('/categorias');
   const config = useDados<ConfiguracaoPublicaDTO>('/configuracoes/mercado/publico');
 
   function mudar<K extends keyof Rascunho>(campo: K, valor: Rascunho[K]) {
     setF((atual) => ({ ...atual, [campo]: valor }));
   }
+
+  // Em produto existente a foto grava na hora (PUT só com foto); em produto novo vai junto com o Salvar.
+  async function gravarFoto(foto: string | null) {
+    if (inicial) {
+      await api.put<ProdutoDTO>(`/produtos/${inicial.id}`, { foto });
+      aoSalvo(foto ? `Foto de ${inicial.nome} atualizada.` : `Foto de ${inicial.nome} removida.`);
+    }
+    mudar('foto', foto ?? '');
+  }
+
+  async function trocarFoto(arquivo: File | undefined) {
+    if (!arquivo) return;
+    setErroFoto(null);
+    if (!arquivo.type.startsWith('image/')) {
+      setErroFoto('Escolha um arquivo de imagem (JPG, PNG ou WebP).');
+      return;
+    }
+    setEnviandoFoto(true);
+    try {
+      await gravarFoto(await reduzirFoto(arquivo));
+    } catch (err) {
+      setErroFoto(mensagemErro(err));
+    } finally {
+      setEnviandoFoto(false);
+      if (inputFoto.current) inputFoto.current.value = '';
+    }
+  }
+
+  async function removerFoto() {
+    setErroFoto(null);
+    setEnviandoFoto(true);
+    try {
+      await gravarFoto(null);
+    } catch (err) {
+      setErroFoto(mensagemErro(err));
+    } finally {
+      setEnviandoFoto(false);
+    }
+  }
+
+  const nomeCategoria = (categorias.dados ?? []).find((c) => String(c.id) === f.categoriaId)?.nome ?? null;
 
   // Margem e markup ao vivo, com a venda e o custo digitados.
   const custo = lerNumero(f.precoCusto) ?? 0;
@@ -255,6 +340,36 @@ function Formulario({
     <form onSubmit={salvar}>
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
       {categorias.erro && <Aviso tipo="erro">{categorias.erro}</Aviso>}
+      <div className="produtos-ficha-corpo">
+        <aside className="produtos-ficha-foto">
+          <FotoProduto foto={f.foto || null} nome={f.nome || 'Produto sem nome'} setor={nomeCategoria} preencher />
+          <div className="produtos-foto-acoes">
+            <Botao
+              variante="secundario"
+              desabilitado={somenteLeitura || enviandoFoto}
+              aoClicar={() => inputFoto.current?.click()}
+            >
+              {enviandoFoto ? 'Enviando...' : 'Enviar foto'}
+            </Botao>
+            {f.foto && (
+              <Botao variante="texto" desabilitado={somenteLeitura || enviandoFoto} aoClicar={removerFoto}>
+                Remover foto
+              </Botao>
+            )}
+            <input
+              ref={inputFoto}
+              type="file"
+              accept="image/*"
+              className="produtos-arquivo-oculto"
+              aria-label="Escolher foto do produto"
+              onChange={(e) => trocarFoto(e.target.files?.[0])}
+            />
+          </div>
+          {erroFoto && <Aviso tipo="erro">{erroFoto}</Aviso>}
+          <p className="produtos-legenda">A foto é reduzida para {LADO_FOTO} × {LADO_FOTO} antes de salvar.</p>
+        </aside>
+
+        <div className="produtos-ficha-campos">
       <Abas
         abas={inicial ? [...ABAS, { id: 'historico', rotulo: 'Histórico' }] : ABAS}
         ativa={aba}
@@ -281,12 +396,12 @@ function Formulario({
               rotulo="Unidade"
               valor={f.unidade}
               aoMudar={(v) => mudar('unidade', v)}
-              opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u }))}
+              opcoes={UNIDADES.map((u) => ({ valor: u, rotulo: u.toLowerCase() }))}
             />
             <div className="produtos-campo-largo">
               <AreaTexto rotulo="Descrição" valor={f.descricao} aoMudar={(v) => mudar('descricao', v)} linhas={3} />
             </div>
-            <Campo rotulo="Foto (endereço da imagem)" valor={f.foto} aoMudar={(v) => mudar('foto', v)} />
+            <Campo rotulo="Endereço da imagem (opcional)" valor={f.foto} aoMudar={(v) => mudar('foto', v)} />
             <div className="produtos-caixas">
               <Caixa rotulo="Vendido no peso (balança)" marcado={f.pesavel} aoMudar={(v) => mudar('pesavel', v)} />
               <Caixa rotulo="Ativo" marcado={f.ativo} aoMudar={(v) => mudar('ativo', v)} />
@@ -393,6 +508,8 @@ function Formulario({
           </Botao>
         </div>
       )}
+        </div>
+      </div>
     </form>
   );
 }

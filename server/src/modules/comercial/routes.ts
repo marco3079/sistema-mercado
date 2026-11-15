@@ -84,7 +84,10 @@ const incluirPedido = {
   vendedor: { select: { id: true, nome: true } },
   venda: { select: { numero: true } },
   entrega: { select: { codigo: true, status: true } },
-  itens: { orderBy: { id: 'asc' }, include: { produto: { select: { nome: true, unidade: true } } } },
+  itens: {
+    orderBy: { id: 'asc' },
+    include: { produto: { select: { nome: true, unidade: true, foto: true, categoria: { select: { nome: true } } } } },
+  },
 } satisfies Prisma.PedidoVendaInclude;
 
 type PedidoCompleto = Prisma.PedidoVendaGetPayload<{ include: typeof incluirPedido }>;
@@ -127,6 +130,8 @@ function paraDetalhe(p: PedidoCompleto) {
       produtoId: i.produtoId,
       produto: i.produto.nome,
       unidade: i.produto.unidade,
+      foto: i.produto.foto ?? null,
+      categoria: i.produto.categoria?.nome ?? null,
       quantidade: num(i.quantidade),
       precoTabela: num(i.precoTabela),
       precoNegociado: num(i.precoNegociado),
@@ -193,7 +198,7 @@ function paraEntregaVenda(v: {
   criadoEm: Date;
   cliente: { nome: string; telefone: string | null; whatsapp: string | null } | null;
   pagamentos: { forma: string }[];
-  itens: { descricao: string; quantidade: unknown; precoUnitario: unknown; total: unknown }[];
+  itens: { descricao: string; quantidade: unknown; precoUnitario: unknown; total: unknown; produto?: { foto: string | null } | null }[];
   entrega: {
     id: number;
     codigo: string;
@@ -218,6 +223,7 @@ function paraEntregaVenda(v: {
     criadoEm: v.criadoEm.toISOString(),
     itens: v.itens.map((i) => ({
       descricao: i.descricao,
+      foto: i.produto?.foto ?? null,
       quantidade: num(i.quantidade as number),
       precoUnitario: num(i.precoUnitario as number),
       total: num(i.total as number),
@@ -227,7 +233,7 @@ function paraEntregaVenda(v: {
 
 const incluirVendaEntrega = {
   cliente: { select: { nome: true, telefone: true, whatsapp: true } },
-  itens: { orderBy: { id: 'asc' } },
+  itens: { orderBy: { id: 'asc' }, include: { produto: { select: { foto: true } } } },
   pagamentos: { orderBy: { id: 'asc' } },
   entrega: { select: { id: true, codigo: true, status: true, destinatario: true, telefone: true, endereco: true, bairro: true } },
 } satisfies Prisma.VendaInclude;
@@ -269,7 +275,12 @@ router.get(
         { ean: { equals: busca } },
       ];
     }
-    const produtos = await prisma.produto.findMany({ where, orderBy: { nome: 'asc' }, take: 50 });
+    const produtos = await prisma.produto.findMany({
+      where,
+      include: { categoria: { select: { nome: true } } },
+      orderBy: { nome: 'asc' },
+      take: 50,
+    });
     const estoques = await prisma.estoqueLoja.findMany({ where: { lojaId, produtoId: { in: produtos.map((p) => p.id) } } });
     const estoquePorProduto = new Map(estoques.map((e) => [e.produtoId, num(e.quantidade)]));
     const promocoes = await promocoesVigentes(produtos);
@@ -286,6 +297,8 @@ router.get(
           precoAtacado: numOuNull(p.precoAtacado),
           estoque: estoquePorProduto.get(p.id) ?? 0,
           promocao: calc.descricaoPromocao,
+          foto: p.foto ?? null,
+          categoria: p.categoria?.nome ?? null,
         };
       }),
     );

@@ -64,17 +64,20 @@ function totalComPromocao(p: Promocao, precoTabela: number, quantidade: number):
   }
 }
 
+// Texto curto da oferta, SEM o nome da promoção (o nome já aparece no título das telas).
+// Ex.: "10% de desconto", "Leve 3 pague 2", "Por R$ 6,49", "A partir de 6: R$ 3,50 cada".
 export function descreverPromocao(p: Promocao): string {
   const valor = num(p.valor);
+  const moeda = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   switch (p.tipo) {
     case 'PRECO_FIXO':
-      return `${p.nome}: por ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+      return `Por ${moeda(valor)}`;
     case 'PERCENTUAL':
-      return `${p.nome}: ${valor}% de desconto`;
+      return `${valor.toLocaleString('pt-BR')}% de desconto`;
     case 'LEVE_PAGUE':
-      return `${p.nome}: leve ${p.levar} pague ${p.pagar}`;
+      return `Leve ${p.levar} pague ${p.pagar}`;
     case 'ATACADO':
-      return `${p.nome}: a partir de ${num(p.qtdMinima)} por ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+      return `A partir de ${num(p.qtdMinima).toLocaleString('pt-BR')}: ${moeda(valor)} cada`;
     default:
       return p.nome;
   }

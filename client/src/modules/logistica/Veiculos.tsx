@@ -3,8 +3,8 @@ import type { FormEvent } from 'react';
 import { api } from '../../lib/api';
 import { lerNumero, mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
-import { Aviso, Botao, Campo, Caixa, Carregando, Modal, Pagina, Selecao, Selo, Tabela } from '../../ui';
-import type { ColunaTabela } from '../../ui';
+import { Aviso, Botao, Campo, Caixa, Carregando, Modal, Pagina, Selecao, Selo } from '../../ui';
+import { Icone } from '../../ui/icones';
 import { TIPOS_VEICULO } from './tipos';
 import type { VeiculoDTO } from './tipos';
 
@@ -95,39 +95,56 @@ export function Veiculos() {
   const [editando, setEditando] = useState<VeiculoDTO | 'novo' | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
-  const colunas: ColunaTabela<VeiculoDTO>[] = [
-    { titulo: 'Placa', celula: (v) => <span className="logistica-codigo">{v.placa}</span> },
-    { titulo: 'Modelo', celula: (v) => v.modelo },
-    { titulo: 'Tipo', celula: (v) => v.tipo },
-    {
-      titulo: 'Capacidade',
-      alinhar: 'direita',
-      celula: (v) => <span className="logistica-numero">{v.capacidadeKg.toLocaleString('pt-BR')} kg</span>,
-    },
-    {
-      titulo: 'Volumes',
-      alinhar: 'direita',
-      celula: (v) => (v.capacidadeVolumes !== null ? String(v.capacidadeVolumes) : '—'),
-    },
-    {
-      titulo: 'Situação',
-      celula: (v) => (v.ativo ? <Selo cor="verde">Ativo</Selo> : <Selo cor="cinza">Inativo</Selo>),
-    },
-  ];
-
   return (
     <Pagina titulo="Frota" acoes={<Botao aoClicar={() => setEditando('novo')}>Novo veículo</Botao>}>
       {aviso && <Aviso tipo="sucesso">{aviso}</Aviso>}
       {lista.erro && <Aviso tipo="erro">{lista.erro}</Aviso>}
       {lista.carregando && !lista.dados && <Carregando />}
-      {lista.dados && (
-        <Tabela<VeiculoDTO>
-          colunas={colunas}
-          dados={lista.dados}
-          chave={(v) => v.id}
-          vazio="Nenhum veículo cadastrado."
-          aoClicarLinha={(v) => setEditando(v)}
-        />
+      {lista.dados && lista.dados.length === 0 && <p className="logistica-vazio">Nenhum veículo cadastrado.</p>}
+      {lista.dados && lista.dados.length > 0 && (
+        <div className="logistica-grade-frota">
+          {lista.dados.map((v) => (
+            <article
+              key={v.id}
+              className={v.ativo ? 'logistica-cartao-veiculo' : 'logistica-cartao-veiculo logistica-cartao-veiculo-inativo'}
+            >
+              <div className="logistica-cartao-veiculo-topo">
+                <span className="logistica-icone-veiculo logistica-icone-veiculo-grande" aria-hidden="true">
+                  <Icone nome="caminhao" tamanho={24} />
+                </span>
+                {v.ativo ? <Selo cor="verde">Ativo</Selo> : <Selo cor="cinza">Inativo</Selo>}
+              </div>
+
+              <span className="logistica-placa logistica-placa-grande">{v.placa}</span>
+
+              <div className="logistica-destino">
+                <strong>{v.modelo}</strong>
+                <span className="logistica-suave">{v.tipo}</span>
+              </div>
+
+              <div className="logistica-cartao-veiculo-numeros">
+                <div className="logistica-cartao-veiculo-numero">
+                  <span className="logistica-numero logistica-valor-forte">
+                    {v.capacidadeKg.toLocaleString('pt-BR')} kg
+                  </span>
+                  <span className="logistica-suave">capacidade</span>
+                </div>
+                <div className="logistica-cartao-veiculo-numero">
+                  <span className="logistica-numero logistica-valor-forte">
+                    {v.capacidadeVolumes !== null ? v.capacidadeVolumes : '—'}
+                  </span>
+                  <span className="logistica-suave">volumes</span>
+                </div>
+              </div>
+
+              <div className="logistica-cartao-lista-acao">
+                <Botao variante="secundario" aoClicar={() => setEditando(v)}>
+                  Editar
+                </Botao>
+              </div>
+            </article>
+          ))}
+        </div>
       )}
 
       {editando !== null && (

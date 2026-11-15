@@ -10,6 +10,7 @@ export interface ItemEstoque {
   unidade: string;
   categoriaId: number | null;
   categoria: string | null;
+  foto: string | null;
   quantidade: number;
   estoqueMinimo: number;
   estoqueMaximo: number | null;
@@ -68,6 +69,8 @@ export interface Movimento {
   motivo: string | null;
   referencia: string | null;
   usuario: string | null;
+  foto: string | null;
+  categoria: string | null;
 }
 
 export type MotivoPerda = 'VENCIDO' | 'AVARIA' | 'QUEBRA' | 'FURTO' | 'CONSUMO_INTERNO' | 'OUTRO';
@@ -90,6 +93,10 @@ export interface ItemPerda {
   unidade: string;
   motivo: string;
   valor: number;
+  codigo: string;
+  ean: string | null;
+  foto: string | null;
+  categoria: string | null;
 }
 
 export interface RespostaPerdas {
@@ -108,6 +115,8 @@ export interface Lote {
   unidade: string;
   diasRestantes: number;
   valorCusto: number;
+  foto: string | null;
+  categoria: string | null;
 }
 
 export interface RespostaValidade {
@@ -147,6 +156,8 @@ export interface ItemInventario {
   diferenca: number | null;
   valorDiferenca: number;
   contadoEm: string | null;
+  foto: string | null;
+  categoria: string | null;
 }
 
 export interface InventarioDetalhe {

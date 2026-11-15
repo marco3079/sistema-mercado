@@ -26,6 +26,7 @@ export interface CurvaLinha {
   produtoId: number;
   codigo: string;
   nome: string;
+  foto: string | null;
   categoria: string;
   quantidade: number;
   faturamento: number;
@@ -38,6 +39,8 @@ export interface CurvaLinha {
 export interface ProdutoParado {
   produtoId: number;
   nome: string;
+  foto: string | null;
+  categoria: string | null;
   estoque: number;
   valorEstoque: number;
   ultimaVenda: string | null; // ISO ou null (nunca vendido)
@@ -47,6 +50,8 @@ export interface MargemLinha {
   produtoId: number;
   codigo: string;
   nome: string;
+  foto: string | null;
+  categoria: string | null;
   custo: number;
   venda: number;
   margem: number;

@@ -40,20 +40,38 @@ export function FotoProduto({
   className?: string;
 }) {
   const [falhou, setFalhou] = useState(false);
+  const [carregou, setCarregou] = useState(false);
   const classes = ['foto-produto', preencher ? 'foto-produto-preencher' : '', className ?? ''].join(' ').trim();
   const estilo = preencher ? undefined : { width: tamanho, height: tamanho };
-
-  if (foto && !falhou) {
-    return (
-      <span className={classes} style={estilo}>
-        <img src={foto} alt={nome} loading="lazy" onError={() => setFalhou(true)} />
-      </span>
-    );
-  }
   const { icone, cor } = estiloDoSetor(setor);
+  const temFoto = Boolean(foto) && !falhou;
+
+  // A ilustração do setor fica sempre por baixo; a foto aparece por cima só quando termina de carregar.
+  // Assim, foto lenta ou inexistente nunca mostra o ícone de imagem quebrada.
   return (
-    <span className={`${classes} foto-produto-vazia foto-produto-${cor}`} style={estilo} role="img" aria-label={nome}>
-      <Icone nome={icone} tamanho={preencher ? 48 : Math.max(16, Math.round(tamanho * 0.45))} />
+    <span
+      className={`${classes} ${temFoto && carregou ? '' : `foto-produto-vazia foto-produto-${cor}`}`.trim()}
+      style={estilo}
+      role="img"
+      aria-label={nome}
+    >
+      {!(temFoto && carregou) && (
+        <Icone nome={icone} tamanho={preencher ? 48 : Math.max(16, Math.round(tamanho * 0.45))} />
+      )}
+      {temFoto && (
+        <img
+          key={foto ?? ''}
+          src={foto ?? undefined}
+          alt=""
+          loading="lazy"
+          className={carregou ? 'foto-produto-img carregada' : 'foto-produto-img'}
+          onLoad={(e) => {
+            if (e.currentTarget.naturalWidth > 0) setCarregou(true);
+            else setFalhou(true);
+          }}
+          onError={() => setFalhou(true)}
+        />
+      )}
     </span>
   );
 }

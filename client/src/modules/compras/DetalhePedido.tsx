@@ -7,6 +7,8 @@ import { lerNumero, mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
 import { Aviso, Botao, Campo, Carregando, Pagina, Selo, Tabela, formatarData, formatarDataHora, formatarMoeda, paraInputData } from '../../ui';
 import { BuscaProduto } from './PedidosCompra';
+import { CelulaProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 import { ROTULO_STATUS_PEDIDO, ROTULO_STATUS_RECEBIMENTO } from './tipos';
 import type { PedidoComTexto, PedidoDetalhe, ProdutoBuscaDTO, StatusPedido } from './tipos';
 
@@ -38,6 +40,8 @@ interface LinhaEdicao {
   unidade: string;
   quantidade: string;
   preco: string;
+  foto: string | null;
+  categoria: string | null;
 }
 
 function numeroParaTexto(n: number): string {
@@ -90,6 +94,8 @@ export function DetalhePedido() {
         unidade: i.unidade,
         quantidade: numeroParaTexto(i.quantidade),
         preco: numeroParaTexto(i.precoUnitario),
+        foto: i.foto,
+        categoria: i.categoria,
       })),
     );
     setCondicao(dados.condicaoPagamento ?? '');
@@ -106,7 +112,15 @@ export function DetalhePedido() {
     if (linhas.some((l) => l.produtoId === p.id)) return;
     setLinhas((atual) => [
       ...atual,
-      { produtoId: p.id, nome: p.nome, unidade: p.unidade, quantidade: '1', preco: numeroParaTexto(p.precoCusto) },
+      {
+        produtoId: p.id,
+        nome: p.nome,
+        unidade: p.unidade,
+        quantidade: '1',
+        preco: numeroParaTexto(p.precoCusto),
+        foto: p.foto ?? null,
+        categoria: p.categoria ?? null,
+      },
     ]);
   }
 
@@ -218,17 +232,40 @@ export function DetalhePedido() {
     >
       {mensagem && <Aviso tipo={mensagem.tipo === 'erro' ? 'erro' : 'sucesso'}>{mensagem.texto}</Aviso>}
 
-      <div className="compras-acumulado">
-        <span>
-          Fornecedor: <strong>{dados.fornecedor.nome}</strong>
-        </span>
-        <span>
-          Total: <strong>{formatarMoeda(dados.total)}</strong>
-        </span>
-        <span>Criado em {formatarDataHora(dados.criadoEm)}</span>
-        {dados.enviadoEm && <span>Enviado em {formatarDataHora(dados.enviadoEm)}</span>}
-        {dados.recebidoEm && <span>Recebido em {formatarDataHora(dados.recebidoEm)}</span>}
+      <div className="resumo">
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-verde">
+            <Icone nome="dinheiro" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{formatarMoeda(dados.total)}</span>
+            <span className="resumo-rotulo">Total do pedido</span>
+          </div>
+        </div>
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-azul">
+            <Icone nome="pacote" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{dados.itens.length}</span>
+            <span className="resumo-rotulo">Itens</span>
+          </div>
+        </div>
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-laranja">
+            <Icone nome="calendario" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{dados.previsaoEntrega ? formatarData(dados.previsaoEntrega) : '—'}</span>
+            <span className="resumo-rotulo">Previsão de entrega</span>
+          </div>
+        </div>
       </div>
+      <p className="compras-ajuda">
+        Fornecedor: <strong>{dados.fornecedor.nome}</strong> · Criado em {formatarDataHora(dados.criadoEm)}
+        {dados.enviadoEm && ` · Enviado em ${formatarDataHora(dados.enviadoEm)}`}
+        {dados.recebidoEm && ` · Recebido em ${formatarDataHora(dados.recebidoEm)}`}
+      </p>
 
       <section className="compras-secao">
         <h2 className="compras-secao-titulo">Itens</h2>
@@ -248,7 +285,9 @@ export function DetalhePedido() {
                 <tbody>
                   {linhas.map((l) => (
                     <tr key={l.produtoId}>
-                      <td>{l.nome} <span className="compras-sub">{l.unidade.toLowerCase()}</span></td>
+                      <td>
+                        <CelulaProduto foto={l.foto} nome={l.nome} setor={l.categoria} detalhe={l.unidade.toLowerCase()} tamanho={36} />
+                      </td>
                       <td className="tabela-alinhar-direita">
                         <input
                           className="compras-input compras-input-curto"
@@ -301,7 +340,7 @@ export function DetalhePedido() {
           <div className="compras-rolagem">
             <Tabela
               colunas={[
-                { titulo: 'Produto', celula: (i) => <>{i.nome}<span className="compras-sub">{i.codigo}</span></> },
+                { titulo: 'Produto', celula: (i) => <CelulaProduto foto={i.foto} nome={i.nome} setor={i.categoria} detalhe={i.codigo} /> },
                 { titulo: 'Quantidade', alinhar: 'direita', celula: (i) => `${i.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} ${i.unidade.toLowerCase()}` },
                 { titulo: 'Preço', alinhar: 'direita', celula: (i) => formatarMoeda(i.precoUnitario) },
                 { titulo: 'Subtotal', alinhar: 'direita', celula: (i) => formatarMoeda(i.subtotal) },

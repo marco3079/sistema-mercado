@@ -46,7 +46,7 @@
   display: inline-block;
   font-size: 0.8rem;
   color: #92400e;
-  background: #fef3c7;
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
   border-radius: 6px;
   padding: 0.1rem 0.4rem;
 }
@@ -399,10 +399,19 @@
 
 .com-pedido-dia-itens {
   margin: 0;
-  padding-left: 1.1rem;
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.45rem;
+}
+
+.com-pedido-dia-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
 }
 
 .com-pedido-dia-rodape {
@@ -663,4 +672,210 @@
   .com-checkout-duplo {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* ---------- Padrão visual com fotos (mercado) ---------- */
+
+.com-identidade {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.com-identidade-linha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.com-check {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--cor-primaria, #2563eb);
+}
+
+.com-item-produto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.com-produto-card-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.com-produto-card-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.com-precos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.com-no-pedido {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #15803d;
+}
+
+/* Carteira: clientes em cartões */
+.com-grade-clientes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.com-cliente-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border: 1px solid var(--cor-borda, #d1d5db);
+  border-radius: var(--raio, 12px);
+  background: var(--cor-superficie, #fff);
+  box-shadow: var(--sombra);
+  min-width: 0;
+}
+
+.com-cliente-card-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.com-cliente-card-rodape {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Loja B2B: vitrine com foto. No celular, lista com barra de carrinho embaixo; no computador, grade com carrinho à direita. */
+.com-b2b-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.com-b2b-produtos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.com-b2b-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border: 1px solid var(--cor-borda, #d1d5db);
+  border-radius: 12px;
+  background: var(--cor-superficie, #fff);
+  min-width: 0;
+}
+
+.com-b2b-foto {
+  width: 72px;
+}
+
+.com-b2b-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.com-b2b-acao {
+  flex: 0 0 auto;
+}
+
+.com-b2b-barra {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 16px;
+  background: var(--cor-superficie, #fff);
+  border-top: 1px solid var(--cor-borda, #d1d5db);
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.com-b2b-barra > div {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 720px) {
+  .com-b2b-produtos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .com-b2b-card {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .com-b2b-foto {
+    width: 100%;
+  }
+}
+
+@media (min-width: 900px) {
+  .com-pub-b2b {
+    max-width: 1120px;
+  }
+
+  .com-b2b-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+    gap: 1.25rem;
+  }
+
+  .com-b2b-layout .com-b2b-carrinho {
+    position: sticky;
+    top: 16px;
+    margin-top: 0;
+  }
+
+  .com-b2b-barra {
+    display: none;
+  }
+}
+
+/* Selo de promoção: no tema escuro, texto claro sobre fundo âmbar translúcido (contraste legível). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema='claro']) .com-promo {
+    color: #fcd34d;
+    background: color-mix(in srgb, #f59e0b 22%, transparent);
+  }
+}
+
+:root[data-tema='escuro'] .com-promo {
+  color: #fcd34d;
+  background: color-mix(in srgb, #f59e0b 22%, transparent);
 }

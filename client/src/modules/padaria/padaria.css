@@ -1,45 +1,19 @@
 /* Padaria: receitas, produção do dia e painel do forno. Só variáveis de ui/estilo.css (funciona no tema escuro). */
 
-/* ---------- Receitas (cartões) ---------- */
+/* ---------- Receitas (cartões com foto, em grade-produtos) ---------- */
 
-.padaria-cartoes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.9rem;
-}
-
-.padaria-cartao {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  width: 100%;
-  padding: 1rem;
-  text-align: left;
-  font: inherit;
-  color: var(--cor-texto);
-  background: var(--cor-superficie);
-  border: 1px solid var(--cor-borda);
-  border-radius: var(--raio);
-}
-
-button.padaria-cartao {
-  cursor: pointer;
-}
-
-button.padaria-cartao:hover {
-  border-color: var(--cor-primaria);
-}
-
-.padaria-cartao-topo {
+.padaria-receita-topo {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
 }
 
-.padaria-cartao-produto {
-  font-weight: 700;
+.padaria-receita-nome {
+  min-width: 0;
   font-size: 1.05rem;
+  overflow-wrap: anywhere;
 }
 
 .padaria-cartao-dados {
@@ -60,8 +34,10 @@ button.padaria-cartao:hover {
   font-variant-numeric: tabular-nums;
 }
 
-.padaria-cartao-tempos,
-.padaria-cartao-rodape {
+.padaria-cartao-tempos {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   margin: 0;
   font-size: 0.85rem;
   color: var(--cor-texto-suave);
@@ -216,8 +192,15 @@ button.padaria-cartao:hover {
 
 .padaria-fornada-topo {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.padaria-fornada-cabeca {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .padaria-fornada-hora {
@@ -246,24 +229,6 @@ button.padaria-cartao:hover {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--cor-perigo);
-}
-
-.padaria-rodape {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 1.2rem;
-  margin-top: 0.9rem;
-  padding: 0.7rem 0.9rem;
-  border-radius: var(--raio-pequeno);
-  background: var(--cor-superficie-2);
-  border: 1px solid var(--cor-borda);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.padaria-rodape .padaria-ajuda {
-  font-weight: 400;
 }
 
 /* ---------- Painel do forno (tablet) ---------- */
@@ -349,6 +314,10 @@ button.padaria-cartao:hover {
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
   color: var(--cor-texto);
+}
+
+.padaria-painel-cartao .foto-produto-preencher {
+  max-width: 220px;
 }
 
 .padaria-painel-cartao .padaria-falta {

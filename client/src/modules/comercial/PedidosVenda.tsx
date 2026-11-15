@@ -6,13 +6,15 @@ import { mensagemErro, ROTULOS_ORIGEM_VENDA } from '../../lib/mercado';
 import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { assinar, rajada } from '../../lib/tempoReal';
 import { useDados } from '../../lib/useDados';
-import { Abas, Aviso, Botao, Carregando, Modal, Pagina, Selo, Tabela, formatarData, formatarMoeda } from '../../ui';
-import type { ColunaTabela } from '../../ui';
-import type { PedidoDetalhe, PedidoLista, StatusPedido } from './tipos';
-import { COR_STATUS_PEDIDO, ROTULO_STATUS_PEDIDO } from './tipos';
+import { Abas, Aviso, Botao, Carregando, MenuAcoes, Modal, Pagina, Selo, Tabela, formatarData, formatarMoeda } from '../../ui';
+import type { AcaoMenu, ColunaTabela } from '../../ui';
+import { FotoProduto } from '../../ui/FotoProduto';
+import type { PedidoDetalhe, PedidoLista } from './tipos';
+import { COR_STATUS_PEDIDO, ROTULO_STATUS_PEDIDO, quantidadeCurta } from './tipos';
 import './comercial.css';
 
 // Pedidos de venda da força de vendas: o gestor aprova, separa e cancela; o vendedor envia e edita os seus.
+// A lista tem uma coluna de ações (menu ⋯) e o detalhe abre ao clicar na linha.
 
 const ABAS: { id: string; rotulo: string }[] = [
   { id: 'todos', rotulo: 'Todos' },
@@ -64,7 +66,7 @@ export function PedidosVenda() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function mudar(pedido: PedidoDetalhe, status: 'PENDENTE' | 'APROVADO' | 'SEPARANDO' | 'CANCELADO') {
+  async function mudar(pedido: { id: number; numero: number }, status: 'PENDENTE' | 'APROVADO' | 'SEPARANDO' | 'CANCELADO') {
     let motivo: string | undefined;
     if (status === 'CANCELADO') {
       if (!window.confirm(`Cancelar o pedido nº ${pedido.numero}?`)) return;
@@ -83,9 +85,42 @@ export function PedidosVenda() {
     }
   }
 
+  // Ações de cada linha: as que fazem sentido para a situação do pedido.
+  function acoesDo(p: PedidoLista): AcaoMenu[] {
+    const acoes: AcaoMenu[] = [{ rotulo: 'Ver detalhes', icone: 'lista', aoClicar: () => setSelecionadoId(p.id) }];
+    if (p.status === 'ORCAMENTO' || p.status === 'PENDENTE') {
+      acoes.push({ rotulo: 'Editar', icone: 'lapis', aoClicar: () => navigate(`${raiz}/pedidos-venda/${p.id}/editar`) });
+    }
+    if (p.status === 'ORCAMENTO') {
+      acoes.push({ rotulo: 'Enviar pedido', icone: 'enviar', aoClicar: () => mudar(p, 'PENDENTE') });
+    }
+    if (gestor && p.status === 'PENDENTE') {
+      acoes.push({ rotulo: 'Aprovar', icone: 'visto', aoClicar: () => mudar(p, 'APROVADO') });
+    }
+    if (gestor && p.status === 'APROVADO') {
+      acoes.push({ rotulo: 'Mandar para separação', icone: 'pacote', aoClicar: () => mudar(p, 'SEPARANDO') });
+    }
+    if (p.status !== 'CANCELADO' && (p.status !== 'FATURADO' || gestor)) {
+      acoes.push({
+        rotulo: p.status === 'FATURADO' ? 'Cancelar venda' : 'Cancelar pedido',
+        icone: 'lixeira',
+        perigo: true,
+        aoClicar: () => mudar(p, 'CANCELADO'),
+      });
+    }
+    return acoes;
+  }
+
   const colunas: ColunaTabela<PedidoLista>[] = [
-    { titulo: 'Pedido', celula: (p) => <strong>nº {p.numero}</strong> },
-    { titulo: 'Cliente', celula: (p) => p.cliente },
+    {
+      titulo: 'Pedido',
+      celula: (p) => (
+        <span className="com-identidade">
+          <strong>Pedido nº {p.numero}</strong>
+          <span className="com-suave">{p.cliente}</span>
+        </span>
+      ),
+    },
     ...(gestor ? [{ titulo: 'Vendedor', celula: (p: PedidoLista) => p.vendedor ?? '—' }] : []),
     {
       titulo: 'Origem',
@@ -95,9 +130,22 @@ export function PedidosVenda() {
       titulo: 'Situação',
       celula: (p) => <Selo cor={COR_STATUS_PEDIDO[p.status]}>{ROTULO_STATUS_PEDIDO[p.status]}</Selo>,
     },
-    { titulo: 'Total', alinhar: 'direita', celula: (p) => formatarMoeda(p.total) },
-    { titulo: 'Flex', alinhar: 'direita', celula: (p) => <span className={classeFlex(p.flex)}>{textoFlex(p.flex)}</span> },
-    { titulo: 'Criado em', celula: (p) => formatarData(p.criadoEm) },
+    { titulo: 'Total', alinhar: 'direita', celula: (p) => <span className="numero">{formatarMoeda(p.total)}</span> },
+    {
+      titulo: 'Flex',
+      alinhar: 'direita',
+      celula: (p) => <span className={`numero ${classeFlex(p.flex)}`}>{textoFlex(p.flex)}</span>,
+    },
+    { titulo: 'Criado em', celula: (p) => <span className="numero">{formatarData(p.criadoEm)}</span> },
+    {
+      titulo: 'Ações',
+      acoes: true,
+      celula: (p) => (
+        <div className="acoes-linha">
+          <MenuAcoes rotulo={`Ações do pedido ${p.numero}`} acoes={acoesDo(p)} />
+        </div>
+      ),
+    },
   ];
 
   const pedido = detalhe.dados;
@@ -121,6 +169,7 @@ export function PedidosVenda() {
       <Abas abas={ABAS} ativa={aba} aoMudar={setAba} />
 
       {erro && <Aviso tipo="erro">{erro}</Aviso>}
+      {erroAcao && selecionadoId === null && <Aviso tipo="erro">{erroAcao}</Aviso>}
       {carregando && !dados ? (
         <Carregando />
       ) : (
@@ -154,13 +203,16 @@ export function PedidosVenda() {
             <div className="com-tabela-itens">
               {pedido.itens.map((i) => (
                 <div key={i.id} className="com-item-linha">
-                  <div>
-                    <strong>{i.produto}</strong>
-                    <div className="com-suave">
-                      {i.quantidade} {i.unidade} × {formatarMoeda(i.precoNegociado)} (tabela {formatarMoeda(i.precoTabela)})
-                    </div>
-                  </div>
-                  <strong>{formatarMoeda(i.total)}</strong>
+                  <span className="com-item-produto">
+                    <FotoProduto foto={i.foto} nome={i.produto} setor={i.categoria} tamanho={44} />
+                    <span className="com-identidade">
+                      <strong>{i.produto}</strong>
+                      <span className="com-suave">
+                        {quantidadeCurta(i.quantidade, i.unidade)} × {formatarMoeda(i.precoNegociado)} (tabela {formatarMoeda(i.precoTabela)})
+                      </span>
+                    </span>
+                  </span>
+                  <strong className="numero">{formatarMoeda(i.total)}</strong>
                 </div>
               ))}
             </div>

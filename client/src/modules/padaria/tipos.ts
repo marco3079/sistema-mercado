@@ -11,12 +11,16 @@ export interface ItemReceitaDTO {
   custoUnitario: number;
   custo: number;
   estoque: number;
+  insumoFoto: string | null;
+  insumoCategoria: string | null;
 }
 
 export interface ReceitaDTO {
   id: number;
   produtoId: number;
   produto: string;
+  foto: string | null;
+  categoria: string | null;
   unidade: string;
   rendimento: number;
   tempoPreparoMin: number | null;
@@ -40,6 +44,8 @@ export interface OrdemDTO {
   id: number;
   produtoId: number;
   produto: string;
+  foto: string | null;
+  categoria: string | null;
   unidade: string;
   receitaId: number;
   quantidadePlanejada: number;
@@ -57,6 +63,8 @@ export interface OrdemDTO {
 export interface SugestaoDTO {
   receitaId: number;
   produto: string;
+  foto: string | null;
+  categoria: string | null;
   mediaVendida: number;
   estoque: number;
   sugerido: number;
@@ -66,6 +74,8 @@ export interface SugestaoDTO {
 export interface ResumoProducaoDTO {
   produtoId: number;
   produto: string;
+  foto: string | null;
+  categoria: string | null;
   unidade: string;
   produzido: number;
   perda: number;
@@ -81,6 +91,8 @@ export interface ProdutoBusca {
   unidade: string;
   precoCusto: number;
   precoVenda: number;
+  foto?: string | null;
+  categoria?: string | null;
   produzido: boolean;
   insumo: boolean;
 }

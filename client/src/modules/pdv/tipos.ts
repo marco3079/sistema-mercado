@@ -58,6 +58,8 @@ export interface ProdutoPdv {
   precoVenda: number;
   precoAtacado: number | null;
   qtdAtacado: number | null;
+  foto: string | null;
+  categoria: string | null;
   estoque: number;
 }
 
@@ -74,6 +76,9 @@ export interface ItemCarrinho {
   unidade: string;
   pesavel: boolean;
   quantidade: number;
+  // Opcionais: rascunhos gravados antes desta versão não têm foto.
+  foto?: string | null;
+  categoria?: string | null;
 }
 
 export interface ItemCalculado {
@@ -144,6 +149,8 @@ export interface DetalheVendaDTO {
     descricao: string;
     quantidade: number;
     unidade: string;
+    foto: string | null;
+    categoria: string | null;
     precoUnitario: number;
     desconto: number;
     total: number;

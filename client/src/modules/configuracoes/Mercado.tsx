@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { api } from '../../lib/api';
 import { lerNumero, mensagemErro } from '../../lib/mercado';
 import { Aviso, Botao, Campo, Caixa, Cartao, Carregando, Grade, Selecao } from '../../ui';
+import '../produtos/etiquetas.css';
 
 // Ajustes do mercado: GET/PUT /configuracoes/mercado. Os tokens nunca voltam; o servidor só diz se estão definidos.
 
@@ -38,6 +39,13 @@ interface MercadoDTO {
   mixFiscalAtivo: boolean;
   iaAtiva: boolean;
   iaChaveDefinida: boolean;
+  etiquetaModo: string;
+  etiquetaLarguraMm: number;
+  etiquetaAlturaMm: number;
+  etiquetaColunas: number;
+  zebraIp: string | null;
+  zebraPorta: number;
+  zebraDpi: number;
 }
 
 // Formulário: números e textos como texto digitado (vírgula decimal); segredos começam vazios.
@@ -73,6 +81,13 @@ interface Formulario {
   mixFiscalAtivo: boolean;
   iaAtiva: boolean;
   iaChave: string;
+  etiquetaModo: string;
+  etiquetaLarguraMm: string;
+  etiquetaAlturaMm: string;
+  etiquetaColunas: string;
+  zebraIp: string;
+  zebraPorta: string;
+  zebraDpi: string;
 }
 
 const OPCOES_PROVEDOR = [
@@ -91,6 +106,25 @@ const OPCOES_AMBIENTE = [
 const OPCOES_MODO_BALANCA = [
   { valor: 'PRECO', rotulo: 'Preço (a etiqueta traz o valor)' },
   { valor: 'PESO', rotulo: 'Peso (a etiqueta traz o peso)' },
+];
+
+const OPCOES_FORMATO_ETIQUETA = [
+  { valor: 'A4', rotulo: 'Folha A4 (pimaco, 3 por linha)' },
+  { valor: 'TERMICA', rotulo: 'Impressora térmica de etiquetas (rolo)' },
+  { valor: 'ZEBRA', rotulo: 'Zebra ZPL pela rede' },
+];
+
+const OPCOES_DPI = [
+  { valor: '203', rotulo: '203 dpi (padrão)' },
+  { valor: '300', rotulo: '300 dpi' },
+];
+
+// Tamanhos comuns de etiqueta (largura × altura em mm).
+const ATALHOS_ETIQUETA = [
+  { largura: 60, altura: 40 },
+  { largura: 50, altura: 30 },
+  { largura: 40, altura: 25 },
+  { largura: 100, altura: 50 },
 ];
 
 // Texto do banco (ou null) para o campo do formulário.
@@ -136,6 +170,13 @@ function formularioDe(d: MercadoDTO): Formulario {
     mixFiscalAtivo: d.mixFiscalAtivo,
     iaAtiva: d.iaAtiva,
     iaChave: '',
+    etiquetaModo: d.etiquetaModo,
+    etiquetaLarguraMm: String(d.etiquetaLarguraMm),
+    etiquetaAlturaMm: String(d.etiquetaAlturaMm),
+    etiquetaColunas: String(d.etiquetaColunas),
+    zebraIp: texto(d.zebraIp),
+    zebraPorta: String(d.zebraPorta),
+    zebraDpi: String(d.zebraDpi),
   };
 }
 
@@ -186,6 +227,13 @@ function corpoDe(f: Formulario) {
     iaAtiva: f.iaAtiva,
     ...(f.whatsappToken.trim() !== '' ? { whatsappToken: f.whatsappToken.trim() } : {}),
     ...(f.iaChave.trim() !== '' ? { iaChave: f.iaChave.trim() } : {}),
+    etiquetaModo: f.etiquetaModo,
+    etiquetaLarguraMm: numeroDe(f.etiquetaLarguraMm, 'Largura da etiqueta'),
+    etiquetaAlturaMm: numeroDe(f.etiquetaAlturaMm, 'Altura da etiqueta'),
+    etiquetaColunas: numeroDe(f.etiquetaColunas, 'Colunas de etiqueta'),
+    zebraIp: textoOuNulo(f.zebraIp),
+    zebraPorta: numeroDe(f.zebraPorta, 'Porta da Zebra'),
+    zebraDpi: numeroDe(f.zebraDpi, 'DPI da Zebra'),
   };
 }
 
@@ -195,6 +243,7 @@ export function Mercado() {
   const [erroCarga, setErroCarga] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'erro' | 'sucesso'; texto: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [testando, setTestando] = useState(false);
 
   useEffect(() => {
     let ativo = true;
@@ -231,6 +280,20 @@ export function Mercado() {
       setAviso({ tipo: 'erro', texto: mensagemErro(err) });
     } finally {
       setOcupado(false);
+    }
+  }
+
+  // Etiqueta de teste: usa o IP já gravado (por isso o aviso pede para salvar antes).
+  async function imprimirTesteZebra() {
+    setAviso(null);
+    setTestando(true);
+    try {
+      await api.post('/impressao/teste');
+      setAviso({ tipo: 'sucesso', texto: 'Etiqueta de teste enviada para a Zebra.' });
+    } catch (err) {
+      setAviso({ tipo: 'erro', texto: mensagemErro(err) });
+    } finally {
+      setTestando(false);
     }
   }
 
@@ -281,6 +344,67 @@ export function Mercado() {
           <p>
             A etiqueta EAN-13 segue o formato 2 PPPPPP VVVVV D: prefixo, PLU do produto, valor (preço ou peso) e
             dígito verificador.
+          </p>
+        </Cartao>
+
+        <Cartao titulo="Impressora de etiquetas">
+          <Selecao
+            rotulo="Formato"
+            valor={form.etiquetaModo}
+            aoMudar={(v) => mudar({ etiquetaModo: v })}
+            opcoes={OPCOES_FORMATO_ETIQUETA}
+          />
+          <div className="etiq-atalhos">
+            {ATALHOS_ETIQUETA.map((a) => (
+              <Botao
+                key={`${a.largura}x${a.altura}`}
+                variante="secundario"
+                aoClicar={() => mudar({ etiquetaLarguraMm: String(a.largura), etiquetaAlturaMm: String(a.altura) })}
+              >
+                {`${a.largura} × ${a.altura} mm`}
+              </Botao>
+            ))}
+          </div>
+          <Campo
+            rotulo="Largura da etiqueta (mm)"
+            valor={form.etiquetaLarguraMm}
+            aoMudar={(v) => mudar({ etiquetaLarguraMm: v })}
+          />
+          <Campo
+            rotulo="Altura da etiqueta (mm)"
+            valor={form.etiquetaAlturaMm}
+            aoMudar={(v) => mudar({ etiquetaAlturaMm: v })}
+          />
+          <Campo
+            rotulo="Etiquetas lado a lado no rolo (1 a 4)"
+            valor={form.etiquetaColunas}
+            aoMudar={(v) => mudar({ etiquetaColunas: v })}
+          />
+          {form.etiquetaModo === 'ZEBRA' && (
+            <>
+              <Campo rotulo="IP da Zebra na rede" valor={form.zebraIp} aoMudar={(v) => mudar({ zebraIp: v })} />
+              <Campo rotulo="Porta" valor={form.zebraPorta} aoMudar={(v) => mudar({ zebraPorta: v })} />
+              <Selecao
+                rotulo="Resolução"
+                valor={form.zebraDpi}
+                aoMudar={(v) => mudar({ zebraDpi: v })}
+                opcoes={OPCOES_DPI}
+              />
+              <div className="etiq-atalhos">
+                <Botao
+                  variante="secundario"
+                  desabilitado={testando || !dto.zebraIp}
+                  aoClicar={imprimirTesteZebra}
+                >
+                  Imprimir teste
+                </Botao>
+              </div>
+              <p>Salve antes de imprimir o teste: ele usa o IP gravado.</p>
+            </>
+          )}
+          <p>
+            Folha A4 e impressora térmica usam a janela de impressão do navegador. O formato escolhido aqui é o padrão
+            da tela de Etiquetas.
           </p>
         </Cartao>
 

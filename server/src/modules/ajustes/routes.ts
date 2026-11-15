@@ -48,6 +48,13 @@ function dtoMercado(c: ConfiguracaoPlataforma) {
     mixFiscalAtivo: c.mixFiscalAtivo,
     iaAtiva: c.iaAtiva,
     iaChaveDefinida: Boolean(c.iaChaveCifrada),
+    etiquetaModo: c.etiquetaModo,
+    etiquetaLarguraMm: c.etiquetaLarguraMm,
+    etiquetaAlturaMm: c.etiquetaAlturaMm,
+    etiquetaColunas: c.etiquetaColunas,
+    zebraIp: c.zebraIp ?? null,
+    zebraPorta: c.zebraPorta,
+    zebraDpi: c.zebraDpi,
   };
 }
 
@@ -99,6 +106,14 @@ const ajusteSchema = z.object({
   mixFiscalAtivo: z.boolean().optional(),
   iaAtiva: z.boolean().optional(),
   iaChave: z.string().nullable().optional(),
+  // Impressão de etiquetas: formato padrão, tamanho em mm, colunas, Zebra (IP, porta, DPI).
+  etiquetaModo: z.enum(['A4', 'TERMICA', 'ZEBRA']).optional(),
+  etiquetaLarguraMm: z.number().int().min(15).max(120).optional(),
+  etiquetaAlturaMm: z.number().int().min(15).max(120).optional(),
+  etiquetaColunas: z.number().int().min(1).max(4).optional(),
+  zebraIp: textoOpcional,
+  zebraPorta: z.number().int().min(1).max(65535).optional(),
+  zebraDpi: z.union([z.literal(203), z.literal(300)]).optional(),
 });
 
 // ---------- Rotas (GESTOR) ----------
@@ -165,6 +180,11 @@ router.get(
       mixFiscalAtivo: c.mixFiscalAtivo,
       fiscalProvedor: c.fiscalProvedor,
       iaAtiva: c.iaAtiva,
+      etiquetaModo: c.etiquetaModo,
+      etiquetaLarguraMm: c.etiquetaLarguraMm,
+      etiquetaAlturaMm: c.etiquetaAlturaMm,
+      etiquetaColunas: c.etiquetaColunas,
+      zebraConfigurada: Boolean(c.zebraIp),
     });
   })
 );

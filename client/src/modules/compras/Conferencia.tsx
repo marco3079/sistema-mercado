@@ -8,6 +8,7 @@ import { formatarQuantidade, hojeIso, lerNumero, mensagemErro } from '../../lib/
 import { useDados } from '../../lib/useDados';
 import { AreaTexto, Aviso, Botao, Caixa, Campo, Carregando, Modal, Pagina, Selecao, Selo, formatarData, formatarMoeda, paraInputData } from '../../ui';
 import { BuscaProduto } from './PedidosCompra';
+import { CelulaProduto } from '../../ui/FotoProduto';
 import { ROTULO_STATUS_RECEBIMENTO } from './tipos';
 import type { ItemNaoAssociado, ItemRecebimentoDTO, ProdutoBuscaDTO, RecebimentoDetalhe } from './tipos';
 
@@ -342,8 +343,7 @@ export function Conferencia() {
                   return (
                     <tr key={item.id} className={divergente ? 'compras-divergente' : undefined}>
                       <td>
-                        {item.nome}
-                        <span className="compras-sub">{item.codigo}</span>
+                        <CelulaProduto foto={item.foto} nome={item.nome} setor={item.categoria} detalhe={item.codigo} />
                       </td>
                       <td className="tabela-alinhar-direita">{formatarQuantidade(item.quantidadeNota, item.unidade.toLowerCase())}</td>
                       <td className="tabela-alinhar-direita">
@@ -441,11 +441,11 @@ export function Conferencia() {
               <table className="tabela">
                 <thead>
                   <tr>
-                    <th scope="col">Atualizar</th>
                     <th scope="col">Produto</th>
                     <th scope="col" className="tabela-alinhar-direita">Venda atual</th>
                     <th scope="col" className="tabela-alinhar-direita">Sugerido</th>
                     <th scope="col" className="tabela-alinhar-direita">Novo preço (R$)</th>
+                    <th scope="col">Atualizar</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -453,18 +453,9 @@ export function Conferencia() {
                     const p = precosVenda[item.produtoId] ?? { marcado: false, preco: numeroParaTexto(item.precoSugerido) };
                     return (
                       <tr key={item.produtoId}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            className="compras-caixa-tabela"
-                            checked={p.marcado}
-                            onChange={(ev) =>
-                              setPrecosVenda((atual) => ({ ...atual, [item.produtoId]: { ...p, marcado: ev.target.checked } }))
-                            }
-                            aria-label={`Atualizar preço de ${item.nome}`}
-                          />
+                                                <td>
+                          <CelulaProduto foto={item.foto} nome={item.nome} setor={item.categoria} tamanho={36} />
                         </td>
-                        <td>{item.nome}</td>
                         <td className="tabela-alinhar-direita">{formatarMoeda(item.precoVendaAtual)}</td>
                         <td className="tabela-alinhar-direita">{formatarMoeda(item.precoSugerido)}</td>
                         <td className="tabela-alinhar-direita">
@@ -476,6 +467,17 @@ export function Conferencia() {
                               setPrecosVenda((atual) => ({ ...atual, [item.produtoId]: { ...p, preco: ev.target.value } }))
                             }
                             aria-label={`Novo preço de ${item.nome}`}
+                          />
+                        </td>
+                                              <td>
+                          <input
+                            type="checkbox"
+                            className="compras-caixa-tabela"
+                            checked={p.marcado}
+                            onChange={(ev) =>
+                              setPrecosVenda((atual) => ({ ...atual, [item.produtoId]: { ...p, marcado: ev.target.checked } }))
+                            }
+                            aria-label={`Atualizar preço de ${item.nome}`}
                           />
                         </td>
                       </tr>

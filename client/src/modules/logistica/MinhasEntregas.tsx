@@ -5,6 +5,7 @@ import { useAtualizacao } from '../../lib/useAtualizacao';
 import { useDados } from '../../lib/useDados';
 import { lerNumero, mensagemErro } from '../../lib/mercado';
 import { Aviso, Botao, Campo, Carregando, Modal, Pagina, Selo, formatarMoeda } from '../../ui';
+import { BarraNivel } from '../../ui/FotoProduto';
 import { COR_ENTREGA, COR_ROTA, ROTULO_ENTREGA, ROTULO_ROTA, linkDoMapa, telefoneParaLink } from './tipos';
 import type { EntregaDTO, RotaDTO } from './tipos';
 
@@ -168,6 +169,19 @@ export function MinhasEntregas() {
               </p>
               {podeIniciar && (
                 <Botao aoClicar={() => setModal({ tipo: 'iniciar' })}>Iniciar rota</Botao>
+              )}
+              {paradas.length > 0 && (
+                <div className="logistica-progresso">
+                  <span className="logistica-suave">
+                    <span className="logistica-numero">{paradas.filter((e) => e.status === 'ENTREGUE').length}</span> de{' '}
+                    {paradas.length} entregas feitas
+                  </span>
+                  <BarraNivel
+                    valor={paradas.filter((e) => e.status === 'ENTREGUE').length}
+                    maximo={paradas.length}
+                    cor="verde"
+                  />
+                </div>
               )}
               {r.status === 'CONCLUIDA' && <p className="logistica-aviso-ok">Rota concluída. Bom trabalho!</p>}
             </section>

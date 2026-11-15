@@ -89,6 +89,8 @@ export interface LucroCategoria {
 export interface LucroProduto {
   produtoId: number;
   produto: string;
+  foto: string | null;
+  categoria: string;
   quantidade: number;
   faturamento: number;
   lucro: number;

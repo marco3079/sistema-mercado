@@ -131,6 +131,7 @@ async function calcVendas(req: Request) {
 interface VendidoProduto {
   codigo: string;
   nome: string;
+  foto: string | null;
   categoria: string;
   quantidade: number;
   fat: number; // centavos
@@ -148,7 +149,7 @@ async function vendidosPorProduto(inicio: Date, fim: Date, loja: number | null):
       quantidade: true,
       total: true,
       custoUnitario: true,
-      produto: { select: { codigo: true, nome: true, categoria: { select: { nome: true } } } },
+      produto: { select: { codigo: true, nome: true, foto: true, categoria: { select: { nome: true } } } },
     },
   });
   const mapa = new Map<number, VendidoProduto>();
@@ -156,6 +157,7 @@ async function vendidosPorProduto(inicio: Date, fim: Date, loja: number | null):
     const a = mapa.get(it.produtoId) ?? {
       codigo: it.produto.codigo,
       nome: it.produto.nome,
+      foto: it.produto.foto ?? null,
       categoria: it.produto.categoria?.nome ?? 'Sem categoria',
       quantidade: 0,
       fat: 0,
@@ -182,7 +184,7 @@ async function calcCurvaAbc(req: Request) {
     const faturamento = reais(a.fat);
     const lucro = reais(a.fat - a.custo);
     const valor = criterio === 'quantidade' ? a.quantidade : criterio === 'lucro' ? lucro : faturamento;
-    return { produtoId, codigo: a.codigo, nome: a.nome, categoria: a.categoria, quantidade: arred3(a.quantidade), faturamento, lucro, valor };
+    return { produtoId, codigo: a.codigo, nome: a.nome, foto: a.foto, categoria: a.categoria, quantidade: arred3(a.quantidade), faturamento, lucro, valor };
   });
   linhas.sort((a, b) => b.valor - a.valor || a.nome.localeCompare(b.nome, 'pt-BR'));
 
@@ -214,12 +216,21 @@ async function calcProdutosParados(req: Request) {
   // Estoque com saldo positivo (soma das lojas quando é "todas").
   const estoques = await prisma.estoqueLoja.findMany({
     where: { quantidade: { gt: 0 }, ...lojaP },
-    select: { produtoId: true, quantidade: true, produto: { select: { nome: true, precoCusto: true } } },
+    select: {
+      produtoId: true,
+      quantidade: true,
+      produto: { select: { nome: true, precoCusto: true, foto: true, categoria: { select: { nome: true } } } },
+    },
   });
-  const estoquePorProduto = new Map<number, { nome: string; custo: number; quantidade: number }>();
+  const estoquePorProduto = new Map<
+    number,
+    { nome: string; foto: string | null; categoria: string | null; custo: number; quantidade: number }
+  >();
   for (const e of estoques) {
     const a = estoquePorProduto.get(e.produtoId) ?? {
       nome: e.produto.nome,
+      foto: e.produto.foto ?? null,
+      categoria: e.produto.categoria?.nome ?? null,
       custo: num(e.produto.precoCusto),
       quantidade: 0,
     };
@@ -264,6 +275,8 @@ async function calcProdutosParados(req: Request) {
       return {
         produtoId: id,
         nome: a.nome,
+        foto: a.foto,
+        categoria: a.categoria,
         estoque: arred3(a.quantidade),
         valorEstoque: reais(centavos(a.quantidade * a.custo)),
         ultimaVenda: ultima === undefined ? null : new Date(ultima).toISOString(),
@@ -277,7 +290,15 @@ async function calcProdutosParados(req: Request) {
 async function calcMargem() {
   const produtos = await prisma.produto.findMany({
     where: { ativo: true, precoCusto: { gt: 0 } },
-    select: { id: true, codigo: true, nome: true, precoCusto: true, precoVenda: true },
+    select: {
+      id: true,
+      codigo: true,
+      nome: true,
+      foto: true,
+      precoCusto: true,
+      precoVenda: true,
+      categoria: { select: { nome: true } },
+    },
   });
   return produtos
     .map((p) => {
@@ -287,6 +308,8 @@ async function calcMargem() {
         produtoId: p.id,
         codigo: p.codigo,
         nome: p.nome,
+        foto: p.foto ?? null,
+        categoria: p.categoria?.nome ?? null,
         custo,
         venda,
         margem: margemSobreVenda(custo, venda),

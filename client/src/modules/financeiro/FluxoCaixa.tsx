@@ -3,6 +3,8 @@ import { useDados } from '../../lib/useDados';
 import { hojeIso } from '../../lib/mercado';
 import { Aviso, Campo, Carregando, Cartao, Pagina, Tabela, formatarData, formatarMoeda } from '../../ui';
 import type { ColunaTabela } from '../../ui';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
 import { GraficoLinha } from '../../layout/GraficoLinha';
 import type { DiaFluxo, FluxoCaixaDTO } from './tipos';
 
@@ -11,13 +13,38 @@ function diaCurto(iso: string): string {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
 
+// Cartão de número do topo (classes .resumo da casca).
+function Indicador({
+  icone,
+  cor,
+  valor,
+  rotulo,
+}: {
+  icone: NomeIcone;
+  cor: 'azul' | 'verde' | 'laranja' | 'roxo' | 'vermelho';
+  valor: string;
+  rotulo: string;
+}) {
+  return (
+    <div className="resumo-item">
+      <span className={`resumo-icone resumo-icone-${cor}`} aria-hidden="true">
+        <Icone nome={icone} tamanho={24} />
+      </span>
+      <div>
+        <span className="resumo-valor">{valor}</span>
+        <span className="resumo-rotulo">{rotulo}</span>
+      </div>
+    </div>
+  );
+}
+
 const colunas: ColunaTabela<DiaFluxo>[] = [
   { titulo: 'Data', celula: (d) => formatarData(d.data) },
-  { titulo: 'Vendas à vista', alinhar: 'direita', celula: (d) => formatarMoeda(d.entradasVendas) },
-  { titulo: 'Recebimentos', alinhar: 'direita', celula: (d) => formatarMoeda(d.entradasLancamentos) },
-  { titulo: 'Saídas', alinhar: 'direita', celula: (d) => formatarMoeda(d.saidas) },
-  { titulo: 'Saldo do dia', alinhar: 'direita', celula: (d) => formatarMoeda(d.saldoDia) },
-  { titulo: 'Saldo acumulado', alinhar: 'direita', celula: (d) => formatarMoeda(d.saldoAcumulado) },
+  { titulo: 'Vendas à vista', alinhar: 'direita', celula: (d) => <span className="numero">{formatarMoeda(d.entradasVendas)}</span> },
+  { titulo: 'Recebimentos', alinhar: 'direita', celula: (d) => <span className="numero">{formatarMoeda(d.entradasLancamentos)}</span> },
+  { titulo: 'Saídas', alinhar: 'direita', celula: (d) => <span className="numero">{formatarMoeda(d.saidas)}</span> },
+  { titulo: 'Saldo do dia', alinhar: 'direita', celula: (d) => <span className="numero">{formatarMoeda(d.saldoDia)}</span> },
+  { titulo: 'Saldo acumulado', alinhar: 'direita', celula: (d) => <span className="numero">{formatarMoeda(d.saldoAcumulado)}</span> },
 ];
 
 // Fluxo de caixa do período: vendas à vista (exceto fiado e boleto), recebimentos e pagamentos efetivos.
@@ -30,9 +57,11 @@ export function FluxoCaixa() {
 
   return (
     <Pagina titulo="Fluxo de caixa">
-      <div className="financeiro-datas financeiro-periodo">
-        <Campo rotulo="De" tipo="date" valor={de} aoMudar={setDe} obrigatorio />
-        <Campo rotulo="Até" tipo="date" valor={ate} aoMudar={setAte} obrigatorio />
+      <div className="barra-ferramentas">
+        <div className="filtros">
+          <Campo rotulo="De" tipo="date" valor={de} aoMudar={setDe} obrigatorio />
+          <Campo rotulo="Até" tipo="date" valor={ate} aoMudar={setAte} obrigatorio />
+        </div>
       </div>
 
       {fluxo.erro && <Aviso tipo="erro">{fluxo.erro}</Aviso>}
@@ -40,38 +69,23 @@ export function FluxoCaixa() {
 
       {dados && (
         <>
-          <div className="financeiro-cartoes">
-            <div className="cartao">
-              <h2 className="cartao-titulo">Entradas no período</h2>
-              <strong>{formatarMoeda(dados.totais.entradas)}</strong>
-            </div>
-            <div className="cartao">
-              <h2 className="cartao-titulo">Saídas no período</h2>
-              <strong>{formatarMoeda(dados.totais.saidas)}</strong>
-            </div>
-            <div className="cartao">
-              <h2 className="cartao-titulo">Saldo do período</h2>
-              <strong>{formatarMoeda(dados.totais.saldo)}</strong>
-            </div>
-            <div className="cartao">
-              <h2 className="cartao-titulo">Previsto nos próximos 30 dias</h2>
-              <p className="financeiro-detalhe">A receber: {formatarMoeda(dados.previsto.receber)}</p>
-              <p className="financeiro-detalhe">A pagar: {formatarMoeda(dados.previsto.pagar)}</p>
-              <strong>{formatarMoeda(dados.previsto.saldo)}</strong>
-            </div>
+          <div className="resumo">
+            <Indicador icone="dinheiro" cor="verde" valor={formatarMoeda(dados.totais.entradas)} rotulo="Entradas no período" />
+            <Indicador icone="transferir" cor="laranja" valor={formatarMoeda(dados.totais.saidas)} rotulo="Saídas no período" />
+            <Indicador icone="grafico" cor="azul" valor={formatarMoeda(dados.totais.saldo)} rotulo="Saldo do período" />
+            <Indicador icone="relogio" cor="roxo" valor={formatarMoeda(dados.previsto.saldo)} rotulo="Previsto para 30 dias" />
           </div>
+          <p className="financeiro-nota">
+            Nos próximos 30 dias: a receber {formatarMoeda(dados.previsto.receber)}, a pagar{' '}
+            {formatarMoeda(dados.previsto.pagar)}.
+          </p>
 
           <Cartao titulo="Saldo acumulado">
             <GraficoLinha pontos={dados.dias.map((d) => ({ rotulo: diaCurto(d.data), valor: d.saldoAcumulado }))} />
           </Cartao>
 
           <Cartao titulo="Dia a dia">
-            <Tabela
-              colunas={colunas}
-              dados={dados.dias}
-              chave={(d) => d.data}
-              vazio="Nenhum dia no período."
-            />
+            <Tabela colunas={colunas} dados={dados.dias} chave={(d) => d.data} vazio="Nenhum dia no período." />
           </Cartao>
         </>
       )}

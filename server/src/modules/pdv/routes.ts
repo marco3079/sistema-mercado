@@ -279,10 +279,15 @@ interface ProdutoPdv {
   precoVenda: number;
   precoAtacado: number | null;
   qtdAtacado: number | null;
+  foto: string | null;
+  categoria: string | null;
   estoque: number;
 }
 
-function dtoProduto(p: Produto, estoque: number): ProdutoPdv {
+// Produto com o nome da categoria (include categoria: { select: { nome: true } }).
+type ProdutoComCategoria = Produto & { categoria?: { nome: string } | null };
+
+function dtoProduto(p: ProdutoComCategoria, estoque: number): ProdutoPdv {
   return {
     id: p.id,
     codigo: p.codigo,
@@ -293,6 +298,8 @@ function dtoProduto(p: Produto, estoque: number): ProdutoPdv {
     precoVenda: num(p.precoVenda),
     precoAtacado: p.precoAtacado === null ? null : num(p.precoAtacado),
     qtdAtacado: p.qtdAtacado === null ? null : num(p.qtdAtacado),
+    foto: p.foto ?? null,
+    categoria: p.categoria?.nome ?? null,
     estoque,
   };
 }
@@ -311,7 +318,12 @@ router.get(
         { ean: { contains: busca } },
       ];
     }
-    const produtos = await prisma.produto.findMany({ where, orderBy: { nome: 'asc' }, take: 30 });
+    const produtos = await prisma.produto.findMany({
+      where,
+      orderBy: { nome: 'asc' },
+      take: 30,
+      include: { categoria: { select: { nome: true } } },
+    });
     const saldos = produtos.length
       ? await prisma.estoqueLoja.findMany({ where: { lojaId, produtoId: { in: produtos.map((p) => p.id) } } })
       : [];
@@ -344,10 +356,13 @@ router.post(
       codigo = prefixado[2].trim();
     }
 
-    let produto: Produto | null = null;
+    let produto: ProdutoComCategoria | null = null;
     const balanca = lerEtiquetaBalanca(codigo, config.balancaPrefixo, config.balancaModo);
     if (balanca) {
-      produto = await prisma.produto.findFirst({ where: { codigoBalanca: balanca.plu, ativo: true, insumo: false } });
+      produto = await prisma.produto.findFirst({
+        where: { codigoBalanca: balanca.plu, ativo: true, insumo: false },
+        include: { categoria: { select: { nome: true } } },
+      });
       if (produto) {
         if (balanca.modo === 'PRECO') {
           const preco = num(produto.precoVenda);
@@ -362,6 +377,7 @@ router.post(
     if (!produto) {
       produto = await prisma.produto.findFirst({
         where: { ativo: true, insumo: false, OR: [{ ean: codigo }, { codigo }] },
+        include: { categoria: { select: { nome: true } } },
       });
     }
     if (!produto) throw new HttpError(404, 'Produto não encontrado');
@@ -598,7 +614,10 @@ async function buscarVenda(id: number) {
       cliente: { select: { id: true, nome: true, cpfCnpj: true } },
       itens: {
         orderBy: { id: 'asc' },
-        include: { produto: { select: { unidade: true } }, promocao: { select: { nome: true } } },
+        include: {
+          produto: { select: { unidade: true, foto: true, categoria: { select: { nome: true } } } },
+          promocao: { select: { nome: true } },
+        },
       },
       pagamentos: { orderBy: { id: 'asc' }, select: { forma: true, valor: true, parcelas: true } },
       notas: { orderBy: { id: 'asc' }, select: { id: true, modelo: true, numero: true, serie: true, chave: true, status: true, xml: true } },
@@ -637,6 +656,8 @@ function dtoDetalhe(v: VendaCompleta) {
       descricao: i.descricao,
       quantidade: num(i.quantidade),
       unidade: i.produto.unidade,
+      foto: i.produto.foto ?? null,
+      categoria: i.produto.categoria?.nome ?? null,
       precoUnitario: num(i.precoUnitario),
       desconto: num(i.desconto),
       total: num(i.total),

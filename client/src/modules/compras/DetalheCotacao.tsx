@@ -6,6 +6,8 @@ import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { lerNumero, mensagemErro } from '../../lib/mercado';
 import { useDados } from '../../lib/useDados';
 import { Aviso, Botao, Carregando, Modal, Pagina, Selecao, Selo, formatarMoeda } from '../../ui';
+import { CelulaProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 import { ROTULO_STATUS_COTACAO } from './tipos';
 import type { CotacaoDetalhe, RetornoRascunho } from './tipos';
 
@@ -93,10 +95,36 @@ export function DetalheCotacao() {
     >
       {mensagem && <Aviso tipo={mensagem.tipo === 'erro' ? 'erro' : 'sucesso'}>{mensagem.texto}</Aviso>}
 
-      <div className="compras-acumulado">
-        {dados.prazo && <span>Responder até: <strong>{new Date(dados.prazo).toLocaleDateString('pt-BR')}</strong></span>}
-        <span>Produtos: <strong>{dados.itens.length}</strong></span>
-        <span>Respostas: <strong>{dados.fornecedores.filter((f) => f.respondidoEm).length} de {dados.fornecedores.length}</strong></span>
+      <div className="resumo">
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-azul">
+            <Icone nome="calendario" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{dados.prazo ? new Date(dados.prazo).toLocaleDateString('pt-BR') : '—'}</span>
+            <span className="resumo-rotulo">Responder até</span>
+          </div>
+        </div>
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-roxo">
+            <Icone nome="pacote" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">{dados.itens.length}</span>
+            <span className="resumo-rotulo">Produtos</span>
+          </div>
+        </div>
+        <div className="resumo-item">
+          <span className="resumo-icone resumo-icone-verde">
+            <Icone nome="visto" tamanho={24} />
+          </span>
+          <div>
+            <span className="resumo-valor">
+              {dados.fornecedores.filter((f) => f.respondidoEm).length} de {dados.fornecedores.length}
+            </span>
+            <span className="resumo-rotulo">Fornecedores responderam</span>
+          </div>
+        </div>
       </div>
 
       {pedidos && pedidos.length > 0 && (
@@ -184,7 +212,9 @@ export function DetalheCotacao() {
               <tbody>
                 {dados.itens.map((item) => (
                   <tr key={item.produtoId}>
-                    <td>{item.nome}</td>
+                    <td>
+                      <CelulaProduto foto={item.foto} nome={item.nome} setor={item.categoria} tamanho={36} />
+                    </td>
                     <td className="compras-numero">
                       {item.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} {item.unidade.toLowerCase()}
                     </td>
@@ -299,7 +329,9 @@ function RespostaManual({ cotacao, aoSalvar }: { cotacao: CotacaoDetalhe; aoSalv
           <tbody>
             {cotacao.itens.map((item) => (
               <tr key={item.produtoId}>
-                <td>{item.nome}</td>
+                <td>
+                  <CelulaProduto foto={item.foto} nome={item.nome} setor={item.categoria} tamanho={36} />
+                </td>
                 <td className="tabela-alinhar-direita">
                   <input
                     className="compras-input compras-input-curto"

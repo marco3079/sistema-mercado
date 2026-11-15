@@ -10,6 +10,7 @@ import {
   Botao,
   Campo,
   Carregando,
+  Cartao,
   MenuAcoes,
   Modal,
   Pagina,
@@ -19,6 +20,7 @@ import {
   formatarMoeda,
 } from '../../ui';
 import type { AcaoMenu, ColunaTabela } from '../../ui';
+import { BarraNivel, CelulaProduto } from '../../ui/FotoProduto';
 import { Icone } from '../../ui/icones';
 import type { NomeIcone } from '../../ui/icones';
 import { MOTIVOS_PERDA, ROTULOS_MOTIVO_PERDA, queryString } from './tipos';
@@ -39,6 +41,14 @@ const COR_SITUACAO: Record<SituacaoEstoque, 'verde' | 'amarelo' | 'vermelho' | '
   ok: 'verde',
 };
 
+// Cor da barra de nível: sem saldo em vermelho, abaixo do mínimo em amarelo, normal em verde.
+const COR_BARRA: Record<SituacaoEstoque, 'verde' | 'amarelo' | 'vermelho'> = {
+  negativo: 'vermelho',
+  zerado: 'vermelho',
+  abaixo_minimo: 'amarelo',
+  ok: 'verde',
+};
+
 const OPCOES_SITUACAO = [
   { valor: 'abaixo_minimo', rotulo: 'Abaixo do mínimo' },
   { valor: 'zerado', rotulo: 'Zerado' },
@@ -50,6 +60,11 @@ const OPCOES_MOTIVO = MOTIVOS_PERDA.map((m) => ({ valor: m, rotulo: ROTULOS_MOTI
 // Ajuste e perda: só o gestor e o estoquista lançam. Os outros perfis só consultam.
 function podeLancar(perfil: string | undefined): boolean {
   return perfil === 'GESTOR' || perfil === 'ESTOQUISTA';
+}
+
+// Barra de nível: saldo contra o maior entre o máximo e três vezes o mínimo (1 se ambos forem zero).
+function metaDaBarra(item: ItemEstoque): number {
+  return Math.max(item.estoqueMaximo ?? 0, item.estoqueMinimo * 3, 1);
 }
 
 type Janela = { tipo: 'ajuste'; item: ItemEstoque } | { tipo: 'perda'; item: ItemEstoque } | null;
@@ -188,6 +203,7 @@ export function Estoque() {
   const { usuario } = useAuth();
   const navegar = useNavigate();
   const lanca = podeLancar(usuario?.perfil);
+  const raiz = RAIZ_DO_PERFIL[usuario?.perfil ?? 'GESTOR'];
 
   const [busca, setBusca] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
@@ -198,41 +214,50 @@ export function Estoque() {
   const caminho = `/estoque${queryString({ busca: busca.trim(), categoriaId, situacao })}`;
   const { dados, carregando, erro, recarregar } = useDados<RespostaEstoque>(caminho);
 
-  function ver(item: ItemEstoque) {
-    navegar(`${RAIZ_DO_PERFIL[usuario?.perfil ?? 'GESTOR']}/movimentacoes?produtoId=${item.produtoId}`);
-  }
-
   function acoesDe(item: ItemEstoque): AcaoMenu[] {
-    const acoes: AcaoMenu[] = [
-      { rotulo: 'Ajustar saldo', icone: 'lapis', aoClicar: () => setJanela({ tipo: 'ajuste', item }) },
+    return [
       { rotulo: 'Lançar perda', icone: 'lixeira', perigo: true, aoClicar: () => setJanela({ tipo: 'perda', item }) },
+      { rotulo: 'Ver movimentos', icone: 'transferir', aoClicar: () => navegar(`${raiz}/movimentacoes?produtoId=${item.produtoId}`) },
+      { rotulo: 'Cadastrar lote', icone: 'validade', aoClicar: () => navegar(`${raiz}/validade?cadastrar=${item.produtoId}`) },
     ];
-    acoes.push({ rotulo: 'Ver movimentos', icone: 'transferir', aoClicar: () => ver(item) });
-    return acoes;
   }
 
   const colunas: ColunaTabela<ItemEstoque>[] = [
-    { titulo: 'Código', celula: (i) => i.codigo },
-    { titulo: 'Produto', celula: (i) => i.nome },
+    {
+      titulo: 'Produto',
+      celula: (i) => (
+        <CelulaProduto foto={i.foto} nome={i.nome} setor={i.categoria} detalhe={`${i.codigo} · ${i.ean ?? 'sem EAN'}`} />
+      ),
+    },
     { titulo: 'Categoria', celula: (i) => i.categoria ?? '—' },
     {
       titulo: 'Quantidade',
       alinhar: 'direita',
       celula: (i) => (
-        <span className={i.quantidade < 0 ? 'estoque-numero-negativo' : undefined}>
-          {formatarQuantidade(i.quantidade, i.unidade)}
-        </span>
+        <div className="estoque-quantidade">
+          <span className={`numero${i.quantidade < 0 ? ' estoque-numero-negativo' : ''}`}>
+            {formatarQuantidade(i.quantidade, i.unidade)}
+          </span>
+          <BarraNivel valor={Math.max(0, i.quantidade)} maximo={metaDaBarra(i)} cor={COR_BARRA[i.situacao]} />
+        </div>
       ),
     },
-    { titulo: 'Mínimo', alinhar: 'direita', celula: (i) => formatarQuantidade(i.estoqueMinimo, i.unidade) },
-    { titulo: 'Valor em estoque', alinhar: 'direita', celula: (i) => formatarMoeda(i.valorEstoque) },
+    { titulo: 'Mínimo', alinhar: 'direita', celula: (i) => <span className="numero">{formatarQuantidade(i.estoqueMinimo, i.unidade)}</span> },
+    { titulo: 'Valor em estoque', alinhar: 'direita', celula: (i) => <span className="numero">{formatarMoeda(i.valorEstoque)}</span> },
     { titulo: 'Situação', celula: (i) => <Selo cor={COR_SITUACAO[i.situacao]}>{ROTULOS_SITUACAO[i.situacao]}</Selo> },
   ];
   if (lanca) {
     colunas.push({
       titulo: 'Ações',
       acoes: true,
-      celula: (i) => <MenuAcoes acoes={acoesDe(i)} rotulo={`Ações de ${i.nome}`} />,
+      celula: (i) => (
+        <div className="acoes-linha">
+          <Botao variante="secundario" aoClicar={() => setJanela({ tipo: 'ajuste', item: i })}>
+            Ajustar
+          </Botao>
+          <MenuAcoes acoes={acoesDe(i)} rotulo={`Mais ações de ${i.nome}`} />
+        </div>
+      ),
     });
   }
 
@@ -248,19 +273,30 @@ export function Estoque() {
 
       {dados && <Resumo {...dados.resumo} />}
 
-      <div className="barra-ferramentas">
-        <div className="filtros">
-          <Campo rotulo="Buscar" valor={busca} aoMudar={setBusca} />
-          <Selecao
-            rotulo="Categoria"
-            valor={categoriaId}
-            aoMudar={setCategoriaId}
-            opcoes={(categorias.dados ?? []).map((c) => ({ valor: String(c.id), rotulo: c.nome }))}
-            vazio="Todas"
-          />
-          <Selecao rotulo="Situação" valor={situacao} aoMudar={setSituacao} opcoes={OPCOES_SITUACAO} vazio="Todas" />
+      <Cartao>
+        <div className="barra-ferramentas">
+          <div className="filtros">
+            <label className="campo estoque-filtro-busca">
+              <span className="campo-rotulo">Buscar</span>
+              <input
+                className="campo-controle"
+                type="search"
+                placeholder="Buscar por nome, código ou EAN"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </label>
+            <Selecao
+              rotulo="Categoria"
+              valor={categoriaId}
+              aoMudar={setCategoriaId}
+              opcoes={(categorias.dados ?? []).map((c) => ({ valor: String(c.id), rotulo: c.nome }))}
+              vazio="Todas"
+            />
+            <Selecao rotulo="Situação" valor={situacao} aoMudar={setSituacao} opcoes={OPCOES_SITUACAO} vazio="Todas" />
+          </div>
         </div>
-      </div>
+      </Cartao>
 
       {dados && (
         <Tabela

@@ -1,20 +1,14 @@
 /* Financeiro, fluxo de caixa e Meu Lucro. Cores só por variáveis da casca, para funcionar no tema escuro e no celular. */
 
-.financeiro-periodo {
-  margin-bottom: 16px;
+/* Busca mais larga que as datas. No celular, uma coluna só (regra .filtros da casca). */
+.financeiro-barra > .filtros {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
-.financeiro-datas {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.financeiro-filtros {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
-  gap: 12px;
-  margin: 16px 0 6px;
+@media (max-width: 519px) {
+  .financeiro-barra > .filtros {
+    grid-template-columns: 1fr;
+  }
 }
 
 .financeiro-linha {
@@ -30,7 +24,6 @@
 }
 
 @media (max-width: 420px) {
-  .financeiro-datas,
   .financeiro-linha {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -51,24 +44,6 @@
 .financeiro-vencido {
   color: var(--cor-perigo);
   font-weight: 600;
-}
-
-.financeiro-cartoes {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.financeiro-cartoes .cartao strong {
-  display: block;
-  font-size: 1.5rem;
-  margin: 4px 0;
-  overflow-wrap: anywhere;
-}
-
-.financeiro-cartoes .cartao p {
-  margin: 2px 0;
 }
 
 .financeiro-texto {
@@ -174,40 +149,5 @@
   background: var(--cor-superficie-2);
   font-family: ui-monospace, Consolas, monospace;
   font-size: 0.9rem;
-  overflow-wrap: anywhere;
-}
-
-/* ---------- Meu Lucro ---------- */
-
-.lucro-destaques {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-  gap: 12px;
-  margin: 16px 0;
-}
-
-.lucro-cartao {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px;
-  min-width: 0;
-  border: 1px solid var(--cor-borda);
-  border-radius: var(--raio);
-  background: var(--cor-superficie);
-}
-
-.lucro-cartao-destaque {
-  border-color: var(--cor-primaria);
-  background: var(--cor-primaria-suave);
-}
-
-.lucro-rotulo {
-  font-size: 0.85rem;
-  color: var(--cor-texto-suave);
-}
-
-.lucro-valor {
-  font-size: 1.6rem;
   overflow-wrap: anywhere;
 }

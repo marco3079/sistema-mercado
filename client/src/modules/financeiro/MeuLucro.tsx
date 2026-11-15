@@ -3,6 +3,9 @@ import { useDados } from '../../lib/useDados';
 import { formatarPercentual, hojeIso } from '../../lib/mercado';
 import { Abas, Aviso, Campo, Carregando, Cartao, Pagina, Tabela, formatarMoeda } from '../../ui';
 import type { ColunaTabela } from '../../ui';
+import { CelulaProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
 import { GraficoLinha } from '../../layout/GraficoLinha';
 import type { LucroCategoria, LucroDTO, LucroProduto } from './tipos';
 
@@ -27,20 +30,52 @@ function intervaloDo(atalho: Atalho, de: string, ate: string): { de: string; ate
   return { de, ate };
 }
 
+// Cartão de número do topo (classes .resumo da casca).
+function Indicador({
+  icone,
+  cor,
+  valor,
+  rotulo,
+}: {
+  icone: NomeIcone;
+  cor: 'azul' | 'verde' | 'laranja' | 'roxo' | 'vermelho';
+  valor: string;
+  rotulo: string;
+}) {
+  return (
+    <div className="resumo-item">
+      <span className={`resumo-icone resumo-icone-${cor}`} aria-hidden="true">
+        <Icone nome={icone} tamanho={24} />
+      </span>
+      <div>
+        <span className="resumo-valor">{valor}</span>
+        <span className="resumo-rotulo">{rotulo}</span>
+      </div>
+    </div>
+  );
+}
+
 const colunasCategoria: ColunaTabela<LucroCategoria>[] = [
   { titulo: 'Categoria', celula: (c) => c.categoria },
-  { titulo: 'Faturamento', alinhar: 'direita', celula: (c) => formatarMoeda(c.faturamento) },
-  { titulo: 'Custo', alinhar: 'direita', celula: (c) => formatarMoeda(c.custo) },
-  { titulo: 'Lucro', alinhar: 'direita', celula: (c) => formatarMoeda(c.lucro) },
-  { titulo: 'Margem', alinhar: 'direita', celula: (c) => formatarPercentual(c.margem) },
+  { titulo: 'Faturamento', alinhar: 'direita', celula: (c) => <span className="numero">{formatarMoeda(c.faturamento)}</span> },
+  { titulo: 'Custo', alinhar: 'direita', celula: (c) => <span className="numero">{formatarMoeda(c.custo)}</span> },
+  { titulo: 'Lucro', alinhar: 'direita', celula: (c) => <span className="numero">{formatarMoeda(c.lucro)}</span> },
+  { titulo: 'Margem', alinhar: 'direita', celula: (c) => <span className="numero">{formatarPercentual(c.margem)}</span> },
 ];
 
 const colunasProduto: ColunaTabela<LucroProduto>[] = [
-  { titulo: 'Produto', celula: (p) => p.produto },
-  { titulo: 'Qtd.', alinhar: 'direita', celula: (p) => p.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 3 }) },
-  { titulo: 'Faturamento', alinhar: 'direita', celula: (p) => formatarMoeda(p.faturamento) },
-  { titulo: 'Lucro', alinhar: 'direita', celula: (p) => formatarMoeda(p.lucro) },
-  { titulo: 'Margem', alinhar: 'direita', celula: (p) => formatarPercentual(p.margem) },
+  {
+    titulo: 'Produto',
+    celula: (p) => <CelulaProduto foto={p.foto} nome={p.produto} setor={p.categoria} detalhe={p.categoria} />,
+  },
+  {
+    titulo: 'Qtd.',
+    alinhar: 'direita',
+    celula: (p) => <span className="numero">{p.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 3 })}</span>,
+  },
+  { titulo: 'Faturamento', alinhar: 'direita', celula: (p) => <span className="numero">{formatarMoeda(p.faturamento)}</span> },
+  { titulo: 'Lucro', alinhar: 'direita', celula: (p) => <span className="numero">{formatarMoeda(p.lucro)}</span> },
+  { titulo: 'Margem', alinhar: 'direita', celula: (p) => <span className="numero">{formatarPercentual(p.margem)}</span> },
 ];
 
 // Meu Lucro (só GESTOR): faturamento, custo, lucro bruto e líquido do período.
@@ -66,9 +101,11 @@ export function MeuLucro() {
         aoMudar={(id) => setAtalho(id as Atalho)}
       />
       {atalho === 'personalizado' && (
-        <div className="financeiro-datas financeiro-periodo">
-          <Campo rotulo="De" tipo="date" valor={deManual} aoMudar={setDeManual} obrigatorio />
-          <Campo rotulo="Até" tipo="date" valor={ateManual} aoMudar={setAteManual} obrigatorio />
+        <div className="barra-ferramentas">
+          <div className="filtros">
+            <Campo rotulo="De" tipo="date" valor={deManual} aoMudar={setDeManual} obrigatorio />
+            <Campo rotulo="Até" tipo="date" valor={ateManual} aoMudar={setAteManual} obrigatorio />
+          </div>
         </div>
       )}
 
@@ -77,49 +114,35 @@ export function MeuLucro() {
 
       {dados && (
         <>
-          <div className="lucro-destaques">
-            <div className="lucro-cartao">
-              <span className="lucro-rotulo">Faturamento</span>
-              <strong className="lucro-valor">{formatarMoeda(dados.faturamento)}</strong>
-              <span className="financeiro-detalhe">Vendas concluídas do período</span>
-            </div>
-            <div className="lucro-cartao">
-              <span className="lucro-rotulo">Custo das mercadorias</span>
-              <strong className="lucro-valor">{formatarMoeda(dados.custoMercadorias)}</strong>
-              <span className="financeiro-detalhe">CMV das vendas</span>
-            </div>
-            <div className="lucro-cartao">
-              <span className="lucro-rotulo">Lucro bruto</span>
-              <strong className="lucro-valor">{formatarMoeda(dados.lucroBruto)}</strong>
-              <span className="financeiro-detalhe">Margem {formatarPercentual(dados.margemBruta)}</span>
-            </div>
+          <div className="resumo">
+            <Indicador icone="dinheiro" cor="azul" valor={formatarMoeda(dados.faturamento)} rotulo="Faturamento" />
+            <Indicador icone="transferir" cor="laranja" valor={formatarMoeda(dados.custoMercadorias)} rotulo="Custo das mercadorias" />
+            <Indicador
+              icone="grafico"
+              cor="verde"
+              valor={formatarMoeda(dados.lucroBruto)}
+              rotulo={`Lucro bruto · margem ${formatarPercentual(dados.margemBruta)}`}
+            />
+            <Indicador
+              icone="estrela"
+              cor="roxo"
+              valor={formatarMoeda(dados.lucroLiquido)}
+              rotulo={`Lucro líquido · margem ${formatarPercentual(dados.margemLiquida)}`}
+            />
           </div>
-
-          <div className="lucro-destaques">
-            <div className="lucro-cartao">
-              <span className="lucro-rotulo">Despesas pagas</span>
-              <strong className="lucro-valor">{formatarMoeda(dados.despesas)}</strong>
-              <span className="financeiro-detalhe">Sem compras (já estão no custo)</span>
-            </div>
-            <div className="lucro-cartao">
-              <span className="lucro-rotulo">Perdas</span>
-              <strong className="lucro-valor">{formatarMoeda(dados.perdas)}</strong>
-              <span className="financeiro-detalhe">Vencido, quebra e avaria</span>
-            </div>
-            <div className="lucro-cartao">
-              <span className="lucro-rotulo">Bonificações</span>
-              <strong className="lucro-valor">{formatarMoeda(dados.bonificacoes)}</strong>
-              <span className="financeiro-detalhe">Da indústria, já recebidas</span>
-            </div>
-            <div className="lucro-cartao lucro-cartao-destaque">
-              <span className="lucro-rotulo">Lucro líquido</span>
-              <strong className="lucro-valor">{formatarMoeda(dados.lucroLiquido)}</strong>
-              <span className="financeiro-detalhe">Margem {formatarPercentual(dados.margemLiquida)}</span>
-            </div>
+          <div className="resumo">
+            <Indicador icone="dinheiro" cor="vermelho" valor={formatarMoeda(dados.despesas)} rotulo="Despesas pagas" />
+            <Indicador icone="relogio" cor="laranja" valor={formatarMoeda(dados.perdas)} rotulo="Perdas" />
+            <Indicador icone="visto" cor="verde" valor={formatarMoeda(dados.bonificacoes)} rotulo="Bonificações" />
           </div>
+          <p className="financeiro-nota">
+            Despesas sem compras (já estão no custo). Perdas: vencido, quebra e avaria. Bonificações: da indústria, já recebidas.
+          </p>
 
           <Cartao titulo="Lucro bruto por dia">
-            <GraficoLinha pontos={dados.porDia.map((d) => ({ rotulo: `${d.data.slice(8, 10)}/${d.data.slice(5, 7)}`, valor: d.lucroBruto }))} />
+            <GraficoLinha
+              pontos={dados.porDia.map((d) => ({ rotulo: `${d.data.slice(8, 10)}/${d.data.slice(5, 7)}`, valor: d.lucroBruto }))}
+            />
           </Cartao>
 
           <Cartao titulo="Por categoria">

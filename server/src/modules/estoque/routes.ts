@@ -90,6 +90,7 @@ router.get(
         precoCusto: true,
         estoqueMinimo: true,
         estoqueMaximo: true,
+        foto: true,
         categoria: { select: { nome: true } },
         estoques: { where: { lojaId }, select: { quantidade: true } },
       },
@@ -107,6 +108,7 @@ router.get(
         unidade: p.unidade,
         categoriaId: p.categoriaId,
         categoria: p.categoria?.nome ?? null,
+        foto: p.foto ?? null,
         quantidade,
         estoqueMinimo: minimo,
         estoqueMaximo: numOuNull(p.estoqueMaximo),
@@ -162,7 +164,7 @@ router.get(
       orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }],
       take: 500,
       include: {
-        produto: { select: { nome: true, unidade: true } },
+        produto: { select: { nome: true, unidade: true, foto: true, categoria: { select: { nome: true } } } },
         usuario: { select: { nome: true } },
       },
     });
@@ -174,6 +176,8 @@ router.get(
         produtoId: m.produtoId,
         produto: m.produto.nome,
         unidade: m.produto.unidade,
+        foto: m.produto.foto ?? null,
+        categoria: m.produto.categoria?.nome ?? null,
         tipo: m.tipo,
         quantidade: num(m.quantidade),
         saldoApos: num(m.saldoApos),
@@ -273,7 +277,18 @@ router.get(
     const perdas = await prisma.movimentoEstoque.findMany({
       where: { lojaId, tipo: 'PERDA', criadoEm: { gte: inicio, lte: fim } },
       orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }],
-      include: { produto: { select: { nome: true, unidade: true } } },
+      include: {
+        produto: {
+          select: {
+            nome: true,
+            unidade: true,
+            codigo: true,
+            ean: true,
+            foto: true,
+            categoria: { select: { nome: true } },
+          },
+        },
+      },
     });
 
     const itens = perdas.map((p) => {
@@ -281,6 +296,10 @@ router.get(
       return {
         data: p.criadoEm.toISOString(),
         produto: p.produto.nome,
+        codigo: p.produto.codigo,
+        ean: p.produto.ean,
+        foto: p.produto.foto ?? null,
+        categoria: p.produto.categoria?.nome ?? null,
         quantidade,
         unidade: p.produto.unidade,
         motivo: p.motivo ?? '',
@@ -318,7 +337,11 @@ router.get(
     const lotes = await prisma.lote.findMany({
       where: { lojaId, quantidade: { gt: 0 } },
       orderBy: [{ validade: 'asc' }, { id: 'asc' }],
-      include: { produto: { select: { nome: true, unidade: true, precoCusto: true } } },
+      include: {
+        produto: {
+          select: { nome: true, unidade: true, precoCusto: true, foto: true, categoria: { select: { nome: true } } },
+        },
+      },
     });
 
     const linhas = lotes.map((l) => {
@@ -327,6 +350,8 @@ router.get(
         id: l.id,
         produtoId: l.produtoId,
         produto: l.produto.nome,
+        foto: l.produto.foto ?? null,
+        categoria: l.produto.categoria?.nome ?? null,
         codigo: l.codigo,
         validade: l.validade.toISOString(),
         quantidade,
@@ -447,7 +472,15 @@ interface ItemComProduto {
   quantidadeSistema: Prisma.Decimal;
   quantidadeContada: Prisma.Decimal | null;
   contadoEm: Date | null;
-  produto: { codigo: string; ean: string | null; nome: string; unidade: string; precoCusto: Prisma.Decimal };
+  produto: {
+    codigo: string;
+    ean: string | null;
+    nome: string;
+    unidade: string;
+    precoCusto: Prisma.Decimal;
+    foto: string | null;
+    categoria: { nome: string } | null;
+  };
 }
 
 function itemDoInventario(item: ItemComProduto) {
@@ -461,6 +494,8 @@ function itemDoInventario(item: ItemComProduto) {
     ean: item.produto.ean,
     nome: item.produto.nome,
     unidade: item.produto.unidade,
+    foto: item.produto.foto ?? null,
+    categoria: item.produto.categoria?.nome ?? null,
     quantidadeSistema: sistema,
     quantidadeContada: contada,
     diferenca,
@@ -555,7 +590,19 @@ router.get(
       where: { id, lojaId },
       include: {
         itens: {
-          include: { produto: { select: { codigo: true, ean: true, nome: true, unidade: true, precoCusto: true } } },
+          include: {
+            produto: {
+              select: {
+                codigo: true,
+                ean: true,
+                nome: true,
+                unidade: true,
+                precoCusto: true,
+                foto: true,
+                categoria: { select: { nome: true } },
+              },
+            },
+          },
         },
       },
     });
@@ -624,7 +671,17 @@ router.put(
         where: { id: atual.id },
         data: { quantidadeContada: contada, contadoEm: new Date(), contadoPorId: req.usuario.id },
         include: {
-          produto: { select: { codigo: true, ean: true, nome: true, unidade: true, precoCusto: true } },
+          produto: {
+            select: {
+              codigo: true,
+              ean: true,
+              nome: true,
+              unidade: true,
+              precoCusto: true,
+              foto: true,
+              categoria: { select: { nome: true } },
+            },
+          },
         },
       });
       return itemDoInventario(atualizado);

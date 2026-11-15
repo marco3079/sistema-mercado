@@ -5,6 +5,7 @@ import { useDados } from '../../lib/useDados';
 import { formatarPercentual, lerNumero, mensagemErro } from '../../lib/mercado';
 import { AreaTexto, Aviso, Botao, Campo, Modal, Selecao, formatarMoeda } from '../../ui';
 import type { ListaProdutos, ProdutoBusca, ReceitaDTO } from './tipos';
+import { CelulaProduto } from '../../ui/FotoProduto';
 
 // Ficha da receita: produto acabado, rendimento, tempos, modo de preparo e insumos com quantidade.
 // Custo, custo unitário e margem são recalculados ao vivo a cada mudança.
@@ -22,6 +23,8 @@ interface LinhaInsumo {
   unidade: string;
   precoCusto: number;
   quantidade: string;
+  foto: string | null;
+  categoria: string | null;
 }
 
 // Número digitado para o campo (com vírgula). Vazio quando não há valor.
@@ -100,6 +103,8 @@ export function FichaReceita({
           unidade: i.unidade,
           precoCusto: i.custoUnitario,
           quantidade: paraCampo(i.quantidade),
+          foto: i.insumoFoto,
+          categoria: i.insumoCategoria,
         }))
       : []
   );
@@ -139,7 +144,15 @@ export function FichaReceita({
     }
     setLinhas((atuais) => [
       ...atuais,
-      { insumoId: p.id, nome: p.nome, unidade: p.unidade, precoCusto: p.precoCusto, quantidade: '' },
+      {
+        insumoId: p.id,
+        nome: p.nome,
+        unidade: p.unidade,
+        precoCusto: p.precoCusto,
+        quantidade: '',
+        foto: p.foto ?? null,
+        categoria: p.categoria ?? null,
+      },
     ]);
     setBuscaInsumo('');
   }
@@ -247,7 +260,7 @@ export function FichaReceita({
                 {resultadosProduto.map((p) => (
                   <li key={p.id}>
                     <Botao variante="texto" aoClicar={() => escolherProduto(p)}>
-                      {p.nome} ({p.unidade.toLowerCase()})
+                      <CelulaProduto foto={p.foto} nome={`${p.nome} (${p.unidade.toLowerCase()})`} setor={p.categoria} tamanho={32} />
                     </Botao>
                   </li>
                 ))}
@@ -279,7 +292,7 @@ export function FichaReceita({
             {resultadosInsumo.map((p) => (
               <li key={p.id}>
                 <Botao variante="texto" aoClicar={() => adicionarInsumo(p)}>
-                  Adicionar {p.nome} ({p.unidade.toLowerCase()})
+                  <CelulaProduto foto={p.foto} nome={`Adicionar ${p.nome} (${p.unidade.toLowerCase()})`} setor={p.categoria} tamanho={32} />
                 </Botao>
               </li>
             ))}
@@ -295,7 +308,9 @@ export function FichaReceita({
               const custoLinha = q !== null ? q * l.precoCusto : null;
               return (
                 <li key={l.insumoId} className="padaria-insumo">
-                  <span className="padaria-insumo-nome">{l.nome}</span>
+                  <span className="padaria-insumo-nome">
+                    <CelulaProduto foto={l.foto} nome={l.nome} setor={l.categoria} tamanho={40} />
+                  </span>
                   <span className="padaria-insumo-quantidade">
                     <Campo
                       rotulo={`Quantidade (${l.unidade.toLowerCase()})`}

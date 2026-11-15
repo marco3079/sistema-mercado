@@ -7,8 +7,10 @@ import { hojeIso, lerNumero, mensagemErro } from '../../lib/mercado';
 import { RAIZ_DO_PERFIL } from '../../lib/tipos';
 import { useAtualizacao } from '../../lib/useAtualizacao';
 import { useDados } from '../../lib/useDados';
-import { Abas, Aviso, Botao, Campo, Carregando, Modal, Pagina, Selo, Tabela, formatarDataHora, formatarMoeda } from '../../ui';
-import type { ColunaTabela } from '../../ui';
+import { Abas, Aviso, Botao, Campo, Cartao, Carregando, MenuAcoes, Modal, Pagina, Selo, Tabela, formatarDataHora, formatarMoeda } from '../../ui';
+import type { AcaoMenu, ColunaTabela } from '../../ui';
+import { Icone } from '../../ui/icones';
+import type { NomeIcone } from '../../ui/icones';
 import { COR_ENTREGA, ROTULO_ENTREGA } from './tipos';
 import type { EntregaDTO, StatusEntrega } from './tipos';
 
@@ -30,9 +32,43 @@ const ROTULO_ABA: Record<Aba, string> = {
   PROBLEMAS: 'Problemas',
 };
 
+// Entregas ainda não encerradas: podem mudar de status.
+const ABERTAS: StatusEntrega[] = ['PENDENTE', 'SEPARANDO', 'EM_ROTA'];
+
 type StatusAcao = 'EM_ROTA' | 'ENTREGUE' | 'FALHOU';
 
 // ---------- Modais ----------
+
+// Escolha do novo status: três botões grandes, cada um abre a confirmação.
+function ModalMudarStatus({
+  entrega,
+  aoFechar,
+  aoEscolher,
+}: {
+  entrega: EntregaDTO;
+  aoFechar: () => void;
+  aoEscolher: (status: StatusAcao) => void;
+}) {
+  const opcoes: { status: StatusAcao; rotulo: string; icone: NomeIcone }[] = [
+    { status: 'EM_ROTA', rotulo: 'Saiu para entrega', icone: 'caminhao' },
+    { status: 'ENTREGUE', rotulo: 'Marcar como entregue', icone: 'visto' },
+    { status: 'FALHOU', rotulo: 'Marcar como não entregue', icone: 'fechar' },
+  ];
+  return (
+    <Modal aberto titulo={`Mudar status · ${entrega.codigo}`} aoFechar={aoFechar}>
+      <div className="logistica-opcoes">
+        {opcoes
+          .filter((o) => !(o.status === 'EM_ROTA' && entrega.status === 'EM_ROTA'))
+          .map((o) => (
+            <button key={o.status} type="button" className="logistica-opcao" onClick={() => aoEscolher(o.status)}>
+              <Icone nome={o.icone} tamanho={20} />
+              <span>{o.rotulo}</span>
+            </button>
+          ))}
+      </div>
+    </Modal>
+  );
+}
 
 // Muda o status da entrega: Entregue pede quem recebeu; Não entregue pede o motivo.
 function ModalStatus({
@@ -197,6 +233,31 @@ function ModalAvisos({ entrega, aoFechar }: { entrega: EntregaDTO; aoFechar: () 
   );
 }
 
+// Indicador do topo: ícone colorido, valor grande e rótulo.
+function ItemResumo({
+  icone,
+  cor,
+  valor,
+  rotulo,
+}: {
+  icone: NomeIcone;
+  cor: 'azul' | 'verde' | 'laranja' | 'roxo' | 'vermelho';
+  valor: string;
+  rotulo: string;
+}) {
+  return (
+    <div className="resumo-item">
+      <span className={`resumo-icone resumo-icone-${cor}`}>
+        <Icone nome={icone} tamanho={22} />
+      </span>
+      <div>
+        <span className="resumo-valor">{valor}</span>
+        <span className="resumo-rotulo">{rotulo}</span>
+      </div>
+    </div>
+  );
+}
+
 // ---------- Tela ----------
 
 export function Entregas() {
@@ -211,9 +272,11 @@ export function Entregas() {
   useAtualizacao(lista.recarregar, 15000);
 
   const [aba, setAba] = useState<Aba>('PENDENTE');
+  const [busca, setBusca] = useState('');
   const [selecionadas, setSelecionadas] = useState<number[]>([]);
   const [modal, setModal] = useState<
     | { tipo: 'avulsa' }
+    | { tipo: 'mudar'; entrega: EntregaDTO }
     | { tipo: 'status'; entrega: EntregaDTO; status: StatusAcao }
     | { tipo: 'avisos'; entrega: EntregaDTO }
     | null
@@ -222,8 +285,25 @@ export function Entregas() {
   const [ocupado, setOcupado] = useState(false);
 
   const todas = lista.dados ?? [];
-  const daAba = todas.filter((e) => SITUACOES_DA_ABA[aba].includes(e.status));
+  const termo = busca.trim().toLowerCase();
+  const daAba = todas
+    .filter((e) => SITUACOES_DA_ABA[aba].includes(e.status))
+    .filter(
+      (e) =>
+        !termo ||
+        [e.destinatario, e.codigo, e.bairro, e.cidade, e.endereco].some((t) => (t ?? '').toLowerCase().includes(termo)),
+    );
   const mostrarCarga = aba === 'PENDENTE' && podeCarregar;
+
+  // Números do topo: pendentes, em rota, entregues hoje e o total a cobrar das entregas abertas.
+  const hoje = new Date().toDateString();
+  const abertas = todas.filter((e) => ABERTAS.includes(e.status));
+  const pendentes = todas.filter((e) => e.status === 'PENDENTE' || e.status === 'SEPARANDO').length;
+  const emRota = todas.filter((e) => e.status === 'EM_ROTA').length;
+  const entreguesHoje = todas.filter(
+    (e) => e.status === 'ENTREGUE' && e.entregueEm !== null && new Date(e.entregueEm).toDateString() === hoje,
+  ).length;
+  const aCobrar = abertas.reduce((soma, e) => soma + e.valorCobrar, 0);
 
   function mudarAba(id: string) {
     setAba(id as Aba);
@@ -263,29 +343,28 @@ export function Entregas() {
     lista.recarregar();
   }
 
-  const colunas: ColunaTabela<EntregaDTO>[] = [];
-  if (mostrarCarga) {
-    colunas.push({
-      titulo: 'Carga',
-      celula: (e) => (
-        <input
-          type="checkbox"
-          className="logistica-marcar"
-          checked={selecionadas.includes(e.id)}
-          onChange={() => alternar(e.id)}
-          aria-label={`Incluir ${e.codigo} na carga`}
-        />
-      ),
-    });
-  }
-  colunas.push(
-    { titulo: 'Código', celula: (e) => <span className="logistica-codigo">{e.codigo}</span> },
+  const colunas: ColunaTabela<EntregaDTO>[] = [
     {
-      titulo: 'Destinatário',
+      titulo: 'Entrega',
       celula: (e) => (
         <div className="logistica-destino">
-          <strong>{e.destinatario}</strong>
-          <span className="logistica-suave">{[e.bairro, e.cidade].filter(Boolean).join(' · ') || e.endereco}</span>
+          <span className="logistica-entrega-nome">
+            {mostrarCarga && (
+              <input
+                type="checkbox"
+                className="logistica-marcar"
+                checked={selecionadas.includes(e.id)}
+                onChange={() => alternar(e.id)}
+                aria-label={`Incluir ${e.codigo} na carga`}
+              />
+            )}
+            <strong>{e.destinatario}</strong>
+          </span>
+          <span className="logistica-suave">
+            <span className="logistica-codigo">{e.codigo}</span>
+            {' · '}
+            {[e.bairro, e.cidade].filter(Boolean).join(' · ') || e.endereco}
+          </span>
         </div>
       ),
     },
@@ -304,35 +383,24 @@ export function Entregas() {
       titulo: 'Ações',
       acoes: true,
       celula: (e) => {
-        const aberta = e.status === 'PENDENTE' || e.status === 'SEPARANDO' || e.status === 'EM_ROTA';
+        const aberta = ABERTAS.includes(e.status);
+        const acoes: AcaoMenu[] = [
+          { rotulo: 'Copiar rastreio', icone: 'documento', aoClicar: () => void copiarLink(e.codigo) },
+          { rotulo: 'Avisos do WhatsApp', icone: 'comentario', aoClicar: () => setModal({ tipo: 'avisos', entrega: e }) },
+        ];
         return (
-          <div className="logistica-acoes-linha">
-            {podeGerir && aberta && e.status !== 'EM_ROTA' && (
-              <Botao variante="texto" aoClicar={() => setModal({ tipo: 'status', entrega: e, status: 'EM_ROTA' })}>
-                Saiu
-              </Botao>
-            )}
+          <div className="acoes-linha">
             {podeGerir && aberta && (
-              <Botao variante="texto" aoClicar={() => setModal({ tipo: 'status', entrega: e, status: 'ENTREGUE' })}>
-                Entregue
+              <Botao variante="secundario" aoClicar={() => setModal({ tipo: 'mudar', entrega: e })}>
+                Mudar status
               </Botao>
             )}
-            {podeGerir && aberta && (
-              <Botao variante="texto" aoClicar={() => setModal({ tipo: 'status', entrega: e, status: 'FALHOU' })}>
-                Não entregue
-              </Botao>
-            )}
-            <Botao variante="texto" aoClicar={() => void copiarLink(e.codigo)}>
-              Copiar link
-            </Botao>
-            <Botao variante="texto" aoClicar={() => setModal({ tipo: 'avisos', entrega: e })}>
-              Avisos
-            </Botao>
+            <MenuAcoes rotulo={`Mais ações da entrega ${e.codigo}`} acoes={acoes} />
           </div>
         );
       },
     },
-  );
+  ];
 
   const acoesDaPagina = (
     <>
@@ -351,6 +419,13 @@ export function Entregas() {
 
   return (
     <Pagina titulo="Entregas" acoes={acoesDaPagina}>
+      <div className="resumo">
+        <ItemResumo icone="relogio" cor="laranja" valor={String(pendentes)} rotulo="Pendentes ou separando" />
+        <ItemResumo icone="caminhao" cor="azul" valor={String(emRota)} rotulo="Em rota" />
+        <ItemResumo icone="visto" cor="verde" valor={String(entreguesHoje)} rotulo="Entregues hoje" />
+        <ItemResumo icone="dinheiro" cor="roxo" valor={formatarMoeda(aCobrar)} rotulo="A cobrar em aberto" />
+      </div>
+
       <Abas
         abas={(Object.keys(ROTULO_ABA) as Aba[]).map((id) => ({
           id,
@@ -360,21 +435,36 @@ export function Entregas() {
         aoMudar={mudarAba}
       />
 
-      {aviso && <Aviso tipo={aviso.tipo === 'erro' ? 'erro' : 'sucesso'}>{aviso.texto}</Aviso>}
-      {lista.erro && <Aviso tipo="erro">{lista.erro}</Aviso>}
-      {lista.carregando && !lista.dados && <Carregando />}
+      <Cartao>
+        <div className="barra-ferramentas">
+          <div className="filtros">
+            <Campo rotulo="Buscar por destinatário, código ou bairro" valor={busca} aoMudar={setBusca} />
+          </div>
+        </div>
 
-      {lista.dados && (
-        <Tabela<EntregaDTO>
-          colunas={colunas}
-          dados={daAba}
-          chave={(e) => e.id}
-          vazio="Nenhuma entrega nesta situação."
-        />
-      )}
+        {aviso && <Aviso tipo={aviso.tipo === 'erro' ? 'erro' : 'sucesso'}>{aviso.texto}</Aviso>}
+        {lista.erro && <Aviso tipo="erro">{lista.erro}</Aviso>}
+        {lista.carregando && !lista.dados && <Carregando />}
+
+        {lista.dados && (
+          <Tabela<EntregaDTO>
+            colunas={colunas}
+            dados={daAba}
+            chave={(e) => e.id}
+            vazio={termo ? 'Nenhuma entrega encontrada para esta busca.' : 'Nenhuma entrega nesta situação.'}
+          />
+        )}
+      </Cartao>
 
       {modal?.tipo === 'avulsa' && (
         <ModalNovaEntrega aoFechar={() => setModal(null)} aoSalvo={aposSalvar} />
+      )}
+      {modal?.tipo === 'mudar' && (
+        <ModalMudarStatus
+          entrega={modal.entrega}
+          aoFechar={() => setModal(null)}
+          aoEscolher={(status) => setModal({ tipo: 'status', entrega: modal.entrega, status })}
+        />
       )}
       {modal?.tipo === 'status' && (
         <ModalStatus

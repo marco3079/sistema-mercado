@@ -4,8 +4,9 @@ import { api } from '../../lib/api';
 import { useAtualizacao } from '../../lib/useAtualizacao';
 import { useDados } from '../../lib/useDados';
 import { formatarQuantidade, lerNumero, mensagemErro } from '../../lib/mercado';
-import { Aviso, Botao, Campo, Carregando, Modal, Pagina, Selecao, Selo, Tabela, formatarDataHora } from '../../ui';
-import type { ColunaTabela } from '../../ui';
+import { Aviso, Botao, Campo, Cartao, Carregando, MenuAcoes, Modal, Pagina, Selecao, Selo, Tabela, formatarDataHora } from '../../ui';
+import type { AcaoMenu, ColunaTabela } from '../../ui';
+import { CelulaProduto } from '../../ui/FotoProduto';
 import { COR_TRANSFERENCIA, ROTULO_TRANSFERENCIA } from './tipos';
 import type { TransferenciaDTO, TransferenciaResumoDTO } from './tipos';
 
@@ -22,13 +23,18 @@ interface ProdutoBusca {
   nome: string;
   unidade: string;
   estoqueLoja: number;
+  foto: string | null;
+  categoria: string | null;
 }
 
 interface ItemNovo {
   produtoId: number;
+  codigo: string;
   nome: string;
   unidade: string;
   saldo: number;
+  foto: string | null;
+  categoria: string | null;
   quantidade: string;
 }
 
@@ -52,7 +58,19 @@ function ModalNovaTransferencia({ aoFechar, aoSalvo }: { aoFechar: () => void; a
     setItens((atual) =>
       atual.some((i) => i.produtoId === p.id)
         ? atual
-        : [...atual, { produtoId: p.id, nome: p.nome, unidade: p.unidade, saldo: p.estoqueLoja, quantidade: '1' }],
+        : [
+            ...atual,
+            {
+              produtoId: p.id,
+              codigo: p.codigo,
+              nome: p.nome,
+              unidade: p.unidade,
+              saldo: p.estoqueLoja,
+              foto: p.foto,
+              categoria: p.categoria,
+              quantidade: '1',
+            },
+          ],
     );
   }
 
@@ -116,10 +134,12 @@ function ModalNovaTransferencia({ aoFechar, aoSalvo }: { aoFechar: () => void; a
             {produtos.dados.itens.map((p) => (
               <li key={p.id} className="logistica-item">
                 <div className="logistica-item-texto">
-                  <strong>{p.nome}</strong>
-                  <span className="logistica-suave">
-                    {p.codigo} · saldo na origem {formatarQuantidade(p.estoqueLoja, p.unidade)}
-                  </span>
+                  <CelulaProduto
+                    foto={p.foto}
+                    nome={p.nome}
+                    setor={p.categoria}
+                    detalhe={`${p.codigo} · saldo na origem ${formatarQuantidade(p.estoqueLoja, p.unidade)}`}
+                  />
                 </div>
                 <Botao variante="secundario" aoClicar={() => adicionar(p)}>
                   Adicionar
@@ -135,8 +155,12 @@ function ModalNovaTransferencia({ aoFechar, aoSalvo }: { aoFechar: () => void; a
           {itens.map((i) => (
             <li key={i.produtoId} className="logistica-item">
               <div className="logistica-item-texto">
-                <strong>{i.nome}</strong>
-                <span className="logistica-suave">saldo na origem {formatarQuantidade(i.saldo, i.unidade)}</span>
+                <CelulaProduto
+                  foto={i.foto}
+                  nome={i.nome}
+                  setor={i.categoria}
+                  detalhe={`${i.codigo} · saldo na origem ${formatarQuantidade(i.saldo, i.unidade)}`}
+                />
               </div>
               <div className="logistica-qtd">
                 <Campo
@@ -273,10 +297,20 @@ export function Transferencias() {
   }
 
   const colunas: ColunaTabela<TransferenciaResumoDTO>[] = [
-    { titulo: 'Nº', celula: (t) => <span className="logistica-codigo">#{t.id}</span> },
-    { titulo: 'Origem → destino', celula: (t) => `${t.origem} → ${t.destino}` },
+    {
+      titulo: 'Transferência',
+      celula: (t) => (
+        <div className="logistica-destino">
+          <strong>
+            {t.origem} → {t.destino}
+          </strong>
+          <span className="logistica-suave">
+            <span className="logistica-codigo">#{t.id}</span> · criada em {formatarDataHora(t.criadoEm)}
+          </span>
+        </div>
+      ),
+    },
     { titulo: 'Itens', alinhar: 'direita', celula: (t) => <span className="logistica-numero">{t.itens}</span> },
-    { titulo: 'Criada', celula: (t) => formatarDataHora(t.criadoEm) },
     { titulo: 'Rota', celula: (t) => t.rotaCodigo ?? '—' },
     {
       titulo: 'Situação',
@@ -285,25 +319,33 @@ export function Transferencias() {
     {
       titulo: 'Ações',
       acoes: true,
-      celula: (t) => (
-        <div className="logistica-acoes-linha">
-          {t.status === 'SOLICITADA' && (
-            <Botao variante="texto" desabilitado={ocupado} aoClicar={() => void executar(() => api.post(`/transferencias/${t.id}/enviar`), `Transferência #${t.id} enviada.`)}>
-              Enviar
-            </Botao>
-          )}
-          {t.status === 'SOLICITADA' && (
-            <Botao variante="texto" desabilitado={ocupado} aoClicar={() => cancelar(t)}>
-              Cancelar
-            </Botao>
-          )}
-          {t.status === 'ENVIADA' && (
-            <Botao variante="texto" desabilitado={ocupado} aoClicar={() => setReceber(t.id)}>
-              Receber
-            </Botao>
-          )}
-        </div>
-      ),
+      celula: (t) => {
+        // Um botão para o próximo passo; cancelar fica no menu (⋯).
+        const proximo =
+          t.status === 'SOLICITADA'
+            ? {
+                rotulo: 'Enviar',
+                aoClicar: () =>
+                  void executar(() => api.post(`/transferencias/${t.id}/enviar`), `Transferência #${t.id} enviada.`),
+              }
+            : t.status === 'ENVIADA'
+              ? { rotulo: 'Receber', aoClicar: () => setReceber(t.id) }
+              : null;
+        const acoes: AcaoMenu[] =
+          t.status === 'SOLICITADA'
+            ? [{ rotulo: 'Cancelar transferência', icone: 'lixeira', perigo: true, aoClicar: () => cancelar(t) }]
+            : [];
+        return (
+          <div className="acoes-linha">
+            {proximo && (
+              <Botao variante="secundario" desabilitado={ocupado} aoClicar={proximo.aoClicar}>
+                {proximo.rotulo}
+              </Botao>
+            )}
+            {acoes.length > 0 && <MenuAcoes rotulo={`Mais ações da transferência #${t.id}`} acoes={acoes} />}
+          </div>
+        );
+      },
     },
   ];
 
@@ -313,12 +355,14 @@ export function Transferencias() {
       {lista.erro && <Aviso tipo="erro">{lista.erro}</Aviso>}
       {lista.carregando && !lista.dados && <Carregando />}
       {lista.dados && (
-        <Tabela<TransferenciaResumoDTO>
-          colunas={colunas}
-          dados={lista.dados}
-          chave={(t) => t.id}
-          vazio="Nenhuma transferência registrada."
-        />
+        <Cartao>
+          <Tabela<TransferenciaResumoDTO>
+            colunas={colunas}
+            dados={lista.dados}
+            chave={(t) => t.id}
+            vazio="Nenhuma transferência registrada."
+          />
+        </Cartao>
       )}
 
       {nova && (

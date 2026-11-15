@@ -11,6 +11,7 @@ import {
   Carregando,
   Grade,
   Modal,
+  MenuAcoes,
   Pagina,
   Selecao,
   Selo,
@@ -18,6 +19,9 @@ import {
   formatarMoeda,
   paraInputData,
 } from '../../ui';
+import type { AcaoMenu } from '../../ui';
+import { FotoProduto } from '../../ui/FotoProduto';
+import { Icone } from '../../ui/icones';
 import { ROTULO_TIPO_PROMOCAO } from './tipos';
 import type { AbaPromocao, PromocaoDTO, SugestaoDTO, TipoPromocao } from './tipos';
 import './promocoes.css';
@@ -33,7 +37,31 @@ function numeroTexto(valor: number | null): string {
   return valor === null ? '' : String(valor).replace('.', ',');
 }
 
-// Cartão de uma promoção, com período, unidades vendidas e ações.
+// Selo grande com a oferta em poucas palavras: "-10%", "Leve 3 pague 2", "R$ 6,49", "R$ 5,00 no atacado".
+function seloOferta(p: PromocaoDTO): string {
+  if (p.tipo === 'PERCENTUAL') return `-${p.valor}%`;
+  if (p.tipo === 'LEVE_PAGUE') return `Leve ${p.levar} pague ${p.pagar}`;
+  if (p.tipo === 'ATACADO') return `${formatarMoeda(p.valor)} no atacado`;
+  return formatarMoeda(p.valor);
+}
+
+// Foto no topo do cartão: a do produto; para categoria, mosaico 2×2 com as fotos de produtos da categoria.
+function FotoPromocao({ p }: { p: PromocaoDTO }) {
+  if (p.produtoId !== null || p.fotos.length <= 1) {
+    const foto = p.produtoId !== null ? p.foto : (p.fotos[0] ?? null);
+    return <FotoProduto foto={foto} nome={p.produto ?? p.categoria ?? p.nome} setor={p.setor} preencher />;
+  }
+  // Sempre 4 células: as que faltam viram o quadro colorido do setor (FotoProduto sem foto).
+  return (
+    <div className="promocoes-mosaico">
+      {[0, 1, 2, 3].map((i) => (
+        <FotoProduto key={i} foto={p.fotos[i] ?? null} nome={p.nome} setor={p.setor} preencher />
+      ))}
+    </div>
+  );
+}
+
+// Cartão de uma promoção: foto, oferta, preços, período, vendas e ações (Editar + menu).
 function CartaoPromocao({
   promocao: p,
   aba,
@@ -47,49 +75,98 @@ function CartaoPromocao({
   aoEncerrar(): void;
   aoExcluir(): void;
 }) {
+  const selo = seloOferta(p);
+  const riscado = p.tipo !== 'LEVE_PAGUE' && p.precoNormal !== null ? p.precoNormal : null;
+  const destaque = p.tipo === 'PERCENTUAL' ? p.precoPromocional : null;
+  // O servidor manda "<nome>: <texto>"; tira o prefixo. Preço fixo e percentual não repetem descrição.
+  const prefixo = `${p.nome}: `;
+  const textoDescricao = p.descricao.startsWith(prefixo) ? p.descricao.slice(prefixo.length) : p.descricao;
+  const descricaoExtra =
+    p.tipo !== 'PRECO_FIXO' && p.tipo !== 'PERCENTUAL' && textoDescricao.trim() !== '' && textoDescricao !== selo && textoDescricao !== p.nome
+      ? textoDescricao
+      : null;
+  const bonificacaoAReceber =
+    p.industria && p.bonificacaoUnidade !== null
+      ? Math.round(p.unidadesVendidas * p.bonificacaoUnidade * 100) / 100
+      : null;
+
+  const acoes: AcaoMenu[] = [];
+  if (aba === 'ativas') acoes.push({ rotulo: 'Encerrar', icone: 'fechar', aoClicar: aoEncerrar });
+  if (p.unidadesVendidas === 0) acoes.push({ rotulo: 'Excluir', icone: 'lixeira', perigo: true, aoClicar: aoExcluir });
+
   return (
-    <article className="promocoes-cartao">
-      <header className="promocoes-cartao-cabecalho">
+    <article className={`promocoes-cartao${aba === 'encerradas' ? ' promocoes-cartao-encerrada' : ''}`}>
+      <div className="promocoes-foto">
+        <FotoPromocao p={p} />
+      </div>
+
+      <div className="promocoes-corpo">
+        <span className="promocoes-selo-oferta">{selo}</span>
         <h3>{p.nome}</h3>
-        <div className="promocoes-selos">
-          <Selo cor={aba === 'ativas' ? 'verde' : aba === 'agendadas' ? 'azul' : 'cinza'}>
-            {ROTULO_TIPO_PROMOCAO[p.tipo]}
-          </Selo>
-          {p.industria && <Selo cor="amarelo">{p.industria}</Selo>}
-        </div>
-      </header>
-      <p className="promocoes-descricao">{p.descricao}</p>
-      <p className="promocoes-texto">
-        {p.produto ? `Produto: ${p.produto}` : `Categoria: ${p.categoria ?? '—'}`}
-        {p.precoNormal !== null && ` · preço normal ${formatarMoeda(p.precoNormal)}`}
-      </p>
-      <p className="promocoes-texto">
-        Período: {formatarData(p.inicio)} a {formatarData(p.fim)}
-      </p>
-      <p className="promocoes-texto">
-        Unidades vendidas: <strong>{formatarQuantidade(p.unidadesVendidas)}</strong>
-      </p>
-      {p.industria && (
-        <p className="promocoes-texto">
-          Bonificação: {formatarMoeda(p.bonificacaoUnidade ?? 0)} por unidade vendida
-        </p>
-      )}
-      <div className="promocoes-acoes">
-        {aba === 'ativas' && (
-          <Botao variante="secundario" aoClicar={aoEncerrar}>
-            Encerrar
-          </Botao>
+        {descricaoExtra && <p className="promocoes-texto">{descricaoExtra}</p>}
+        <p className="promocoes-texto">{p.produto ?? (p.categoria ? `Categoria ${p.categoria}` : '—')}</p>
+
+        {(riscado !== null || destaque !== null) && (
+          <p className="promocoes-precos">
+            {riscado !== null && <s>{formatarMoeda(riscado)}</s>}
+            {destaque !== null && <strong>{formatarMoeda(destaque)}</strong>}
+          </p>
         )}
+
+        <p className="promocoes-linha">
+          <Icone nome="calendario" tamanho={15} />
+          {formatarData(p.inicio)} a {formatarData(p.fim)}
+        </p>
+        <p className="promocoes-linha">
+          <Icone nome="carrinho" tamanho={15} />
+          {formatarQuantidade(p.unidadesVendidas)} vendidas
+        </p>
+
+        {(p.industria || bonificacaoAReceber !== null) && (
+          <div className="promocoes-selos">
+            {p.industria && <Selo cor="amarelo">{p.industria}</Selo>}
+          </div>
+        )}
+        {bonificacaoAReceber !== null && (
+          <p className="promocoes-texto">
+            Bonificação {formatarMoeda(p.bonificacaoUnidade ?? 0)} por unidade · a receber{' '}
+            <strong>{formatarMoeda(bonificacaoAReceber)}</strong>
+          </p>
+        )}
+      </div>
+
+      <footer className="promocoes-rodape">
         <Botao variante="secundario" aoClicar={aoEditar}>
           Editar
         </Botao>
-        {p.unidadesVendidas === 0 && (
-          <Botao variante="perigo" aoClicar={aoExcluir}>
-            Excluir
-          </Botao>
-        )}
-      </div>
+        {acoes.length > 0 && <MenuAcoes rotulo={`Mais ações de ${p.nome}`} acoes={acoes} />}
+      </footer>
     </article>
+  );
+}
+
+// Indicador do topo (cartão com ícone colorido, valor grande e rótulo), como no estoque.
+function Indicador({
+  rotulo,
+  valor,
+  cor,
+  icone,
+}: {
+  rotulo: string;
+  valor: string;
+  cor: 'azul' | 'verde' | 'laranja' | 'roxo';
+  icone: 'raio' | 'calendario' | 'carrinho' | 'dinheiro';
+}) {
+  return (
+    <div className="resumo-item">
+      <span className={`resumo-icone resumo-icone-${cor}`}>
+        <Icone nome={icone} tamanho={22} />
+      </span>
+      <div>
+        <span className="resumo-valor">{valor}</span>
+        <span className="resumo-rotulo">{rotulo}</span>
+      </div>
+    </div>
   );
 }
 
@@ -394,12 +471,27 @@ export function Promocoes() {
   const [erro, setErro] = useState<string | null>(null);
   const lista = useDados<PromocaoDTO[]>(`/promocoes?status=${aba}`);
   const promocoes = lista.dados ?? [];
+  // Todas as promoções, só para os números do topo (ativas, agendadas, vendas, bonificação).
+  const todas = useDados<PromocaoDTO[]>('/promocoes');
 
   function aoAtualizar(mensagem: string) {
     setAviso(mensagem);
     setErro(null);
     lista.recarregar();
+    todas.recarregar();
   }
+
+  const agora = Date.now();
+  const conjunto = todas.dados ?? [];
+  const numAtivas = conjunto.filter(
+    (p) => p.ativa && new Date(p.inicio).getTime() <= agora && new Date(p.fim).getTime() >= agora,
+  ).length;
+  const numAgendadas = conjunto.filter((p) => p.ativa && new Date(p.inicio).getTime() > agora).length;
+  const numUnidades = conjunto.reduce((soma, p) => soma + p.unidadesVendidas, 0);
+  const aReceber = conjunto.reduce(
+    (soma, p) => (p.industria && p.bonificacaoUnidade !== null ? soma + p.unidadesVendidas * p.bonificacaoUnidade : soma),
+    0,
+  );
 
   async function encerrar(p: PromocaoDTO) {
     if (!window.confirm(`Encerrar a promoção "${p.nome}" agora?`)) return;
@@ -427,14 +519,25 @@ export function Promocoes() {
     <Pagina
       titulo="Promoções"
       acoes={
-        <>
+        <div className="acoes-linha">
           <Botao variante="secundario" aoClicar={() => setSugerindo(true)}>
             Promoções inteligentes
-          </Botao>{' '}
+          </Botao>
           <Botao aoClicar={() => setEdicao('nova')}>Nova promoção</Botao>
-        </>
+        </div>
       }
     >
+      {todas.dados && (
+        <div className="resumo">
+          <Indicador rotulo="Ativas" valor={String(numAtivas)} cor="verde" icone="raio" />
+          <Indicador rotulo="Agendadas" valor={String(numAgendadas)} cor="azul" icone="calendario" />
+          <Indicador rotulo="Unidades vendidas" valor={formatarQuantidade(Math.round(numUnidades))} cor="roxo" icone="carrinho" />
+          {aReceber > 0 && (
+            <Indicador rotulo="Bonificação a receber" valor={formatarMoeda(aReceber)} cor="laranja" icone="dinheiro" />
+          )}
+        </div>
+      )}
+
       <Abas
         abas={[
           { id: 'ativas', rotulo: 'Ativas' },
